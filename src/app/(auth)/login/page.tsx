@@ -54,13 +54,13 @@ const LoginPage = () => {
         // Redirection selon rôle
         switch (data.user.role) {
           case 'admin':
-            router.push('/admin-dashboard');
+            router.push('/dashboard/admin');
             break;
           case 'student':
-            router.push('/student-interface');
+            router.push('/dashboard/student');
             break;
           case 'parent':
-            router.push('/parent-interface');
+            router.push('/dashboard/parent');
             break;
           default:
             console.log('Rôle inconnu :', data.user.role);
