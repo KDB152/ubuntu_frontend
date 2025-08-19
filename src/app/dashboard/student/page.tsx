@@ -48,7 +48,8 @@ import {
   TrendingDown,
   Activity,
   Flame,
-  Medal
+  Medal,
+  AlertTriangle
 } from 'lucide-react';
 
 // Hook pour récupérer les données utilisateur depuis le state (pas localStorage)
@@ -74,6 +75,60 @@ const useAuth = () => {
   return { user, isLoading, logout: () => setUser(null) };
 };
 
+// Composant Modal de Déconnexion
+const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/20 max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Confirmation de déconnexion</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Contenu */}
+        <div className="mb-8">
+          <p className="text-blue-200 text-lg mb-2">
+            Voulez-vous vraiment vous déconnecter ?
+          </p>
+          <p className="text-blue-300 text-sm">
+            Vous devrez vous reconnecter pour accéder au tableau de bord.
+          </p>
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={onClose}
+            className="flex-1 px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold backdrop-blur-sm"
+          >
+            Non, rester connecté
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold flex items-center justify-center space-x-2"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Oui, se déconnecter</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StudentDashboard = () => {
   const { user, isLoading: authLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -87,7 +142,7 @@ const StudentDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notifications, setNotifications] = useState(3);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Mise à jour de l'heure
   useEffect(() => {
@@ -276,9 +331,28 @@ const StudentDashboard = () => {
     }).format(date);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Nettoyer les données de session
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('adminSession');
+      sessionStorage.clear();
+    } catch (error) {
+      console.log('Nettoyage du storage:', error);
+    }
+
+    // Redirection vers la page de login
     window.location.href = '/login';
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   const sidebarItems = [
@@ -396,30 +470,6 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex">
-      {/* Confirmation Dialog */}
-      {showLogoutDialog && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">Confirmer la déconnexion</h3>
-            <p className="text-blue-200 mb-6">Voulez-vous vraiment vous déconnecter ?</p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowLogoutDialog(false)}
-                className="px-4 py-2 bg-white/10 text-blue-200 rounded-xl hover:bg-white/20 transition-all border border-white/20"
-              >
-                Non
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all"
-              >
-                Oui
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Sidebar moderne avec thème bleu */}
       <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-slate-800/95 to-blue-900/95 backdrop-blur-xl shadow-2xl border-r border-white/10 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         
@@ -481,28 +531,26 @@ const StudentDashboard = () => {
             {/* Progression générale */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-white">Progression générale</span>
+                <span className="text-sm font-semibold text-white">Progression</span>
                 <span className="text-sm font-bold text-white">{studentData.progress}%</span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-3">
                 <div 
-                  className="bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 h-3 rounded-full transition-all duration-1000 shadow-sm"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-1000 shadow-sm"
                   style={{ width: `${studentData.progress}%` }}
                 />
               </div>
             </div>
 
-            {/* Objectif de la semaine */}
+            {/* Classement */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-white">Objectif de la semaine</span>
-                <span className="text-sm font-bold text-white">{studentData.weeklyProgress}/{studentData.weeklyGoal}</span>
+                <span className="text-sm font-semibold text-white">Classement</span>
+                <span className="text-sm font-bold text-white">#{studentData.rank}</span>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-3">
-                <div 
-                  className="bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 h-3 rounded-full transition-all duration-1000 shadow-sm"
-                  style={{ width: `${(studentData.weeklyProgress/studentData.weeklyGoal)*100}%` }}
-                />
+              <div className="flex items-center space-x-2">
+                <Trophy className="w-4 h-4 text-amber-400" />
+                <span className="text-xs text-blue-300">sur {studentData.totalStudents} élèves</span>
               </div>
             </div>
           </div>
@@ -533,37 +581,10 @@ const StudentDashboard = () => {
           ))}
         </nav>
 
-        {/* Actions rapides modernes */}
+        {/* Déconnexion avec modal */}
         <div className="p-4 border-t border-white/10">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-4 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-            <div className="relative z-10">
-              <div className="flex items-center space-x-2 mb-3">
-                <Zap className="w-5 h-5" />
-                <span className="font-bold">Actions rapides</span>
-              </div>
-              <div className="space-y-2">
-                <button className="w-full text-left text-sm opacity-90 hover:opacity-100 transition-opacity flex items-center space-x-2">
-                  <Play className="w-4 h-4" />
-                  <span>Reprendre le dernier cours</span>
-                </button>
-                <button className="w-full text-left text-sm opacity-90 hover:opacity-100 transition-opacity flex items-center space-x-2">
-                  <Award className="w-4 h-4" />
-                  <span>Prochain quiz</span>
-                </button>
-                <button className="w-full text-left text-sm opacity-90 hover:opacity-100 transition-opacity flex items-center space-x-2">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Contacter le professeur</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Déconnexion */}
-        <div className="p-4 border-t border-white/10">
-          <button
-            onClick={() => setShowLogoutDialog(true)}
+          <button 
+            onClick={handleLogoutClick}
             className="w-full flex items-center space-x-3 px-4 py-3 text-blue-200 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 border border-transparent hover:border-red-500/20"
           >
             <LogOut className="w-5 h-5" />
@@ -588,7 +609,7 @@ const StudentDashboard = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg hidden text-white hover:text-blue-200 p-2 hover:bg-white/10 rounded-lg transition-all"
+                className="lg:hidden text-white hover:text-blue-200 p-2 hover:bg-white/10 rounded-lg transition-all"
               >
                 <Menu className="w-6 h-6" />
               </button>
@@ -606,100 +627,52 @@ const StudentDashboard = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
                 <input
                   type="text"
+                  placeholder="Rechercher..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher un cours, quiz..."
                   className="pl-10 pr-4 py-3 w-64 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
                 />
               </div>
               
-              {/* Notifications modernes */}
-              <button className="relative p-3 text-blue-200 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                <Bell className="w-5 h-5" />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                    {notifications}
-                  </span>
-                )}
-              </button>
-
-              {/* Profil rapide moderne */}
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:block text-right">
-                  <p className="font-semibold text-white">{studentData.fullName}</p>
-                  <p className="text-sm text-blue-200">{studentData.class}</p>
-                </div>
-                {studentData.profilePicture ? (
-                  <img 
-                    src={studentData.profilePicture} 
-                    alt={studentData.fullName}
-                    className="w-10 h-10 rounded-xl object-cover border-2 border-white/20"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center border-2 border-white/20">
-                    <span className="text-white font-bold text-sm">
-                      {getInitials(studentData.firstName, studentData.lastName)}
+              {/* Notifications */}
+              <div className="relative">
+                <button className="text-white hover:text-blue-200 p-2 hover:bg-white/10 rounded-lg transition-all">
+                  <Bell className="w-6 h-6" />
+                  {notifications > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {notifications}
                     </span>
-                  </div>
-                )}
+                  )}
+                </button>
               </div>
+
+              {/* Paramètres */}
+              <button className="text-white hover:text-blue-200 p-2 hover:bg-white/10 rounded-lg transition-all">
+                <Settings className="w-6 h-6" />
+              </button>
             </div>
           </div>
         </header>
 
-        {/* Contenu principal avec fond cohérent */}
-        <main className="p-6">
+        {/* Main content */}
+        <main className="p-6 lg:p-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
-              {/* Métriques principales modernisées */}
+              {/* Statistiques clés modernisées */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-20 h-20 bg-blue-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-blue-400/30 transition-colors"></div>
                   <div className="flex items-center justify-between relative z-10">
                     <div>
-                      <p className="text-blue-200 text-sm font-semibold">Cours terminés</p>
-                      <p className="text-3xl font-bold text-white mt-1">{studentData.completedCourses}</p>
+                      <p className="text-blue-200 text-sm font-semibold">Progression générale</p>
+                      <p className="text-3xl font-bold text-white mt-1">{studentData.progress}%</p>
                       <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
-                        <BookOpen className="w-4 h-4 mr-1" />
-                        sur {studentData.totalCourses}
+                        <TrendingUp className="w-4 h-4 mr-1" />
+                        +{studentData.weeklyProgress}% cette semaine
                       </p>
                     </div>
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <BookOpen className="w-7 h-7 text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-emerald-400/30 transition-colors"></div>
-                  <div className="flex items-center justify-between relative z-10">
-                    <div>
-                      <p className="text-blue-200 text-sm font-semibold">Quiz terminés</p>
-                      <p className="text-3xl font-bold text-white mt-1">{studentData.completedQuizzes}</p>
-                      <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
-                        <Award className="w-4 h-4 mr-1" />
-                        sur {studentData.totalQuizzes}
-                      </p>
-                    </div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <Award className="w-7 h-7 text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-purple-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-purple-400/30 transition-colors"></div>
-                  <div className="flex items-center justify-between relative z-10">
-                    <div>
-                      <p className="text-blue-200 text-sm font-semibold">Note moyenne</p>
-                      <p className="text-3xl font-bold text-white mt-1">{studentData.averageScore}</p>
-                      <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
-                        <Star className="w-4 h-4 mr-1" />
-                        sur 20
-                      </p>
-                    </div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <Star className="w-7 h-7 text-white" />
+                      <TrendingUp className="w-7 h-7 text-white" />
                     </div>
                   </div>
                 </div>
@@ -708,30 +681,69 @@ const StudentDashboard = () => {
                   <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-amber-400/30 transition-colors"></div>
                   <div className="flex items-center justify-between relative z-10">
                     <div>
-                      <p className="text-blue-200 text-sm font-semibold">Classement</p>
-                      <p className="text-3xl font-bold text-white mt-1">#{studentData.rank}</p>
+                      <p className="text-blue-200 text-sm font-semibold">Note moyenne</p>
+                      <p className="text-3xl font-bold text-white mt-1">{studentData.averageScore}/20</p>
                       <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
-                        <Users className="w-4 h-4 mr-1" />
-                        sur {studentData.totalStudents}
+                        <Star className="w-4 h-4 mr-1" />
+                        Top {Math.round(100 - (studentData.rank / studentData.totalStudents) * 100)}%
                       </p>
                     </div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <Medal className="w-7 h-7 text-white" />
+                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <Star className="w-7 h-7 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-emerald-400/30 transition-colors"></div>
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <p className="text-blue-200 text-sm font-semibold">Série actuelle</p>
+                      <p className="text-3xl font-bold text-white mt-1">{studentData.currentStreak}</p>
+                      <p className="text-emerald-400 text-sm font-semibold flex items-center mt-1">
+                        <Flame className="w-4 h-4 mr-1" />
+                        jours consécutifs
+                      </p>
+                    </div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <Flame className="w-7 h-7 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-purple-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-purple-400/30 transition-colors"></div>
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <p className="text-blue-200 text-sm font-semibold">Temps d'étude</p>
+                      <p className="text-3xl font-bold text-white mt-1">{Math.floor(studentData.studyTime/60)}h {studentData.studyTime%60}min</p>
+                      <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
+                        <Timer className="w-4 h-4 mr-1" />
+                        cette semaine
+                      </p>
+                    </div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <Timer className="w-7 h-7 text-white" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Activité hebdomadaire modernisée */}
+              {/* Activité hebdomadaire */}
               <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-white flex items-center">
-                    <Activity className="w-6 h-6 text-blue-400 mr-3" />
+                    <BarChart3 className="w-6 h-6 text-blue-400 mr-3" />
                     Activité cette semaine
                   </h2>
-                  <button className="text-blue-300 hover:text-white text-sm font-semibold flex items-center transition-colors">
-                    Détails <ArrowRight className="w-4 h-4 ml-1" />
-                  </button>
+                  <div className="flex space-x-2">
+                    <button className="px-4 py-2 text-xs bg-white/10 text-blue-200 rounded-xl hover:bg-white/20 transition-all border border-white/20">
+                      Étude
+                    </button>
+                    <button className="px-4 py-2 text-xs bg-blue-600 text-white rounded-xl hover:shadow-lg transition-all">
+                      Quiz
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-end justify-between space-x-3 h-40">
                   {Object.entries(studentData.weeklyStats).map(([day, minutes], index) => (
@@ -1014,6 +1026,13 @@ const StudentDashboard = () => {
           )}
         </main>
       </div>
+
+      {/* Modal de déconnexion */}
+      <LogoutModal 
+        isOpen={showLogoutModal}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
 };

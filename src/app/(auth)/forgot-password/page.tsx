@@ -101,7 +101,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
           {/* En-tête */}
           <div className="text-center mb-10">
-            <div className="lg:hidden flex justify-center mb-6">
+            <div className="flex justify-center mb-6">
               <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
                 <BookOpen className="w-12 h-12 text-white" />
               </div>

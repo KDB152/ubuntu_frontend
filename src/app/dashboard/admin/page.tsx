@@ -47,8 +47,63 @@ import {
   Medal,
   Heart,
   ArrowRight,
-  LogOut
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
+
+// Composant Modal de Déconnexion
+const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/20 max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Confirmation de déconnexion</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Contenu */}
+        <div className="mb-8">
+          <p className="text-blue-200 text-lg mb-2">
+            Voulez-vous vraiment vous déconnecter ?
+          </p>
+          <p className="text-blue-300 text-sm">
+            Vous devrez vous reconnecter pour accéder au panel d'administration.
+          </p>
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={onClose}
+            className="flex-1 px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold backdrop-blur-sm"
+          >
+            Non, rester connecté
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold flex items-center justify-center space-x-2"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Oui, se déconnecter</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -57,12 +112,38 @@ const AdminDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notifications, setNotifications] = useState(5);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Mise à jour de l'heure
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fonction de déconnexion
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Nettoyer les données de session
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('adminSession');
+      sessionStorage.clear();
+    } catch (error) {
+      console.log('Nettoyage du storage:', error);
+    }
+
+    // Redirection vers la page de login
+    window.location.href = '/login';
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
 
   // Données simulées pour l'admin avec plus de détails
   const adminData = {
@@ -333,9 +414,12 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Déconnexion */}
+        {/* Déconnexion avec modal */}
         <div className="p-4 border-t border-white/10">
-          <button className="w-full flex items-center space-x-3 px-4 py-3 text-blue-200 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 border border-transparent hover:border-red-500/20">
+          <button 
+            onClick={handleLogoutClick}
+            className="w-full flex items-center space-x-3 px-4 py-3 text-blue-200 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 border border-transparent hover:border-red-500/20"
+          >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Se déconnecter</span>
           </button>
@@ -414,6 +498,14 @@ const AdminDashboard = () => {
                 <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-red-600 rounded-xl flex items-center justify-center border-2 border-white/20">
                   <span className="text-white font-bold text-sm">AD</span>
                 </div>
+                {/* Bouton déconnexion dans le header */}
+                <button 
+                  onClick={handleLogoutClick}
+                  className="p-2 text-blue-200 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20"
+                  title="Se déconnecter"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>
@@ -785,6 +877,13 @@ const AdminDashboard = () => {
           )}
         </main>
       </div>
+
+      {/* Modal de déconnexion */}
+      <LogoutModal 
+        isOpen={showLogoutModal}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
 };

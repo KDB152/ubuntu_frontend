@@ -104,7 +104,7 @@ const ResetPasswordPage = () => {
           </div>
 
           <div className="text-center mb-10">
-            <div className="lg:hidden flex justify-center mb-6">
+            <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
                 <BookOpen className="w-10 h-10 text-white" />
               </div>

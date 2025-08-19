@@ -50,8 +50,63 @@ import {
   Sparkles,
   ArrowRight,
   MoreHorizontal,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
+
+// Composant Modal de Déconnexion
+const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/20 max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Confirmation de déconnexion</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Contenu */}
+        <div className="mb-8">
+          <p className="text-blue-200 text-lg mb-2">
+            Voulez-vous vraiment vous déconnecter ?
+          </p>
+          <p className="text-blue-300 text-sm">
+            Vous devrez vous reconnecter pour accéder au tableau de bord.
+          </p>
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={onClose}
+            className="flex-1 px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold backdrop-blur-sm"
+          >
+            Non, rester connecté
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold flex items-center justify-center space-x-2"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Oui, se déconnecter</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ParentDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -59,6 +114,7 @@ const ParentDashboard = () => {
   const [selectedChild, setSelectedChild] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notifications, setNotifications] = useState(2);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Mise à jour de l'heure
   useEffect(() => {
@@ -145,6 +201,30 @@ const ParentDashboard = () => {
     ]
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Nettoyer les données de session
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('adminSession');
+      sessionStorage.clear();
+    } catch (error) {
+      console.log('Nettoyage du storage:', error);
+    }
+
+    // Redirection vers la page de login
+    window.location.href = '/login';
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
+
   const sidebarItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-500' },
     { id: 'children', label: 'Mes enfants', icon: Users, color: 'text-emerald-500' },
@@ -213,10 +293,6 @@ const ParentDashboard = () => {
   };
 
   const maxHours = Math.max(...currentChild.weeklyActivity.map(d => d.hours));
-
-  const logout = () => {
-    console.log('Déconnexion...');
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex">
@@ -356,7 +432,7 @@ const ParentDashboard = () => {
         {/* Déconnexion */}
         <div className="p-4 border-t border-white/10">
           <button
-            onClick={logout}
+            onClick={handleLogoutClick}
             className="w-full flex items-center space-x-3 px-4 py-3 text-blue-200 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 border border-transparent hover:border-red-500/20"
           >
             <LogOut className="w-5 h-5" />
@@ -405,125 +481,61 @@ const ParentDashboard = () => {
               </div>
               
               {/* Notifications */}
-              <button className="relative p-3 text-blue-200 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                <Bell className="w-5 h-5" />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                    {notifications}
-                  </span>
-                )}
-              </button>
-
-              {/* Profil rapide */}
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:block text-right">
-                  <p className="font-semibold text-white">{parentData.name.split(' ')[0]}</p>
-                  <p className="text-sm text-blue-200">Parent</p>
-                </div>
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-purple-600 rounded-xl flex items-center justify-center border-2 border-white/20">
-                  <span className="text-white font-bold text-sm">
-                    {getInitials(parentData.name)}
-                  </span>
-                </div>
+              <div className="relative">
+                <button className="text-white hover:text-blue-200 p-2 hover:bg-white/10 rounded-lg transition-all">
+                  <Bell className="w-6 h-6" />
+                  {notifications > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {notifications}
+                    </span>
+                  )}
+                </button>
               </div>
+
+              {/* Paramètres */}
+              <button className="text-white hover:text-blue-200 p-2 hover:bg-white/10 rounded-lg transition-all">
+                <Settings className="w-6 h-6" />
+              </button>
             </div>
           </div>
         </header>
 
-        {/* Contenu principal */}
-        <main className="p-6">
+        {/* Main content */}
+        <main className="p-6 lg:p-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
-              {/* Carte de l'enfant sélectionné moderne */}
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full -mr-16 -mt-16"></div>
-                <div className="flex items-center justify-between mb-6 relative z-10">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white/20">
-                      <span className="text-white font-bold text-2xl">{currentChild.avatar}</span>
-                    </div>
-                    <div>
-                      <h2 className="text-3xl font-bold text-white">{currentChild.name}</h2>
-                      <p className="text-blue-200 font-medium">{currentChild.class} • {currentChild.age} ans</p>
-                      <p className="text-sm text-blue-300">Dernière activité: {currentChild.lastActivity}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-4xl font-bold text-white mb-2">{currentChild.progress}%</div>
-                    <div className="text-sm text-blue-200 font-medium">Progression générale</div>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Medal className="w-5 h-5 text-amber-400" />
-                      <span className="text-sm font-bold text-white">#{currentChild.rank}</span>
-                      <span className="text-sm text-blue-300">sur {currentChild.totalStudents}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                  {/* Progression */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                    <h3 className="font-bold text-white mb-3 flex items-center">
-                      <TrendingUp className="w-5 h-5 mr-2 text-emerald-400" />
-                      Progression
-                    </h3>
-                    <div className="w-full bg-white/20 rounded-full h-4 mb-3">
-                      <div 
-                        className="bg-gradient-to-r from-emerald-400 to-blue-500 h-4 rounded-full transition-all duration-1000"
-                        style={{ width: `${currentChild.progress}%` }}
-                      />
-                    </div>
-                    <p className="text-sm text-blue-200">Moyenne: <span className="font-bold text-white">{currentChild.averageScore}/20</span></p>
-                  </div>
-
-                  {/* Points forts */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                    <h3 className="font-bold text-white mb-3 flex items-center">
-                      <CheckCircle className="w-5 h-5 mr-2 text-emerald-400" />
-                      Points forts
-                    </h3>
-                    <div className="space-y-2">
-                      {currentChild.strengths.map((strength, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <Star className="w-4 h-4 text-emerald-400" />
-                          <span className="text-sm text-blue-200">{strength}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Points à améliorer */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                    <h3 className="font-bold text-white mb-3 flex items-center">
-                      <Target className="w-5 h-5 mr-2 text-amber-400" />
-                      À améliorer
-                    </h3>
-                    <div className="space-y-2">
-                      {currentChild.weaknesses.map((weakness, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <AlertCircle className="w-4 h-4 text-amber-400" />
-                          <span className="text-sm text-blue-200">{weakness}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Métriques principales */}
+              {/* Statistiques clés modernisées */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-20 h-20 bg-blue-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-blue-400/30 transition-colors"></div>
                   <div className="flex items-center justify-between relative z-10">
                     <div>
-                      <p className="text-blue-200 text-sm font-semibold">Moyenne générale</p>
-                      <p className="text-3xl font-bold text-white mt-1">{currentChild.averageScore}<span className="text-lg text-blue-200">/20</span></p>
-                      <p className="text-emerald-400 text-sm font-semibold flex items-center mt-1">
+                      <p className="text-blue-200 text-sm font-semibold">Progression</p>
+                      <p className="text-3xl font-bold text-white mt-1">{currentChild.progress}%</p>
+                      <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
                         <TrendingUp className="w-4 h-4 mr-1" />
-                        +0.5 ce mois
+                        Top {Math.round(100 - (currentChild.rank / currentChild.totalStudents) * 100)}%
                       </p>
                     </div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <BarChart3 className="w-7 h-7 text-white" />
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <TrendingUp className="w-7 h-7 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-amber-400/30 transition-colors"></div>
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <p className="text-blue-200 text-sm font-semibold">Note moyenne</p>
+                      <p className="text-3xl font-bold text-white mt-1">{currentChild.averageScore}/20</p>
+                      <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
+                        <Star className="w-4 h-4 mr-1" />
+                        {currentChild.averageScore >= 15 ? 'Excellent' : 'Bon'}
+                      </p>
+                    </div>
+                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <Star className="w-7 h-7 text-white" />
                     </div>
                   </div>
                 </div>
@@ -561,96 +573,121 @@ const ParentDashboard = () => {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border border-white/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/20 rounded-full -mr-10 -mt-10 group-hover:bg-amber-400/30 transition-colors"></div>
-                  <div className="flex items-center justify-between relative z-10">
-                    <div>
-                      <p className="text-blue-200 text-sm font-semibold">Classement</p>
-                      <p className="text-3xl font-bold text-white mt-1">#{currentChild.rank}</p>
-                      <p className="text-blue-300 text-sm font-semibold flex items-center mt-1">
-                        <Users className="w-4 h-4 mr-1" />
-                        sur {currentChild.totalStudents}
-                      </p>
-                    </div>
-                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <Medal className="w-7 h-7 text-white" />
-                    </div>
+              {/* Activité hebdomadaire */}
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white flex items-center">
+                    <BarChart3 className="w-6 h-6 text-blue-400 mr-3" />
+                    Activité cette semaine
+                  </h2>
+                  <div className="flex space-x-2">
+                    <button className="px-4 py-2 text-xs bg-blue-600 text-white rounded-xl hover:shadow-lg transition-all">
+                      Heures d'étude
+                    </button>
+                    <button className="px-4 py-2 text-xs bg-white/10 text-blue-200 rounded-xl hover:bg-white/20 transition-all border border-white/20">
+                      Scores
+                    </button>
                   </div>
+                </div>
+                <div className="flex items-end justify-between space-x-3 h-40">
+                  {currentChild.weeklyActivity.map((day, index) => (
+                    <div key={day.day} className="flex-1 flex flex-col items-center">
+                      <div 
+                        className="w-full bg-gradient-to-t from-blue-500 to-indigo-400 rounded-lg transition-all duration-500 hover:shadow-lg relative group"
+                        style={{ height: `${(day.hours/maxHours)*100}%`, minHeight: '8px' }}
+                      >
+                        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-900/90 text-white text-xs px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-white/20">
+                          {day.hours}h
+                        </div>
+                      </div>
+                      <span className="text-xs text-blue-200 mt-3 font-medium">
+                        {day.day}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Activité hebdomadaire et notes récentes */}
+              {/* Résultats récents et Événements à venir */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Activité hebdomadaire modernisée */}
+                {/* Résultats récents */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white flex items-center">
-                      <Activity className="w-6 h-6 text-blue-400 mr-3" />
-                      Activité cette semaine
+                      <Star className="w-6 h-6 text-amber-400 mr-3" />
+                      Résultats récents
                     </h2>
                     <button className="text-blue-300 hover:text-white text-sm font-semibold flex items-center transition-colors">
-                      Détails <ArrowRight className="w-4 h-4 ml-1" />
-                    </button>
-                  </div>
-                  <div className="flex items-end justify-between space-x-3 h-40">
-                    {currentChild.weeklyActivity.map((day, index) => (
-                      <div key={index} className="flex-1 flex flex-col items-center">
-                        <div 
-                          className="w-full bg-gradient-to-t from-blue-500 to-indigo-400 rounded-lg transition-all duration-500 hover:shadow-lg relative group"
-                          style={{ height: `${(day.hours/maxHours)*100}%`, minHeight: '8px' }}
-                        >
-                          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-900/90 text-white text-xs px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-white/20">
-                            {day.hours}h
-                          </div>
-                        </div>
-                        <span className="text-xs text-blue-200 mt-3 font-medium capitalize">
-                          {day.day}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 p-3 bg-blue-500/20 rounded-lg border border-blue-500/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-blue-200">Total cette semaine</span>
-                      <span className="text-lg font-bold text-white">
-                        {currentChild.weeklyActivity.reduce((sum, day) => sum + day.hours, 0).toFixed(1)}h
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes récentes modernisées */}
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white flex items-center">
-                      <Award className="w-6 h-6 text-amber-400 mr-3" />
-                      Notes récentes
-                    </h2>
-                    <button className="text-blue-300 hover:text-white text-sm font-semibold flex items-center transition-colors">
-                      Tout voir <ArrowRight className="w-4 h-4 ml-1" />
+                      Voir tout <ArrowRight className="w-4 h-4 ml-1" />
                     </button>
                   </div>
                   <div className="space-y-4">
-                    {currentChild.recentScores.map((score, index) => {
+                    {currentChild.recentScores.slice(0, 4).map((score, index) => {
                       const SubjectIcon = subjectIcons[score.subject] || FileText;
                       return (
                         <div key={index} className="group p-4 border border-white/20 rounded-xl hover:shadow-lg transition-all cursor-pointer bg-white/5 hover:bg-white/10 backdrop-blur-sm">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className={`w-12 h-12 bg-gradient-to-br ${subjectColors[score.subject] || 'from-slate-400 to-slate-500'} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start space-x-3">
+                              <div className={`w-12 h-12 bg-gradient-to-br ${subjectColors[score.subject] || 'from-slate-400 to-slate-500'} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg`}>
                                 <SubjectIcon className="w-6 h-6 text-white" />
                               </div>
-                              <div>
-                                <p className="font-bold text-white text-sm group-hover:text-blue-300 transition-colors">{score.subject}</p>
-                                <p className="text-xs text-blue-200 font-medium">{score.type} • {score.date}</p>
+                              <div className="flex-1">
+                                <h3 className="font-bold text-white text-sm group-hover:text-blue-300 transition-colors">{score.subject} - {score.type}</h3>
+                                <p className="text-xs text-blue-200 font-medium">{score.date}</p>
                               </div>
                             </div>
-                            <div className={`px-4 py-2 rounded-xl border ${getScoreBgColor(score.score)} backdrop-blur-sm`}>
-                              <span className={`font-bold text-lg ${getScoreColor(score.score)}`}>
-                                {score.score}/20
-                              </span>
+                            <div className={`px-4 py-2 rounded-lg font-bold text-sm ${getScoreBgColor(score.score)}`}>
+                              <span className={getScoreColor(score.score)}>{score.score}/20</span>
                             </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Événements à venir */}
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                      <Calendar className="w-6 h-6 text-red-400 mr-3" />
+                      Événements à venir
+                    </h2>
+                    <button className="text-blue-300 hover:text-white text-sm font-semibold flex items-center transition-colors">
+                      Planning complet <ArrowRight className="w-4 h-4 ml-1" />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    {currentChild.upcomingEvents.map((event, index) => {
+                      const EventIcon = getEventIcon(event.type);
+                      return (
+                        <div key={index} className="group p-4 border border-white/20 rounded-xl hover:shadow-lg transition-all cursor-pointer bg-white/5 hover:bg-white/10 backdrop-blur-sm relative">
+                          {event.isImportant && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+                              <span className="text-white text-xs font-bold">!</span>
+                            </div>
+                          )}
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start space-x-3">
+                              <div className={`w-12 h-12 bg-gradient-to-br ${subjectColors[event.subject] || 'from-slate-400 to-slate-500'} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg`}>
+                                <EventIcon className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-bold text-white text-sm group-hover:text-red-300 transition-colors">{event.title}</h3>
+                                <p className="text-xs text-blue-200 font-medium">{event.subject} • {event.type.charAt(0).toUpperCase() + event.type.slice(1)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2 text-xs text-blue-200">
+                              <Calendar className="w-4 h-4" />
+                              <span className="font-medium">{event.date}</span>
+                            </div>
+                            <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all transform hover:scale-105">
+                              Détails
+                            </button>
                           </div>
                         </div>
                       );
@@ -659,98 +696,57 @@ const ParentDashboard = () => {
                 </div>
               </div>
 
-              {/* Événements à venir modernisés */}
+              {/* Forces et faiblesses */}
               <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-white flex items-center">
-                    <Calendar className="w-6 h-6 text-emerald-400 mr-3" />
-                    Événements à venir
+                    <Brain className="w-6 h-6 text-purple-400 mr-3" />
+                    Forces et faiblesses
                   </h2>
                   <button className="text-blue-300 hover:text-white text-sm font-semibold flex items-center transition-colors">
-                    Planning complet <ArrowRight className="w-4 h-4 ml-1" />
+                    Rapport détaillé <ArrowRight className="w-4 h-4 ml-1" />
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {currentChild.upcomingEvents.map((event, index) => {
-                    const IconComponent = getEventIcon(event.type);
-                    const SubjectIcon = subjectIcons[event.subject] || FileText;
-                    return (
-                      <div key={index} className="group p-4 border border-white/20 rounded-xl hover:shadow-lg transition-all cursor-pointer bg-white/5 hover:bg-white/10 backdrop-blur-sm relative">
-                        {event.isImportant && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-                            <span className="text-white text-xs font-bold">!</span>
-                          </div>
-                        )}
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-14 h-14 bg-gradient-to-br ${subjectColors[event.subject]} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
-                            <SubjectIcon className="w-7 h-7 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-white text-sm group-hover:text-blue-300 transition-colors">{event.title}</h3>
-                            <p className="text-xs text-blue-200 font-medium">{event.subject}</p>
-                            <p className="text-xs text-blue-300">{event.date}</p>
-                            <div className="flex items-center space-x-2 mt-2">
-                              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
-                                {event.type === 'quiz' ? 'Quiz' : event.type === 'exam' ? 'Contrôle' : 'Exposé'}
-                              </span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <CheckCircle className="w-5 h-5 text-emerald-400 mr-2" />
+                      Points forts
+                    </h3>
+                    <div className="space-y-3">
+                      {currentChild.strengths.map((strength, index) => {
+                        const IconComponent = subjectIcons[strength] || FileText;
+                        return (
+                          <div key={index} className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/20">
+                            <div className={`w-10 h-10 bg-gradient-to-br ${subjectColors[strength]} rounded-lg flex items-center justify-center`}>
+                              <IconComponent className="w-5 h-5 text-white" />
                             </div>
+                            <span className="text-white font-medium">{strength}</span>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+                      À améliorer
+                    </h3>
+                    <div className="space-y-3">
+                      {currentChild.weaknesses.map((weakness, index) => {
+                        const IconComponent = subjectIcons[weakness] || FileText;
+                        return (
+                          <div key={index} className="flex items-center space-x-3 p-3 bg-white/5 rounded-xl border border-white/20">
+                            <div className={`w-10 h-10 bg-gradient-to-br ${subjectColors[weakness]} rounded-lg flex items-center justify-center`}>
+                              <IconComponent className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="text-white font-medium">{weakness}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Actions rapides modernisées */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <button className="group p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-blue-500/30">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <MessageSquare className="w-6 h-6" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">Messages</div>
-                      <div className="text-sm opacity-90">Contacter professeur</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button className="group p-6 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-emerald-500/30">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <FileText className="w-6 h-6" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">Rapports</div>
-                      <div className="text-sm opacity-90">Analyse détaillée</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button className="group p-6 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-purple-500/30">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Calendar className="w-6 h-6" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">Calendrier</div>
-                      <div className="text-sm opacity-90">Planning complet</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button className="group p-6 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-amber-500/30">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Settings className="w-6 h-6" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">Paramètres</div>
-                      <div className="text-sm opacity-90">Configuration</div>
-                    </div>
-                  </div>
-                </button>
               </div>
             </div>
           )}
@@ -765,7 +761,7 @@ const ParentDashboard = () => {
                 Section {sidebarItems.find(item => item.id === activeTab)?.label}
               </h3>
               <p className="text-blue-200 mb-8 max-w-md mx-auto text-lg">
-                Cette section sera bientôt disponible avec toutes les fonctionnalités avancées pour suivre la progression de votre enfant.
+                Cette section sera bientôt disponible avec toutes les fonctionnalités avancées pour suivre la progression de vos enfants.
               </p>
               <div className="flex items-center justify-center space-x-4">
                 <button 
@@ -782,6 +778,13 @@ const ParentDashboard = () => {
           )}
         </main>
       </div>
+
+      {/* Modal de déconnexion */}
+      <LogoutModal 
+        isOpen={showLogoutModal}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
 };
