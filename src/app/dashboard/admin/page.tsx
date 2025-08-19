@@ -145,6 +145,18 @@ const AdminDashboard = () => {
     setShowLogoutModal(false);
   };
 
+  const [adminName, setAdminName] = useState("Administrateur");
+  const [adminEmail, setAdminEmail] = useState("Système");
+
+  useEffect(() => {
+    const storedUserDetails = localStorage.getItem("userDetails");
+    if (storedUserDetails) {
+      const userDetails = JSON.parse(storedUserDetails);
+      setAdminName(`${userDetails.firstName} ${userDetails.lastName}`);
+      setAdminEmail(userDetails.email);
+    }
+  }, []);
+
   // Données simulées pour l'admin avec plus de détails
   const adminData = {
     totalStudents: 156,
@@ -320,8 +332,8 @@ const AdminDashboard = () => {
               <span className="text-white font-bold text-lg">AD</span>
             </div>
             <div className="flex-1">
-              <p className="font-bold text-white text-lg">Administrateur</p>
-              <p className="text-sm text-blue-200 font-medium">Système</p>
+              <p className="font-bold text-white text-lg">{adminName}</p>
+              <p className="text-sm text-blue-200 font-medium">{adminEmail}</p>
               <p className="text-xs text-blue-300">Chrono-Carto</p>
             </div>
             <div className="flex flex-col items-end">

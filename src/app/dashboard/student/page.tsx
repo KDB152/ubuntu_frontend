@@ -58,21 +58,18 @@ const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulation d'une vérification d'authentification
-    setTimeout(() => {
-      setUser({
-        id: 'user-123',
-        firstName: 'Marie',
-        lastName: 'Dubois',
-        email: 'marie.dubois@email.com',
-        role: 'student',
-        profilePicture: null
-      });
-      setIsLoading(false);
-    }, 1000);
+    const storedUserDetails = localStorage.getItem("userDetails");
+    if (storedUserDetails) {
+      setUser(JSON.parse(storedUserDetails));
+    }
+    setIsLoading(false);
   }, []);
 
-  return { user, isLoading, logout: () => setUser(null) };
+  return { user, isLoading, logout: () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userDetails");
+    setUser(null);
+  } };
 };
 
 // Composant Modal de Déconnexion
@@ -155,146 +152,46 @@ const StudentDashboard = () => {
     try {
       setLoading(true);
       
-      // Simule un délai d'API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockData = {
-        id: userId,
-        firstName: user?.firstName || "Marie",
-        lastName: user?.lastName || "Dubois", 
-        email: user?.email || "marie.dubois@email.com",
-        class: "Terminale S",
-        establishment: "Lycée Victor Hugo",
-        progress: 73,
-        totalCourses: 28,
-        completedCourses: 20,
-        totalQuizzes: 52,
-        completedQuizzes: 38,
-        averageScore: 15.2,
-        rank: 8,
-        totalStudents: 178,
-        currentStreak: 12,
-        weeklyGoal: 5,
-        weeklyProgress: 3,
-        studyTime: 847, // minutes cette semaine
-        favoriteSubject: "Histoire",
-        profilePicture: null,
-        recentCourses: [
-          { 
-            id: 1,
-            title: 'La Révolution française et l\'Empire', 
-            subject: 'Histoire', 
-            progress: 87, 
-            lastAccessed: '2025-01-16',
-            type: 'cours',
-            duration: '45 min',
-            difficulty: 'Moyen',
-            likes: 24,
-            views: 156,
-            isBookmarked: true
-          },
-          { 
-            id: 2,
-            title: 'Les climats et paysages européens', 
-            subject: 'Géographie', 
-            progress: 65, 
-            lastAccessed: '2025-01-15',
-            type: 'vidéo',
-            duration: '35 min',
-            difficulty: 'Facile',
-            likes: 18,
-            views: 89,
-            isBookmarked: false
-          },
-          { 
-            id: 3,
-            title: 'La démocratie française et européenne', 
-            subject: 'EMC', 
-            progress: 42, 
-            lastAccessed: '2025-01-14',
-            type: 'cours',
-            duration: '40 min',
-            difficulty: 'Difficile',
-            likes: 31,
-            views: 203,
-            isBookmarked: true
-          },
-          { 
-            id: 4,
-            title: 'Les grandes découvertes', 
-            subject: 'Histoire', 
-            progress: 95, 
-            lastAccessed: '2025-01-13',
-            type: 'quiz',
-            duration: '20 min',
-            difficulty: 'Moyen',
-            likes: 15,
-            views: 67,
-            isBookmarked: false
-          }
-        ],
-        upcomingQuizzes: [
-          { 
-            id: 1,
-            title: 'Évaluation : Première Guerre mondiale', 
-            subject: 'Histoire', 
-            dueDate: '2025-01-19', 
-            difficulty: 'Moyen',
-            questions: 18,
-            duration: '45 min',
-            maxScore: 20,
-            isImportant: true
-          },
-          { 
-            id: 2,
-            title: 'Quiz : Relief et hydrographie français', 
-            subject: 'Géographie', 
-            dueDate: '2025-01-21', 
-            difficulty: 'Facile',
-            questions: 12,
-            duration: '25 min',
-            maxScore: 20,
-            isImportant: false
-          },
-          { 
-            id: 3,
-            title: 'Test : Constitution et institutions', 
-            subject: 'EMC', 
-            dueDate: '2025-01-23', 
-            difficulty: 'Difficile',
-            questions: 25,
-            duration: '60 min',
-            maxScore: 20,
-            isImportant: true
-          }
-        ],
-        achievements: [
-          { id: 1, title: 'Premier pas', description: 'Premier cours terminé', unlocked: true, color: 'text-emerald-500', rarity: 'common', points: 10 },
-          { id: 2, title: 'Série de feu', description: 'Série de 10 jours consécutifs', unlocked: true, color: 'text-amber-500', rarity: 'rare', points: 50 },
-          { id: 3, title: 'Perfectionniste', description: 'Score parfait à un quiz', unlocked: true, color: 'text-purple-500', rarity: 'epic', points: 100 },
-          { id: 4, title: 'Explorateur', description: 'Toutes les matières découvertes', unlocked: true, color: 'text-blue-500', rarity: 'rare', points: 75 },
-          { id: 5, title: 'Érudit', description: '50 quiz terminés', unlocked: false, color: 'text-yellow-500', rarity: 'legendary', points: 200 },
-          { id: 6, title: 'Maître du temps', description: '100h d\'étude', unlocked: false, color: 'text-red-500', rarity: 'legendary', points: 300 }
-        ],
-        weeklyStats: {
-          monday: 45,
-          tuesday: 60,
-          wednesday: 30,
-          thursday: 80,
-          friday: 25,
-          saturday: 90,
-          sunday: 40
-        }
-      };
-      
-      setStudentData({
-        ...mockData,
-        fullName: `${mockData.firstName} ${mockData.lastName}`,
-      });
+      // Remplacez ceci par un véritable appel API à votre backend
+      // Exemple: const response = await fetch(`/api/students/${userId}`);
+      // const data = await response.json();
 
-      setRecentCourses(mockData.recentCourses || []);
-      setUpcomingQuizzes(mockData.upcomingQuizzes || []);
-      setAchievements(mockData.achievements || []);
+      // Pour l'instant, utilisons les données de localStorage pour simuler
+      const storedUserDetails = localStorage.getItem("userDetails");
+      if (storedUserDetails) {
+        const userDetails = JSON.parse(storedUserDetails);
+        setStudentData({
+          id: userDetails.id,
+          firstName: userDetails.firstName,
+          lastName: userDetails.lastName,
+          email: userDetails.email,
+          class: userDetails.studentDetails?.class || "Non spécifié",
+          establishment: userDetails.studentDetails?.establishment || "Non spécifié",
+          progress: userDetails.studentDetails?.progress || 0,
+          totalCourses: userDetails.studentDetails?.totalCourses || 0,
+          completedCourses: userDetails.studentDetails?.completedCourses || 0,
+          totalQuizzes: userDetails.studentDetails?.totalQuizzes || 0,
+          completedQuizzes: userDetails.studentDetails?.completedQuizzes || 0,
+          averageScore: userDetails.studentDetails?.averageScore || 0,
+          rank: userDetails.studentDetails?.rank || 0,
+          totalStudents: userDetails.studentDetails?.totalStudents || 0,
+          currentStreak: userDetails.studentDetails?.currentStreak || 0,
+          weeklyGoal: userDetails.studentDetails?.weeklyGoal || 0,
+          weeklyProgress: userDetails.studentDetails?.weeklyProgress || 0,
+          studyTime: userDetails.studentDetails?.studyTime || 0,
+          favoriteSubject: userDetails.studentDetails?.favoriteSubject || "Non spécifié",
+          profilePicture: userDetails.profilePicture || null,
+          recentCourses: userDetails.studentDetails?.recentCourses || [],
+          upcomingQuizzes: userDetails.studentDetails?.upcomingQuizzes || [],
+          achievements: userDetails.studentDetails?.achievements || [],
+          weeklyStats: userDetails.studentDetails?.weeklyStats || {},
+          fullName: `${userDetails.firstName} ${userDetails.lastName}`,
+        });
+
+        setRecentCourses(userDetails.studentDetails?.recentCourses || []);
+        setUpcomingQuizzes(userDetails.studentDetails?.upcomingQuizzes || []);
+        setAchievements(userDetails.studentDetails?.achievements || []);
+      }
 
     } catch (err) {
       setError(err.message);
@@ -338,10 +235,7 @@ const StudentDashboard = () => {
   const handleLogoutConfirm = () => {
     // Nettoyer les données de session
     try {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('adminSession');
+      logout(); // Utilise la fonction logout du hook useAuth
       sessionStorage.clear();
     } catch (error) {
       console.log('Nettoyage du storage:', error);
@@ -515,8 +409,8 @@ const StudentDashboard = () => {
             )}
             <div className="flex-1">
               <p className="font-bold text-white text-lg">{studentData.fullName}</p>
-              <p className="text-sm text-blue-200 font-medium">{studentData.class}</p>
-              <p className="text-xs text-blue-300">{studentData.establishment}</p>
+              <p className="text-sm text-blue-200 font-medium">{studentData.email}</p>
+              <p className="text-xs text-blue-300">{studentData.class} - {studentData.establishment}</p>
             </div>
             <div className="flex flex-col items-end">
               <div className="flex items-center space-x-1">

@@ -39,7 +39,6 @@ import {
   Shield,
   Zap,
   Lightbulb,
-  BookmarkCheck,
   LogOut,
   Home,
   Trophy,
@@ -51,8 +50,28 @@ import {
   ArrowRight,
   MoreHorizontal,
   ChevronDown,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
+
+const useAuth = () => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const storedUserDetails = localStorage.getItem("userDetails");
+    if (storedUserDetails) {
+      setUser(JSON.parse(storedUserDetails));
+    }
+    setIsLoading(false);
+  }, []);
+
+  return { user, isLoading, logout: () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userDetails");
+    setUser(null);
+  } };
+};
 
 // Composant Modal de Déconnexion
 const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
@@ -108,122 +127,154 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
   );
 };
 
+type Child = {
+  id: string;
+  name: string;
+  class: string;
+  progress: number;
+  rank: number;
+  totalStudents: number;
+  averageScore: number;
+  currentStreak: number;
+  studyTime: number;
+  weeklyActivity: { day: string; hours: number }[];
+  recentScores: { subject: string; type: string; date: string; score: number }[];
+  upcomingEvents: { type: string; subject: string; title: string; date: string; isImportant?: boolean }[];
+  strengths: string[];
+  weaknesses: string[];
+};
+
+type ParentData = {
+  name: string;
+  email: string;
+  phone: string;
+  children: Child[];
+};
+
 const ParentDashboard = () => {
+  const { user, isLoading: authLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedChild, setSelectedChild] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notifications, setNotifications] = useState(2);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [parentData, setParentData] = useState<ParentData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mise à jour de l'heure
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // Données simulées pour le parent
-  const parentData = {
-    name: 'Pierre Martin',
-    email: 'pierre.martin@email.com',
-    phone: '06 12 34 56 78',
-    children: [
-      {
-        id: 1,
-        name: 'Paul Martin',
-        class: 'Terminale S',
-        age: 17,
-        avatar: 'PM',
-        progress: 85,
-        averageScore: 15.2,
-        rank: 8,
-        totalStudents: 32,
-        lastActivity: '2025-01-16',
-        currentStreak: 8,
-        studyTime: 642, // minutes cette semaine
-        strengths: ['Histoire', 'Géographie'],
-        weaknesses: ['EMC'],
-        recentScores: [
-          { subject: 'Histoire', score: 17, date: '2025-01-15', type: 'Quiz' },
-          { subject: 'Géographie', score: 16, date: '2025-01-14', type: 'Devoir' },
-          { subject: 'EMC', score: 12, date: '2025-01-13', type: 'Quiz' },
-          { subject: 'Histoire', score: 18, date: '2025-01-12', type: 'Contrôle' }
-        ],
-        upcomingEvents: [
-          { type: 'quiz', subject: 'Histoire', title: 'Quiz Révolution française', date: '2025-01-18', isImportant: true },
-          { type: 'exam', subject: 'Géographie', title: 'Contrôle climats européens', date: '2025-01-20', isImportant: false }
-        ],
-        weeklyActivity: [
-          { day: 'Lun', hours: 2.5 },
-          { day: 'Mar', hours: 1.8 },
-          { day: 'Mer', hours: 3.2 },
-          { day: 'Jeu', hours: 2.1 },
-          { day: 'Ven', hours: 2.8 },
-          { day: 'Sam', hours: 1.5 },
-          { day: 'Dim', hours: 0.8 }
-        ]
-      },
-      {
-        id: 2,
-        name: 'Julie Martin',
-        class: 'Première ES',
-        age: 16,
-        avatar: 'JM',
-        progress: 72,
-        averageScore: 13.8,
-        rank: 15,
-        totalStudents: 28,
-        lastActivity: '2025-01-16',
-        currentStreak: 5,
-        studyTime: 456, // minutes cette semaine
-        strengths: ['EMC', 'Histoire'],
-        weaknesses: ['Géographie'],
-        recentScores: [
-          { subject: 'EMC', score: 16, date: '2025-01-15', type: 'Exposé' },
-          { subject: 'Histoire', score: 14, date: '2025-01-14', type: 'Quiz' },
-          { subject: 'Géographie', score: 11, date: '2025-01-13', type: 'Devoir' },
-          { subject: 'EMC', score: 15, date: '2025-01-12', type: 'Quiz' }
-        ],
-        upcomingEvents: [
-          { type: 'presentation', subject: 'EMC', title: 'Exposé démocratie', date: '2025-01-19', isImportant: false },
-          { type: 'quiz', subject: 'Histoire', title: 'Quiz Première Guerre', date: '2025-01-21', isImportant: true }
-        ],
-        weeklyActivity: [
-          { day: 'Lun', hours: 1.8 },
-          { day: 'Mar', hours: 2.2 },
-          { day: 'Mer', hours: 2.5 },
-          { day: 'Jeu', hours: 1.9 },
-          { day: 'Ven', hours: 2.1 },
-          { day: 'Sam', hours: 1.2 },
-          { day: 'Dim', hours: 0.5 }
-        ]
-      }
-    ]
-  };
+  useEffect(() => {
+    if (user) {
+      setParentData({
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.parentDetails?.phone || "Non spécifié",
+        children: user.parentDetails?.children || [],
+      });
+      setLoading(false);
+    } else if (!authLoading) {
+      setError("User not authenticated");
+      setLoading(false);
+    }
+  }, [user, authLoading]);
+
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
   };
 
-  const handleLogoutConfirm = () => {
-    // Nettoyer les données de session
-    try {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('adminSession');
-      sessionStorage.clear();
-    } catch (error) {
-      console.log('Nettoyage du storage:', error);
-    }
+const handleLogoutConfirm = () => {
+  // Nettoyer les données de session
+  try {
+    logout(); // Utilise la fonction logout du hook useAuth
+    sessionStorage.clear();
+  } catch (error) {
+    console.log("Nettoyage du storage:", error);
+  }
 
-    // Redirection vers la page de login
-    window.location.href = '/login';
-  };
+  // Redirection vers la page de login
+  window.location.href = "/login"; // Fixed: Added valid URL and closed the string
+};
 
   const handleLogoutCancel = () => {
     setShowLogoutModal(false);
   };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse shadow-2xl">
+              <BookOpen className="w-10 h-10 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+              <Loader2 className="w-3 h-3 text-white animate-spin" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-3">Chargement de votre espace</h2>
+          <p className="text-blue-200 animate-pulse text-lg">Préparation de vos données personnalisées...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-red-500/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-6 border border-red-300/30">
+            <Shield className="w-10 h-10 text-red-400" />
+          </div>
+          <h2 className="text-2xl font-semibold text-white mb-3">Accès non autorisé</h2>
+          <p className="text-blue-200 mb-8">Vous devez être connecté pour accéder à cette page</p>
+          <button 
+            onClick={() => window.location.href = "/login"}
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+          >
+            Retour à la connexion
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-red-500/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-6 border border-red-300/30">
+            <X className="w-10 h-10 text-red-400" />
+          </div>
+          <h2 className="text-2xl font-semibold text-white mb-3">Erreur de chargement</h2>
+          <p className="text-blue-200 mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+          >
+            Recharger la page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!parentData || parentData.children.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <User className="w-20 h-20 text-blue-300 mx-auto mb-6" />
+          <h2 className="text-2xl font-semibold text-white mb-3">Aucun enfant associé</h2>
+          <p className="text-blue-200">Veuillez contacter l'administration pour associer un enfant à votre compte.</p>
+        </div>
+      </div>
+    );
+  }
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-500' },
@@ -246,7 +297,9 @@ const ParentDashboard = () => {
     'EMC': Shield
   };
 
-  const currentChild = parentData.children[selectedChild];
+  const currentChild = parentData?.children[selectedChild];
+
+  // const maxHours = currentChild ? Math.max(...currentChild.weeklyActivity.map(d => d.hours)) : 0;
 
   const getScoreColor = (score) => {
     if (score >= 16) return 'text-emerald-500';
@@ -470,10 +523,7 @@ const ParentDashboard = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Barre de recherche moderne */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
-                <input
+              {/* Barre de recherche mo
                   type="text"
                   placeholder="Rechercher..."
                   className="pl-10 pr-4 py-3 w-64 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"

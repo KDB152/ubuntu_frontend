@@ -15,17 +15,21 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(0);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    setErrorMessage(null); // Clear error message on input change
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null); // Clear previous error message
 
     try {
       const res = await fetch('http://localhost:3001/auth/login', {
@@ -37,39 +41,38 @@ const LoginPage = () => {
         })
       });
 
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.log('Réponse non JSON :', text);
+      if (!res.ok) {
+        const errorData = await res.json();
+        setErrorMessage(errorData.message || 'Email ou mot de passe sont incorrects');
         setIsLoading(false);
         return;
       }
 
-      if (res.ok) {
-        // Stockage du JWT
-        localStorage.setItem('accessToken', data.accessToken);
+      const data = await res.json();
 
-        // Redirection selon rôle
-        switch (data.user.role) {
-          case 'admin':
-            router.push('/dashboard/admin');
-            break;
-          case 'student':
-            router.push('/dashboard/student');
-            break;
-          case 'parent':
-            router.push('/dashboard/parent');
-            break;
-          default:
-            console.log('Rôle inconnu :', data.user.role);
-        }
-      } else {
-        console.log('Erreur login :', data.message);
+      // Stockage du JWT
+      localStorage.setItem('accessToken', data.accessToken);
+      // Stockage des détails de l'utilisateur
+      localStorage.setItem('userDetails', JSON.stringify(data.user));
+
+      // Redirection selon rôle
+      switch (data.user.role) {
+        case 'admin':
+          router.push('/dashboard/admin');
+          break;
+        case 'student':
+          router.push('/dashboard/student');
+          break;
+        case 'parent':
+          router.push('/dashboard/parent');
+          break;
+        default:
+          setErrorMessage('Rôle utilisateur inconnu. Contactez l\'administrateur.');
+          console.log('Rôle inconnu :', data.user.role);
       }
     } catch (err) {
       console.error('Erreur fetch :', err);
+      setErrorMessage('Une erreur est survenue. Veuillez réessayer plus tard.');
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +114,9 @@ const LoginPage = () => {
     </div>
     <h2 className="text-5xl font-bold text-white mb-3">Connexion</h2> {/* texte plus grand */}
     <p className="text-blue-200 text-lg">Accédez à votre espace d'apprentissage</p>
+    {errorMessage && (
+      <p className="text-red-400 text-sm mt-4">{errorMessage}</p>
+    )}
   </div>
 
               <form
