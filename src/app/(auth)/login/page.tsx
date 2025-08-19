@@ -13,7 +13,7 @@ const LoginPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState(0);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -26,6 +26,7 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     try {
       const res = await fetch('http://localhost:3001/auth/login', {
@@ -43,15 +44,20 @@ const LoginPage = () => {
         data = JSON.parse(text);
       } catch {
         console.log('Réponse non JSON :', text);
+        setError('Erreur de communication avec le serveur');
         setIsLoading(false);
         return;
       }
 
       if (res.ok) {
-        // Stockage du JWT
+        // Stockage des données utilisateur complètes
         localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        localStorage.setItem('userRole', data.user.role);
 
-        // Redirection selon rôle
+        console.log('Données utilisateur reçues:', data.user);
+
+        // Redirection selon rôle avec les données
         switch (data.user.role) {
           case 'admin':
             router.push('/dashboard/admin');
@@ -62,14 +68,20 @@ const LoginPage = () => {
           case 'parent':
             router.push('/dashboard/parent');
             break;
+          case 'teacher':
+            router.push('/dashboard/teacher');
+            break;
           default:
             console.log('Rôle inconnu :', data.user.role);
+            setError('Rôle utilisateur non reconnu');
         }
       } else {
         console.log('Erreur login :', data.message);
+        setError(data.message || 'Erreur de connexion');
       }
     } catch (err) {
       console.error('Erreur fetch :', err);
+      setError('Erreur de connexion au serveur');
     } finally {
       setIsLoading(false);
     }
@@ -99,24 +111,30 @@ const LoginPage = () => {
 
       {/* Contenu principal */}
       <div className="relative z-10 flex min-h-screen">
-
         {/* Panneau droit - formulaire */}
         <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-8">
-<div className="w-full max-w-2xl">  {/* élargi de md à 2xl */}
-  <div className="text-center mb-10">
-    <div className="flex justify-center mb-6">
-      <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-        <BookOpen className="w-10 h-10 text-white" />
-      </div>
-    </div>
-    <h2 className="text-5xl font-bold text-white mb-3">Connexion</h2> {/* texte plus grand */}
-    <p className="text-blue-200 text-lg">Accédez à votre espace d'apprentissage</p>
-  </div>
+          <div className="w-full max-w-2xl">
+            <div className="text-center mb-10">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
+                  <BookOpen className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              <h2 className="text-5xl font-bold text-white mb-3">Connexion</h2>
+              <p className="text-blue-200 text-lg">Accédez à votre espace d'apprentissage personnalisé</p>
+            </div>
 
-              <form
-    onSubmit={handleSubmit}
-    className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl space-y-8"
-  >
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl space-y-8"
+            >
+              {/* Message d'erreur */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl backdrop-blur-sm">
+                  {error}
+                </div>
+              )}
+
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-3">Adresse email</label>
