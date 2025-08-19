@@ -35,18 +35,34 @@ const handleSubmit = async (e: React.FormEvent) => {
     const data = await response.json();
 
     if (!response.ok) {
-      // 💡 Vérifie si l'erreur renvoyée est "User not found"
-      if (data.message?.toLowerCase().includes("not found")) {
-        setErrors({ email: "Cet utilisateur n'est pas inscrit et n'a pas de compte." });
+      // 🔥 AMÉLIORATION: Messages d'erreur plus spécifiques
+      if (data.message?.toLowerCase().includes("not found") || 
+          data.message?.toLowerCase().includes("user not found") ||
+          data.message?.toLowerCase().includes("email not found") ||
+          data.message?.toLowerCase().includes("n'existe pas") ||
+          response.status === 404) {
+        setErrors({ 
+          email: "Cette adresse email n'est pas inscrite. Veuillez vérifier votre email ou créer un compte." 
+        });
+      } else if (data.message?.toLowerCase().includes("invalid email") ||
+                 data.message?.toLowerCase().includes("email invalide")) {
+        setErrors({ 
+          email: "Format d'adresse email invalide." 
+        });
       } else {
-        setErrors({ email: data.message || 'Erreur lors de la demande de réinitialisation' });
+        setErrors({ 
+          email: data.message || 'Erreur lors de la demande de réinitialisation' 
+        });
       }
       return;
     }
 
     setIsSuccess(true);
   } catch (error) {
-    setErrors({ email: error instanceof Error ? error.message : 'Une erreur est survenue' });
+    console.error('Erreur réseau:', error);
+    setErrors({ 
+      email: 'Impossible de se connecter au serveur. Veuillez réessayer.' 
+    });
   } finally {
     setIsLoading(false);
   }
