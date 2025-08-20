@@ -77,43 +77,6 @@ const FileManagementTab = ({ uploadedFiles, setUploadedFiles }) => {
 
   const fileInputRef = useRef(null);
 
-  // Fichiers existants (simulation)
-  const [existingFiles] = useState([
-    {
-      id: 1,
-      name: 'La Révolution française.pdf',
-      type: 'PDF',
-      subject: 'Histoire',
-      level: 'Terminale',
-      size: '2.4 MB',
-      uploadDate: '2025-01-15',
-      views: 234,
-      status: 'Publié'
-    },
-    {
-      id: 2,
-      name: 'Les climats européens.mp4',
-      type: 'Vidéo',
-      subject: 'Géographie',
-      level: 'Terminale',
-      size: '45.7 MB',
-      uploadDate: '2025-01-14',
-      views: 187,
-      status: 'Publié'
-    },
-    {
-      id: 3,
-      name: 'Cours EMC - Démocratie.txt',
-      type: 'Texte',
-      subject: 'EMC',
-      level: 'Terminale',
-      size: '156 KB',
-      uploadDate: '2025-01-13',
-      views: 142,
-      status: 'Brouillon'
-    }
-  ]);
-
   // Types de fichiers acceptés
   const acceptedTypes = {
     'application/pdf': { label: 'PDF', icon: FileText, color: 'text-red-500 bg-red-100' },
@@ -240,7 +203,7 @@ const FileManagementTab = ({ uploadedFiles, setUploadedFiles }) => {
     }
   };
 
-  const filteredFiles = [...existingFiles, ...uploadedFiles].filter(file => {
+  const filteredFiles = [...uploadedFiles].filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          file.subject.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSubject = filterSubject === 'Tous' || file.subject === filterSubject;

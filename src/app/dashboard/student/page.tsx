@@ -1,5 +1,6 @@
 'use client';
 
+import StudentCoursesView from './StudentCoursesView';
 import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
@@ -893,31 +894,32 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Autres sections avec design cohérent */}
-          {activeTab !== 'dashboard' && (
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-12 text-center border border-white/20">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                <BookOpen className="w-12 h-12 text-white" />
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-4">
-                Section {sidebarItems.find(item => item.id === activeTab)?.label}
-              </h3>
-              <p className="text-blue-200 mb-8 max-w-md mx-auto text-lg">
-                Cette section sera bientôt disponible avec toutes les fonctionnalités avancées pour optimiser votre apprentissage.
-              </p>
-              <div className="flex items-center justify-center space-x-4">
-                <button 
-                  onClick={() => setActiveTab('dashboard')}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
-                >
-                  Retour au tableau de bord
-                </button>
-                <button className="px-8 py-4 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold backdrop-blur-sm">
-                  En savoir plus
-                </button>
-              </div>
-            </div>
-          )}
+{activeTab === 'courses' ? (
+  <StudentCoursesView userRole="student" />
+) : activeTab !== 'dashboard' && (
+  <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-12 text-center border border-white/20">
+    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
+      <BookOpen className="w-12 h-12 text-white" />
+    </div>
+    <h3 className="text-3xl font-bold text-white mb-4">
+      Section {sidebarItems.find(item => item.id === activeTab)?.label}
+    </h3>
+    <p className="text-blue-200 mb-8 max-w-md mx-auto text-lg">
+      Cette section sera bientôt disponible avec toutes les fonctionnalités avancées pour optimiser votre apprentissage.
+    </p>
+    <div className="flex items-center justify-center space-x-4">
+      <button 
+        onClick={() => setActiveTab('dashboard')}
+        className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+      >
+        Retour au tableau de bord
+      </button>
+      <button className="px-8 py-4 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold backdrop-blur-sm">
+        En savoir plus
+      </button>
+    </div>
+  </div>
+)}
         </main>
       </div>
 

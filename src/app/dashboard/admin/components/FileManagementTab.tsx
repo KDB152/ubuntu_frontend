@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   Upload, 
   File, 
@@ -23,15 +23,46 @@ import {
   User,
   Tag,
   Save,
-  RefreshCw
+  RefreshCw,
+  Edit,
+  Settings,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Loader2
 } from 'lucide-react';
 
-const FileManagementTab = () => {
+// Types pour TypeScript
+interface Course {
+  id: string;
+  name: string;
+  title: string;
+  type: string;
+  subject: string;
+  level: string;
+  size: string;
+  uploadDate: string;
+  views: number;
+  status: 'Publié' | 'Brouillon';
+  description?: string;
+  tags?: string[];
+  fileName?: string;
+  fileUrl?: string;
+}
+
+interface FileUpload {
+  file: File;
+  progress: number;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  error?: string;
+}
+
+const FileManagementTabImproved = () => {
+  // États existants
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [currentFiles, setCurrentFiles] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadedFiles, setUploadedFiles] = useState<Course[]>([]);
+  const [currentFiles, setCurrentFiles] = useState<FileUpload[]>([]);
   const [courseTitle, setCourseTitle] = useState('');
   const [courseSubject, setCourseSubject] = useState('Histoire');
   const [courseDescription, setCourseDescription] = useState('');
@@ -41,45 +72,18 @@ const FileManagementTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSubject, setFilterSubject] = useState('Tous');
   const [filterType, setFilterType] = useState('Tous');
+  const [filterStatus, setFilterStatus] = useState('Tous');
 
-  const fileInputRef = useRef(null);
-  
-  // Fichiers existants (simulation)
-  const [existingFiles] = useState([
-    {
-      id: 1,
-      name: 'La Révolution française.pdf',
-      type: 'PDF',
-      subject: 'Histoire',
-      level: 'Terminale',
-      size: '2.4 MB',
-      uploadDate: '2025-01-15',
-      views: 234,
-      status: 'Publié'
-    },
-    {
-      id: 2,
-      name: 'Les climats européens.mp4',
-      type: 'Vidéo',
-      subject: 'Géographie',
-      level: 'Terminale',
-      size: '45.7 MB',
-      uploadDate: '2025-01-14',
-      views: 187,
-      status: 'Publié'
-    },
-    {
-      id: 3,
-      name: 'Cours EMC - Démocratie.txt',
-      type: 'Texte',
-      subject: 'EMC',
-      level: 'Terminale',
-      size: '156 KB',
-      uploadDate: '2025-01-13',
-      views: 142,
-      status: 'Brouillon'
-    }
-  ]);
+  // Nouveaux états pour les fonctionnalités améliorées
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<Course | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [fileToEdit, setFileToEdit] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Types de fichiers acceptés
   const acceptedTypes = {
@@ -93,8 +97,14 @@ const FileManagementTab = () => {
   const subjects = ['Histoire', 'Géographie', 'EMC'];
   const levels = ['Seconde', 'Première', 'Terminale'];
 
-  // Gestion du drag & drop
-  const handleDrag = useCallback((e) => {
+  // Fonction pour afficher les notifications
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+  // Gestion du drag & drop améliorée
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -104,7 +114,7 @@ const FileManagementTab = () => {
     }
   }, []);
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -114,19 +124,25 @@ const FileManagementTab = () => {
     }
   }, []);
 
-  const handleFiles = (files) => {
+  const handleFiles = (files: File[]) => {
     const validFiles = files.filter(file => {
       return Object.keys(acceptedTypes).includes(file.type) && file.size <= 100 * 1024 * 1024; // 100MB max
     });
 
-    setCurrentFiles(prev => [...prev, ...validFiles]);
+    const newFileUploads: FileUpload[] = validFiles.map(file => ({
+      file,
+      progress: 0,
+      status: 'pending'
+    }));
+
+    setCurrentFiles(prev => [...prev, ...newFileUploads]);
   };
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     setCurrentFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -134,117 +150,247 @@ const FileManagementTab = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const simulateUpload = async (file, index) => {
-    const fileId = `${file.name}-${index}`;
+  // Simulation d'upload améliorée avec gestion d'erreurs
+  const simulateUpload = async (fileUpload: FileUpload, index: number): Promise<{success: boolean, url?: string, error?: string}> => {
+    const { file } = fileUpload;
     
-    for (let progress = 0; progress <= 100; progress += 10) {
-      setUploadProgress(prev => ({
-        ...prev,
-        [fileId]: progress
-      }));
-      await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      // Simulation d'une vérification de fichier
+      if (file.name.includes('error')) {
+        throw new Error('Fichier corrompu détecté');
+      }
+
+      // Mise à jour du statut
+      setCurrentFiles(prev => prev.map((f, i) => 
+        i === index ? { ...f, status: 'uploading' as const } : f
+      ));
+
+      // Simulation du progrès d'upload
+      for (let progress = 0; progress <= 100; progress += 10) {
+        setCurrentFiles(prev => prev.map((f, i) => 
+          i === index ? { ...f, progress } : f
+        ));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Succès
+      setCurrentFiles(prev => prev.map((f, i) => 
+        i === index ? { ...f, status: 'success' as const } : f
+      ));
+
+      return { success: true, url: `uploads/${file.name}` };
+    } catch (error) {
+      // Erreur
+      setCurrentFiles(prev => prev.map((f, i) => 
+        i === index ? { ...f, status: 'error' as const, error: error instanceof Error ? error.message : 'Erreur inconnue' } : f
+      ));
+      
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
     }
-    
-    return { success: true, url: `uploads/${file.name}` };
   };
 
+  // Soumission améliorée avec gestion d'erreurs
   const handleSubmit = async () => {
     if (!courseTitle.trim() || currentFiles.length === 0) {
-      alert('Veuillez remplir le titre et ajouter au moins un fichier');
+      showNotification('error', 'Veuillez remplir le titre et ajouter au moins un fichier');
       return;
     }
 
     setIsUploading(true);
     
     try {
-      // Simulation de l'upload
-      const uploadPromises = currentFiles.map((file, index) => simulateUpload(file, index));
-      await Promise.all(uploadPromises);
+      // Upload des fichiers
+      const uploadPromises = currentFiles.map((fileUpload, index) => simulateUpload(fileUpload, index));
+      const results = await Promise.all(uploadPromises);
       
-      // Ajouter aux fichiers uploadés
-      const newFiles = currentFiles.map((file, index) => ({
-        id: Date.now() + index,
-        name: file.name,
-        type: acceptedTypes[file.type]?.label || 'Inconnu',
+      // Vérifier s'il y a des erreurs
+      const errors = results.filter(r => !r.success);
+      if (errors.length > 0) {
+        showNotification('error', `Erreur lors de l'upload de ${errors.length} fichier(s)`);
+        return;
+      }
+      
+      // Créer les nouveaux cours
+      const newCourses: Course[] = currentFiles.map((fileUpload, index) => ({
+        id: Date.now() + index + '',
+        name: fileUpload.file.name,
+        title: courseTitle,
+        type: acceptedTypes[fileUpload.file.type as keyof typeof acceptedTypes]?.label || 'Inconnu',
         subject: courseSubject,
         level: courseLevel,
-        size: formatFileSize(file.size),
+        size: formatFileSize(fileUpload.file.size),
         uploadDate: new Date().toISOString().split('T')[0],
         views: 0,
         status: 'Publié',
-        title: courseTitle,
         description: courseDescription,
-        tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean)
+        tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean),
+        fileName: fileUpload.file.name,
+        fileUrl: results[index].url
       }));
       
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+      setUploadedFiles(prev => [...prev, ...newCourses]);
       
       // Reset du formulaire
       setCourseTitle('');
       setCourseDescription('');
       setCourseTags('');
       setCurrentFiles([]);
-      setUploadProgress({});
       setShowUploadModal(false);
       
-      alert('Fichiers uploadés avec succès !');
+      showNotification('success', `${newCourses.length} cours ajouté(s) avec succès !`);
     } catch (error) {
-      alert('Erreur lors de l\'upload');
+      showNotification('error', 'Erreur lors de l\'upload');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const getFileIcon = (type) => {
+  // Fonction de suppression
+  const handleDelete = async (course: Course) => {
+    setIsLoading(true);
+    try {
+      // Simulation d'appel API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setUploadedFiles(prev => prev.filter(f => f.id !== course.id));
+      
+      showNotification('success', 'Cours supprimé avec succès');
+      setShowDeleteModal(false);
+      setFileToDelete(null);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la suppression');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction d'édition
+  const handleEdit = async (updatedCourse: Course) => {
+    setIsLoading(true);
+    try {
+      // Simulation d'appel API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setUploadedFiles(prev => prev.map(f => f.id === updatedCourse.id ? updatedCourse : f));
+      
+      showNotification('success', 'Cours modifié avec succès');
+      setShowEditModal(false);
+      setFileToEdit(null);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la modification');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction de téléchargement
+  const handleDownload = async (course: Course) => {
+    try {
+      // Simulation d'un téléchargement
+      const link = document.createElement('a');
+      link.href = course.fileUrl || '#';
+      link.download = course.fileName || course.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification('success', 'Téléchargement démarré');
+    } catch (error) {
+      showNotification('error', 'Erreur lors du téléchargement');
+    }
+  };
+
+  // Fonction de changement de statut
+  const toggleStatus = async (course: Course) => {
+    const newStatus = course.status === 'Publié' ? 'Brouillon' : 'Publié';
+    const updatedCourse = { ...course, status: newStatus };
+    await handleEdit(updatedCourse);
+  };
+
+  const getFileIcon = (type: string) => {
     const config = Object.values(acceptedTypes).find(t => t.label === type) || acceptedTypes['text/plain'];
     return config;
   };
 
-  const filteredFiles = [...existingFiles, ...uploadedFiles].filter(file => {
+  // Filtrage amélioré
+  const filteredFiles = [...uploadedFiles].filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         file.subject.toLowerCase().includes(searchQuery.toLowerCase());
+                         file.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (file.title && file.title.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesSubject = filterSubject === 'Tous' || file.subject === filterSubject;
     const matchesType = filterType === 'Tous' || file.type === filterType;
+    const matchesStatus = filterStatus === 'Tous' || file.status === filterStatus;
     
-    return matchesSearch && matchesSubject && matchesType;
+    return matchesSearch && matchesSubject && matchesType && matchesStatus;
   });
 
   return (
     <div className="space-y-8">
-      {/* En-tête */}
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg backdrop-blur-xl border ${
+          notification.type === 'success' 
+            ? 'bg-green-500/20 border-green-500/30 text-green-100' 
+            : 'bg-red-500/20 border-red-500/30 text-red-100'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {notification.type === 'success' ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : (
+              <XCircle className="w-5 h-5" />
+            )}
+            <span>{notification.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* En-tête amélioré */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center">
-              <BookOpen className="w-8 h-8 text-blue-300 mr-4" />
-              Gestion des fichiers de cours
+              <Shield className="w-8 h-8 text-blue-300 mr-4" />
+              Administration - Gestion des cours
             </h1>
-            <p className="text-blue-200 mt-2">Ajoutez et gérez vos contenus pédagogiques</p>
+            <p className="text-blue-200 mt-2">Gérez vos contenus pédagogiques : ajout, modification, suppression</p>
+            <div className="flex items-center space-x-4 mt-3 text-sm text-blue-300">
+              <span>Total: {filteredFiles.length} cours</span>
+              <span>Publiés: {filteredFiles.filter(f => f.status === 'Publié').length}</span>
+              <span>Brouillons: {filteredFiles.filter(f => f.status === 'Brouillon').length}</span>
+            </div>
           </div>
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Ajouter un cours</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Actualiser</span>
+            </button>
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Ajouter un cours</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Filtres et recherche */}
+      {/* Filtres et recherche améliorés */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher un fichier..."
+              placeholder="Rechercher par nom, titre ou matière..."
               className="pl-10 pr-4 py-3 w-full border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
             />
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
@@ -265,16 +411,25 @@ const FileManagementTab = () => {
               <option value="Vidéo">Vidéo</option>
               <option value="Texte">Texte</option>
             </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+            >
+              <option value="Tous">Tous les statuts</option>
+              <option value="Publié">Publié</option>
+              <option value="Brouillon">Brouillon</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Liste des fichiers */}
+      {/* Liste des fichiers améliorée */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
         <div className="p-6 border-b border-white/20">
           <h2 className="text-xl font-bold text-white flex items-center">
             <File className="w-5 h-5 text-blue-300 mr-2" />
-            Fichiers de cours ({filteredFiles.length})
+            Cours disponibles ({filteredFiles.length})
           </h2>
         </div>
         
@@ -282,7 +437,7 @@ const FileManagementTab = () => {
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Fichier</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Cours</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Matière</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Taille</th>
@@ -293,7 +448,7 @@ const FileManagementTab = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {filteredFiles.map((file, index) => {
+              {filteredFiles.map((file) => {
                 const iconConfig = getFileIcon(file.type);
                 const IconComponent = iconConfig.icon;
                 
@@ -307,6 +462,9 @@ const FileManagementTab = () => {
                         <div>
                           <p className="text-sm font-medium text-white">{file.name}</p>
                           {file.title && <p className="text-xs text-blue-300">{file.title}</p>}
+                          {file.description && (
+                            <p className="text-xs text-blue-400 mt-1 max-w-xs truncate">{file.description}</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -326,21 +484,44 @@ const FileManagementTab = () => {
                       <span className="text-sm text-blue-200">{file.views}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        file.status === 'Publié' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <button
+                        onClick={() => toggleStatus(file)}
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
+                          file.status === 'Publié' 
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                            : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                        }`}
+                      >
                         {file.status}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        <button className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-green-300 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                        <button 
+                          onClick={() => handleDownload(file)}
+                          className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                          title="Télécharger"
+                        >
                           <Download className="w-4 h-4" />
                         </button>
-                        <button className="p-2 text-red-300 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                        <button 
+                          onClick={() => {
+                            setFileToEdit(file);
+                            setShowEditModal(true);
+                          }}
+                          className="p-2 text-green-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                          title="Modifier"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setFileToDelete(file);
+                            setShowDeleteModal(true);
+                          }}
+                          className="p-2 text-red-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                          title="Supprimer"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -350,10 +531,18 @@ const FileManagementTab = () => {
               })}
             </tbody>
           </table>
+          
+          {filteredFiles.length === 0 && (
+            <div className="text-center py-12">
+              <File className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+              <p className="text-blue-200 text-lg">Aucun cours trouvé</p>
+              <p className="text-blue-300 text-sm">Essayez de modifier vos filtres ou ajoutez un nouveau cours</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Modal d'upload */}
+      {/* Modal d'upload amélioré */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
           <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -409,12 +598,12 @@ const FileManagementTab = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par virgule)</label>
+                  <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par des virgules)</label>
                   <input
                     type="text"
                     value={courseTags}
                     onChange={(e) => setCourseTags(e.target.value)}
-                    placeholder="révolution, politique, société"
+                    placeholder="Ex: révolution, france, histoire"
                     className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
                   />
                 </div>
@@ -425,136 +614,354 @@ const FileManagementTab = () => {
                 <textarea
                   value={courseDescription}
                   onChange={(e) => setCourseDescription(e.target.value)}
-                  placeholder="Décrivez le contenu du cours..."
-                  rows="3"
+                  placeholder="Description détaillée du cours..."
+                  rows={3}
                   className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
                 />
               </div>
 
-              {/* Zone de drag & drop */}
-              <div>
-                <label className="block text-sm font-semibold text-white mb-4">Fichiers du cours *</label>
-                <div
-                  className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                    dragActive 
-                      ? 'border-blue-400 bg-blue-400/10' 
-                      : 'border-white/30 hover:border-white/50'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
+              {/* Zone de drop améliorée */}
+              <div
+                className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                  dragActive 
+                    ? 'border-blue-400 bg-blue-400/10' 
+                    : 'border-white/30 hover:border-white/50'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <Upload className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+                <p className="text-white text-lg font-semibold mb-2">
+                  Glissez-déposez vos fichiers ici
+                </p>
+                <p className="text-blue-200 mb-4">
+                  ou cliquez pour sélectionner (PDF, TXT, MP4, AVI, MOV - max 100MB)
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.txt,.mp4,.avi,.mov"
+                  onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all border border-white/20"
                 >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.txt,.mp4,.avi,.mov"
-                    onChange={(e) => handleFiles(Array.from(e.target.files))}
-                    className="hidden"
-                  />
-                  
-                  <div className="space-y-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
-                      <Upload className="w-10 h-10 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xl font-semibold text-white mb-2">
-                        Glissez vos fichiers ici ou cliquez pour parcourir
-                      </p>
-                      <p className="text-blue-200 text-sm">
-                        Formats acceptés: PDF, TXT, MP4, AVI, MOV (max 100MB)
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
-                    >
-                      Choisir des fichiers
-                    </button>
-                  </div>
-                </div>
+                  Sélectionner des fichiers
+                </button>
               </div>
 
-              {/* Liste des fichiers sélectionnés */}
+              {/* Liste des fichiers sélectionnés avec statut */}
               {currentFiles.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white">Fichiers sélectionnés ({currentFiles.length})</h3>
-                  <div className="space-y-3">
-                    {currentFiles.map((file, index) => {
-                      const fileType = acceptedTypes[file.type] || acceptedTypes['text/plain'];
-                      const IconComponent = fileType.icon;
-                      const progressKey = `${file.name}-${index}`;
-                      const progress = uploadProgress[progressKey] || 0;
-                      
-                      return (
-                        <div key={index} className="flex items-center justify-between p-4 bg-white/10 rounded-xl border border-white/20">
-                          <div className="flex items-center space-x-3 flex-1">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${fileType.color}`}>
-                              <IconComponent className="w-5 h-5" />
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white">Fichiers sélectionnés</h3>
+                  {currentFiles.map((fileUpload, index) => {
+                    const { file, progress, status, error } = fileUpload;
+                    const iconConfig = acceptedTypes[file.type as keyof typeof acceptedTypes] || acceptedTypes['text/plain'];
+                    const IconComponent = iconConfig.icon;
+                    
+                    return (
+                      <div key={index} className="flex items-center space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconConfig.color}`}>
+                          <IconComponent className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-white">{file.name}</p>
+                          <p className="text-xs text-blue-200">{formatFileSize(file.size)}</p>
+                          
+                          {status === 'uploading' && (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between text-xs text-blue-200 mb-1">
+                                <span>Upload en cours...</span>
+                                <span>{progress}%</span>
+                              </div>
+                              <div className="w-full bg-white/20 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-white truncate">{file.name}</p>
-                              <p className="text-xs text-blue-300">{formatFileSize(file.size)}</p>
-                              {progress > 0 && progress < 100 && (
-                                <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                                  <div 
-                                    className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${progress}%` }}
-                                  />
-                                </div>
-                              )}
+                          )}
+                          
+                          {status === 'success' && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              <CheckCircle className="w-4 h-4 text-green-400" />
+                              <span className="text-xs text-green-400">Upload réussi</span>
                             </div>
-                          </div>
-                          {!isUploading && (
-                            <button
-                              onClick={() => removeFile(index)}
-                              className="text-red-300 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                          )}
+                          
+                          {status === 'error' && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              <XCircle className="w-4 h-4 text-red-400" />
+                              <span className="text-xs text-red-400">{error || 'Erreur d\'upload'}</span>
+                            </div>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
+                        
+                        {status === 'pending' && (
+                          <button
+                            onClick={() => removeFile(index)}
+                            className="p-2 text-red-300 hover:text-white hover:bg-red-500/20 rounded-lg transition-all"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                        
+                        {status === 'uploading' && (
+                          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end space-x-4 p-6 border-t border-white/20">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                disabled={isUploading}
-                className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold backdrop-blur-sm disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isUploading || !courseTitle.trim() || currentFiles.length === 0}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUploading ? (
-                  <>
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Upload en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    <span>Publier le cours</span>
-                  </>
-                )}
-              </button>
+              {/* Boutons d'action */}
+              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/20">
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+                  disabled={isUploading}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isUploading || currentFiles.length === 0 || !courseTitle.trim()}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Upload en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      <span>Publier le cours</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de suppression */}
+      {showDeleteModal && fileToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Confirmer la suppression</h3>
+                  <p className="text-blue-200 text-sm">Cette action est irréversible</p>
+                </div>
+              </div>
+              
+              <p className="text-blue-200 mb-6">
+                Êtes-vous sûr de vouloir supprimer le cours <strong className="text-white">"{fileToDelete.title || fileToDelete.name}"</strong> ?
+              </p>
+              
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setFileToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+                  disabled={isLoading}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => handleDelete(fileToDelete)}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Supprimer</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'édition */}
+      {showEditModal && fileToEdit && (
+        <EditCourseModal
+          course={fileToEdit}
+          onSave={handleEdit}
+          onClose={() => {
+            setShowEditModal(false);
+            setFileToEdit(null);
+          }}
+          isLoading={isLoading}
+          subjects={subjects}
+          levels={levels}
+        />
       )}
     </div>
   );
 };
 
-export default FileManagementTab;
+// Composant Modal d'édition séparé
+interface EditCourseModalProps {
+  course: Course;
+  onSave: (course: Course) => void;
+  onClose: () => void;
+  isLoading: boolean;
+  subjects: string[];
+  levels: string[];
+}
+
+const EditCourseModal: React.FC<EditCourseModalProps> = ({ 
+  course, 
+  onSave, 
+  onClose, 
+  isLoading, 
+  subjects, 
+  levels 
+}) => {
+  const [editedCourse, setEditedCourse] = useState<Course>(course);
+
+  const handleSave = () => {
+    onSave(editedCourse);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-white/20">
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <Edit className="w-6 h-6 text-blue-300 mr-3" />
+            Modifier le cours
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Nom du fichier</label>
+              <input
+                type="text"
+                value={editedCourse.name}
+                onChange={(e) => setEditedCourse(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Titre du cours</label>
+              <input
+                type="text"
+                value={editedCourse.title}
+                onChange={(e) => setEditedCourse(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Matière</label>
+              <select
+                value={editedCourse.subject}
+                onChange={(e) => setEditedCourse(prev => ({ ...prev, subject: e.target.value }))}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+              >
+                {subjects.map(subject => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Niveau</label>
+              <select
+                value={editedCourse.level}
+                onChange={(e) => setEditedCourse(prev => ({ ...prev, level: e.target.value }))}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+              >
+                {levels.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">Description</label>
+            <textarea
+              value={editedCourse.description || ''}
+              onChange={(e) => setEditedCourse(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par des virgules)</label>
+            <input
+              type="text"
+              value={editedCourse.tags?.join(', ') || ''}
+              onChange={(e) => setEditedCourse(prev => ({ 
+                ...prev, 
+                tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
+              }))}
+              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+            />
+          </div>
+
+          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/20">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+              disabled={isLoading}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Sauvegarde...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>Sauvegarder</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FileManagementTabImproved;
+
