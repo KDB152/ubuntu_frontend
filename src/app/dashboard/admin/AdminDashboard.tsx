@@ -1,0 +1,394 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  BarChart3,
+  Users,
+  BookOpen,
+  MessageSquare,
+  Settings,
+  FileText,
+  Shield,
+  Bell,
+  Database,
+  Zap,
+  Menu,
+  X,
+  LogOut,
+  User,
+  Search,
+  Palette,
+  Archive,
+  Activity,
+  Globe,
+  Lock,
+  Mail,
+  Phone,
+  Calendar,
+  Clock,
+  Award,
+  Target,
+  TrendingUp,
+  Eye,
+  Download,
+  Upload,
+  RefreshCw,
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  Filter,
+  Star,
+  Heart,
+  Flag,
+  Tag,
+  Bookmark,
+  Share2,
+  ExternalLink,
+  Home,
+  ChevronRight,
+  ChevronDown,
+  Maximize2,
+  Minimize2
+} from 'lucide-react';
+
+// Import des composants d'onglets
+import DashboardOverviewTab from './DashboardOverviewTab';
+import UsersManagementTab from './UsersManagementTab';
+import QuizzesManagementTab from './QuizzesManagementTab';
+import MessagesManagementTab from './MessagesManagementTab';
+import SettingsManagementTab from './SettingsManagementTab';
+import FileManagementTab from './FileManagementTab';
+
+type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'files' | 'settings';
+
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'super_admin';
+  avatar?: string;
+  lastLogin: string;
+}
+
+const AdminDashboard = () => {
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Données de l'utilisateur admin connecté
+  const currentUser: AdminUser = {
+    id: 'admin-1',
+    name: 'Professeur Admin',
+    email: 'admin@chronocarto.fr',
+    role: 'super_admin',
+    lastLogin: '2024-12-20T10:30:00'
+  };
+
+  const menuItems = [
+    {
+      id: 'overview',
+      label: 'Vue d\'ensemble',
+      icon: BarChart3,
+      description: 'Statistiques et tableau de bord principal',
+      badge: null
+    },
+    {
+      id: 'users',
+      label: 'Utilisateurs',
+      icon: Users,
+      description: 'Gestion des étudiants et parents',
+      badge: '1,247'
+    },
+    {
+      id: 'quizzes',
+      label: 'Quiz',
+      icon: BookOpen,
+      description: 'Création et gestion des questionnaires',
+      badge: '156'
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      icon: MessageSquare,
+      description: 'Communication avec les utilisateurs',
+      badge: '12'
+    },
+    {
+      id: 'files',
+      label: 'Fichiers',
+      icon: FileText,
+      description: 'Gestion des documents et médias',
+      badge: null
+    },
+    {
+      id: 'settings',
+      label: 'Paramètres',
+      icon: Settings,
+      description: 'Configuration du système',
+      badge: null
+    }
+  ];
+
+  const handleTabChange = (tabId: TabType) => {
+    setActiveTab(tabId);
+    if (window.innerWidth < 1024) {
+      setSidebarCollapsed(true);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+      // Logique de déconnexion
+      window.location.href = '/login';
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return <DashboardOverviewTab />;
+      case 'users':
+        return <UsersManagementTab />;
+      case 'quizzes':
+        return <QuizzesManagementTab />;
+      case 'messages':
+        return <MessagesManagementTab />;
+      case 'files':
+        return <FileManagementTab />;
+      case 'settings':
+        return <SettingsManagementTab />;
+      default:
+        return <DashboardOverviewTab />;
+    }
+  };
+
+  const getCurrentTabInfo = () => {
+    return menuItems.find(item => item.id === activeTab) || menuItems[0];
+  };
+
+  const currentTabInfo = getCurrentTabInfo();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
+        sidebarCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'w-80'
+      }`}>
+        <div className="h-full bg-white/10 backdrop-blur-xl border-r border-white/20">
+          {/* Header du sidebar */}
+          <div className="p-6 border-b border-white/20">
+            <div className="flex items-center justify-between">
+              {!sidebarCollapsed && (
+                <div>
+                  <h1 className="text-xl font-bold text-white">Chrono-Carto</h1>
+                  <p className="text-blue-200 text-sm">Administration</p>
+                </div>
+              )}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all lg:hidden"
+              >
+                {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="p-4 space-y-2">
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabChange(item.id as TabType)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                  }`}
+                  title={sidebarCollapsed ? item.label : ''}
+                >
+                  <IconComponent className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300'}`} />
+                  {!sidebarCollapsed && (
+                    <>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold">{item.label}</div>
+                        <div className="text-xs opacity-75">{item.description}</div>
+                      </div>
+                      {item.badge && (
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          isActive 
+                            ? 'bg-white/20 text-white' 
+                            : 'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Profil utilisateur */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20">
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-all"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                {!sidebarCollapsed && (
+                  <div className="flex-1 text-left">
+                    <div className="text-white font-semibold text-sm">{currentUser.name}</div>
+                    <div className="text-blue-300 text-xs">{currentUser.role}</div>
+                  </div>
+                )}
+              </button>
+
+              {/* Menu utilisateur */}
+              {showUserMenu && !sidebarCollapsed && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 shadow-xl">
+                  <div className="p-2">
+                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-all text-left">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm">Mon profil</span>
+                    </button>
+                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-all text-left">
+                      <Settings className="w-4 h-4" />
+                      <span className="text-sm">Préférences</span>
+                    </button>
+                    <hr className="my-2 border-white/20" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center space-x-3 px-3 py-2 text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded-lg transition-all text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="text-sm">Déconnexion</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Overlay pour mobile */}
+      {!sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      {/* Contenu principal */}
+      <div className={`transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'
+      }`}>
+        {/* Header principal */}
+        <header className="bg-white/10 backdrop-blur-xl border-b border-white/20 sticky top-0 z-30">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all lg:hidden"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <currentTabInfo.icon className="w-6 h-6 text-blue-300" />
+                    <h1 className="text-2xl font-bold text-white">{currentTabInfo.label}</h1>
+                  </div>
+                  <p className="text-blue-200 text-sm">{currentTabInfo.description}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                {/* Barre de recherche */}
+                <div className="relative hidden md:block">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Rechercher..."
+                    className="pl-10 pr-4 py-2 w-64 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                  />
+                </div>
+
+                {/* Actions rapides */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                    title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                  >
+                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                  </button>
+                  
+                  <button className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all relative">
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                  </button>
+                  
+                  <button className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                    <RefreshCw className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Contenu de l'onglet */}
+        <main className="p-6">
+          {renderTabContent()}
+        </main>
+
+        {/* Footer */}
+        <footer className="bg-white/5 backdrop-blur-xl border-t border-white/20 px-6 py-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="text-blue-300">
+              © 2024 Chrono-Carto. Tous droits réservés.
+            </div>
+            <div className="flex items-center space-x-4 text-blue-300">
+              <span>Version 2.1.0</span>
+              <span>•</span>
+              <button className="hover:text-white transition-all">
+                Documentation
+              </button>
+              <span>•</span>
+              <button className="hover:text-white transition-all">
+                Support
+              </button>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
