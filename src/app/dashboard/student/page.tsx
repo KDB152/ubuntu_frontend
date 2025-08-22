@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useStudentDashboard } from '@/hooks/useDashboard';
 import {
   Home,
   BookOpen,
@@ -87,6 +88,7 @@ interface Notification {
   timestamp: string;
   isRead: boolean;
   priority: 'low' | 'normal' | 'high';
+  createdAt: string; // Added for consistency with new notifications
 }
 
 const StudentDashboard = () => {
@@ -97,22 +99,67 @@ const StudentDashboard = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
 
-  // Données de l'étudiant connecté
-  const currentStudent: StudentUser = {
-    id: 'student-1',
-    firstName: 'Marie',
-    lastName: 'Dubois',
-    username: 'marie.dubois',
-    email: 'marie.dubois@email.com',
-    grade: '3ème',
-    level: 12,
-    xp: 2450,
-    streak: 7,
-    lastActivity: '2024-12-20T10:30:00'
-  };
+  // Données dynamiques de l'étudiant connecté
+  const [currentStudent, setCurrentStudent] = useState<StudentUser | null>(null);
+
+  // Use the student dashboard hook
+  const {
+    progress,
+    quizzes,
+    messages,
+    conversations,
+    notifications,
+    loading,
+    error,
+    loadProgress,
+    loadQuizzes,
+    loadConversations,
+    loadMessages,
+    loadNotifications,
+    sendMessage,
+    createConversation,
+    markNotificationAsRead,
+    submitQuizAttempt,
+    logout,
+    clearError,
+  } = useStudentDashboard();
+
+  useEffect(() => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('userDetails') : null;
+      if (!raw) return;
+      const user = JSON.parse(raw);
+      const base: StudentUser = {
+        id: String(user.id),
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        username: (user.firstName || '').toLowerCase() + '.' + (user.lastName || '').toLowerCase(),
+        email: user.email,
+        grade: '',
+        level: 1,
+        xp: 0,
+        streak: 0,
+        lastActivity: new Date().toISOString(),
+      };
+      fetch(`${API_BASE}/students/by-user/${user.id}`)
+        .then(r => r.json())
+        .then(s => {
+          const student = { ...base, grade: s?.class_level || '' };
+          setCurrentStudent(student);
+          // Load dashboard data
+          loadProgress(user.id);
+          loadQuizzes();
+          loadConversations(user.id);
+          loadNotifications(user.id);
+        })
+        .catch(() => setCurrentStudent(base));
+    } catch {
+      // ignore
+    }
+  }, [loadProgress, loadQuizzes, loadConversations, loadNotifications]);
 
   const menuItems = [
     {
@@ -199,7 +246,8 @@ const StudentDashboard = () => {
         message: 'Le quiz "La Révolution française" est maintenant disponible',
         timestamp: '2024-12-20T09:30:00',
         isRead: false,
-        priority: 'normal'
+        priority: 'normal',
+        createdAt: '2024-12-20T09:30:00'
       },
       {
         id: '2',
@@ -208,7 +256,8 @@ const StudentDashboard = () => {
         message: 'Votre professeur a répondu à votre question',
         timestamp: '2024-12-20T08:45:00',
         isRead: false,
-        priority: 'high'
+        priority: 'high',
+        createdAt: '2024-12-20T08:45:00'
       },
       {
         id: '3',
@@ -217,10 +266,11 @@ const StudentDashboard = () => {
         message: 'Félicitations ! Vous avez obtenu le badge "Historien en herbe"',
         timestamp: '2024-12-19T16:20:00',
         isRead: true,
-        priority: 'normal'
+        priority: 'normal',
+        createdAt: '2024-12-19T16:20:00'
       }
     ];
-    setNotifications(mockNotifications);
+    // setNotifications(mockNotifications); // This state is now managed by the hook
   }, []);
 
   const handleTabChange = (tabId: TabType, quizId?: string) => {
@@ -245,20 +295,26 @@ const StudentDashboard = () => {
 
   const handleLogout = () => {
     if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      window.location.href = '/login';
+      logout();
     }
   };
 
-  const markNotificationAsRead = (notificationId: string) => {
-    setNotifications(prev => prev.map(notif => 
-      notif.id === notificationId ? { ...notif, isRead: true } : notif
-    ));
+  const handleRefresh = () => {
+    if (currentStudent) {
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      loadProgress(userDetails.id);
+      loadQuizzes();
+      loadConversations(userDetails.id);
+      loadNotifications(userDetails.id);
+    }
   };
 
   const getXPProgress = () => {
-    const currentLevelXP = currentStudent.level * 200;
-    const nextLevelXP = (currentStudent.level + 1) * 200;
-    const progress = ((currentStudent.xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+    const lvl = currentStudent?.level || 1;
+    const xp = currentStudent?.xp || 0;
+    const currentLevelXP = lvl * 200;
+    const nextLevelXP = (lvl + 1) * 200;
+    const progress = ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
     return Math.max(0, Math.min(100, progress));
   };
 
@@ -294,7 +350,7 @@ const StudentDashboard = () => {
   };
 
   const currentTabInfo = getCurrentTabInfo();
-  const unreadNotifications = notifications.filter(n => !n.isRead).length;
+  const unreadNotifications = notifications.filter((n: any) => !n.isRead).length;
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -302,9 +358,9 @@ const StudentDashboard = () => {
         ? 'bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900' 
         : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
     }`}>
-      {/* Sidebar */}
+      {/* Sidebar - Comportement cohérent */}
       <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
-        sidebarCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'w-80'
+        sidebarCollapsed ? 'w-20' : 'w-80'
       }`}>
         <div className={`h-full backdrop-blur-xl border-r transition-colors duration-300 ${
           darkMode 
@@ -312,7 +368,7 @@ const StudentDashboard = () => {
             : 'bg-white/80 border-gray-200'
         }`}>
           {/* Header du sidebar */}
-          <div className={`p-6 border-b transition-colors duration-300 ${
+          <div className={`p-4 border-b transition-colors duration-300 ${
             darkMode ? 'border-white/20' : 'border-gray-200'
           }`}>
             <div className="flex items-center justify-between">
@@ -332,7 +388,7 @@ const StudentDashboard = () => {
               )}
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className={`p-2 rounded-lg transition-all lg:hidden ${
+                className={`p-2 rounded-lg transition-all ${
                   darkMode 
                     ? 'text-white/80 hover:text-white hover:bg-white/10' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -344,77 +400,97 @@ const StudentDashboard = () => {
           </div>
 
           {/* Profil étudiant dans la sidebar */}
-          {!sidebarCollapsed && (
+          {currentStudent && (
             <div className={`p-4 border-b transition-colors duration-300 ${
-              darkMode ? 'border-white/20' : 'border-gray-200'
+              darkMode ? 'border-white/20' : 'border-white/20'
             }`}>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
-                    {currentStudent.firstName[0]}{currentStudent.lastName[0]}
-                  </span>
+              {!sidebarCollapsed ? (
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {(currentStudent?.firstName || '').charAt(0)}{(currentStudent?.lastName || '').charAt(0)}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className={`font-semibold transition-colors duration-300 ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {currentStudent?.firstName} {currentStudent?.lastName}
+                    </h3>
+                    <p className={`text-sm transition-colors duration-300 ${
+                      darkMode ? 'text-blue-200' : 'text-blue-600'
+                    }`}>
+                      {currentStudent?.grade}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className={`font-semibold transition-colors duration-300 ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    {currentStudent.firstName} {currentStudent.lastName}
-                  </h3>
-                  <p className={`text-sm transition-colors duration-300 ${
-                    darkMode ? 'text-blue-200' : 'text-blue-600'
-                  }`}>
-                    {currentStudent.grade}
-                  </p>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">
+                      {(currentStudent?.firstName || '').charAt(0)}{(currentStudent?.lastName || '').charAt(0)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
               
               {/* Barre de progression XP */}
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className={`transition-colors duration-300 ${
-                    darkMode ? 'text-blue-300' : 'text-blue-600'
+              {!sidebarCollapsed && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className={`transition-colors duration-300 ${
+                      darkMode ? 'text-blue-300' : 'text-blue-600'
+                    }`}>
+                      Niveau {currentStudent?.level?.toString() || '1'}
+                    </span>
+                    <span className={`transition-colors duration-300 ${
+                      darkMode ? 'text-blue-300' : 'text-blue-600'
+                    }`}>
+                      {currentStudent?.xp || 0} XP
+                    </span>
+                  </div>
+                  <div className={`w-full h-2 rounded-full transition-colors duration-300 ${
+                    darkMode ? 'bg-white/10' : 'bg-gray-200'
                   }`}>
-                    Niveau {currentStudent.level}
-                  </span>
-                  <span className={`transition-colors duration-300 ${
-                    darkMode ? 'text-blue-300' : 'text-blue-600'
-                  }`}>
-                    {currentStudent.xp} XP
-                  </span>
+                    <div 
+                      className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
+                      style={{ width: `${getXPProgress()}%` }}
+                    />
+                  </div>
                 </div>
-                <div className={`w-full h-2 rounded-full transition-colors duration-300 ${
-                  darkMode ? 'bg-white/10' : 'bg-gray-200'
-                }`}>
-                  <div 
-                    className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
-                    style={{ width: `${getXPProgress()}%` }}
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* Streak */}
-              <div className="flex items-center justify-between mt-2 text-xs">
-                <div className="flex items-center space-x-1">
-                  <Zap className={`w-3 h-3 transition-colors duration-300 ${
+              {/* Streak - Version compacte quand sidebar réduite */}
+              {!sidebarCollapsed ? (
+                <div className="flex items-center justify-between mt-2 text-xs">
+                  <div className="flex items-center space-x-1">
+                    <Zap className={`w-3 h-3 transition-colors duration-300 ${
+                      darkMode ? 'text-yellow-400' : 'text-yellow-500'
+                    }`} />
+                    <span className={`transition-colors duration-300 ${
+                      darkMode ? 'text-yellow-400' : 'text-yellow-600'
+                    }`}>
+                      {currentStudent?.streak || 0} jours
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Trophy className={`w-3 h-3 transition-colors duration-300 ${
+                      darkMode ? 'text-orange-400' : 'text-orange-500'
+                    }`} />
+                    <span className={`transition-colors duration-300 ${
+                      darkMode ? 'text-orange-400' : 'text-orange-600'
+                    }`}>
+                      Rang #3
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center mt-2">
+                  <Zap className={`w-4 h-4 transition-colors duration-300 ${
                     darkMode ? 'text-yellow-400' : 'text-yellow-500'
                   }`} />
-                  <span className={`transition-colors duration-300 ${
-                    darkMode ? 'text-yellow-400' : 'text-yellow-600'
-                  }`}>
-                    {currentStudent.streak} jours
-                  </span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Trophy className={`w-3 h-3 transition-colors duration-300 ${
-                    darkMode ? 'text-orange-400' : 'text-orange-500'
-                  }`} />
-                  <span className={`transition-colors duration-300 ${
-                    darkMode ? 'text-orange-400' : 'text-orange-600'
-                  }`}>
-                    Rang #3
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -498,17 +574,9 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Overlay pour mobile */}
-      {!sidebarCollapsed && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarCollapsed(true)}
-        />
-      )}
-
-      {/* Contenu principal */}
+      {/* Contenu principal - Ajustement automatique */}
       <div className={`transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'
+        sidebarCollapsed ? 'ml-20' : 'ml-80'
       }`}>
         {/* Header principal */}
         <header className={`backdrop-blur-xl border-b sticky top-0 z-30 transition-colors duration-300 ${
@@ -519,17 +587,6 @@ const StudentDashboard = () => {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className={`p-2 rounded-lg transition-all lg:hidden ${
-                    darkMode 
-                      ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
-                
                 <div>
                   <div className="flex items-center space-x-2">
                     <currentTabInfo.icon className={`w-6 h-6 transition-colors duration-300 ${
@@ -594,7 +651,7 @@ const StudentDashboard = () => {
                       <Bell className="w-5 h-5" />
                       {unreadNotifications > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                          {unreadNotifications}
+                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
                         </span>
                       )}
                     </button>
@@ -616,50 +673,62 @@ const StudentDashboard = () => {
                           </h3>
                         </div>
                         <div className="max-h-96 overflow-y-auto">
-                          {notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className={`p-4 border-b transition-all cursor-pointer ${
-                                darkMode 
-                                  ? 'border-white/10 hover:bg-white/5' 
-                                  : 'border-gray-100 hover:bg-gray-50'
-                              } ${!notification.isRead ? (darkMode ? 'bg-blue-500/10' : 'bg-blue-50') : ''}`}
-                              onClick={() => markNotificationAsRead(notification.id)}
-                            >
-                              <div className="flex items-start space-x-3">
-                                <div className={`w-2 h-2 rounded-full mt-2 ${
-                                  !notification.isRead ? 'bg-blue-500' : 'bg-transparent'
-                                }`} />
-                                <div className="flex-1">
-                                  <h4 className={`font-medium text-sm transition-colors duration-300 ${
-                                    darkMode ? 'text-white' : 'text-gray-900'
-                                  }`}>
-                                    {notification.title}
-                                  </h4>
-                                  <p className={`text-xs mt-1 transition-colors duration-300 ${
-                                    darkMode ? 'text-blue-200' : 'text-gray-600'
-                                  }`}>
-                                    {notification.message}
-                                  </p>
-                                  <p className={`text-xs mt-1 transition-colors duration-300 ${
-                                    darkMode ? 'text-blue-300' : 'text-gray-400'
-                                  }`}>
-                                    {new Date(notification.timestamp).toLocaleString('fr-FR')}
-                                  </p>
+                          {notifications.length === 0 ? (
+                            <div className={`p-4 text-center ${
+                              darkMode ? 'text-blue-200' : 'text-gray-600'
+                            }`}>
+                              Aucune notification
+                            </div>
+                          ) : (
+                                                         notifications.map((notification: any) => (
+                              <div
+                                key={notification.id}
+                                className={`p-4 border-b transition-all cursor-pointer ${
+                                  darkMode 
+                                    ? 'border-white/10 hover:bg-white/5' 
+                                    : 'border-gray-100 hover:bg-gray-50'
+                                } ${!notification.isRead ? (darkMode ? 'bg-blue-500/10' : 'bg-blue-50') : ''}`}
+                                onClick={() => markNotificationAsRead(notification.id)}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                                    !notification.isRead ? 'bg-blue-500' : 'bg-transparent'
+                                  }`} />
+                                  <div className="flex-1">
+                                    <h4 className={`font-medium text-sm transition-colors duration-300 ${
+                                      darkMode ? 'text-white' : 'text-gray-900'
+                                    }`}>
+                                      {notification.title}
+                                    </h4>
+                                    <p className={`text-xs mt-1 transition-colors duration-300 ${
+                                      darkMode ? 'text-blue-200' : 'text-gray-600'
+                                    }`}>
+                                      {notification.message}
+                                    </p>
+                                    <p className={`text-xs mt-1 transition-colors duration-300 ${
+                                      darkMode ? 'text-blue-300' : 'text-gray-400'
+                                    }`}>
+                                      {new Date(notification.createdAt).toLocaleString('fr-FR')}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
                   
-                  <button className={`p-2 rounded-lg transition-all ${
-                    darkMode 
-                      ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}>
+                  <button 
+                    onClick={handleRefresh}
+                    className={`p-2 rounded-lg transition-all ${
+                      darkMode 
+                        ? 'text-white/80 hover:text-white hover:bg-white/10' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                    title="Actualiser"
+                  >
                     <RefreshCw className="w-5 h-5" />
                   </button>
                 </div>

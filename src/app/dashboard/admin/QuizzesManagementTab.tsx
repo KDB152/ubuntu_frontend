@@ -105,133 +105,56 @@ const QuizzesManagementTab = () => {
   const subjects = ['Histoire', 'Géographie', 'EMC'];
   const levels = ['Seconde', 'Première', 'Terminale'];
 
-  // Données simulées
   useEffect(() => {
-    const mockQuizzes: Quiz[] = [
-      {
-        id: '1',
-        title: 'La Révolution française',
-        description: 'Quiz sur les événements majeurs de la Révolution française de 1789 à 1799',
-        subject: 'Histoire',
-        level: 'Terminale',
-        duration: 30,
-        questions: [
-          {
-            id: '1',
-            question: 'En quelle année a commencé la Révolution française ?',
-            type: 'single',
-            options: ['1788', '1789', '1790', '1791'],
-            correctAnswer: '1789',
-            points: 2,
-            explanation: 'La Révolution française a commencé en 1789 avec la convocation des États généraux.'
-          },
-          {
-            id: '2',
-            question: 'Qui était le roi de France au début de la Révolution ?',
-            type: 'single',
-            options: ['Louis XIV', 'Louis XV', 'Louis XVI', 'Louis XVII'],
-            correctAnswer: 'Louis XVI',
-            points: 2
-          }
-        ],
-        totalPoints: 20,
-        attempts: 45,
-        averageScore: 14.2,
-        passScore: 10,
-        status: 'Publié',
-        createdDate: '2024-11-15',
-        lastModified: '2024-12-01',
-        tags: ['révolution', 'france', 'histoire moderne'],
-        isTimeLimited: true,
-        allowRetake: true,
-        showResults: true,
-        randomizeQuestions: false
-      },
-      {
-        id: '2',
-        title: 'Les climats du monde',
-        description: 'Évaluation sur les différents types de climats et leurs caractéristiques',
-        subject: 'Géographie',
-        level: 'Première',
-        duration: 25,
-        questions: [],
-        totalPoints: 15,
-        attempts: 32,
-        averageScore: 11.8,
-        passScore: 8,
-        status: 'Publié',
-        createdDate: '2024-11-20',
-        lastModified: '2024-11-25',
-        tags: ['climat', 'géographie physique'],
-        isTimeLimited: true,
-        allowRetake: false,
-        showResults: true,
-        randomizeQuestions: true
-      },
-      {
-        id: '3',
-        title: 'Citoyenneté et démocratie',
-        description: 'Quiz sur les principes de la citoyenneté et du fonctionnement démocratique',
-        subject: 'EMC',
-        level: 'Seconde',
-        duration: 20,
-        questions: [],
-        totalPoints: 12,
-        attempts: 28,
-        averageScore: 9.5,
-        passScore: 6,
-        status: 'Brouillon',
-        createdDate: '2024-12-01',
-        lastModified: '2024-12-10',
-        tags: ['citoyenneté', 'démocratie', 'institutions'],
-        isTimeLimited: false,
-        allowRetake: true,
-        showResults: false,
-        randomizeQuestions: false
-      }
-    ];
-
-    const mockAttempts: QuizAttempt[] = [
-      {
-        id: '1',
-        quizId: '1',
-        studentId: '1',
-        studentName: 'Marie Dubois',
-        score: 16,
-        totalPoints: 20,
-        percentage: 80,
-        timeSpent: 25,
-        completedAt: '2024-12-15T10:30:00',
-        answers: {}
-      },
-      {
-        id: '2',
-        quizId: '1',
-        studentId: '2',
-        studentName: 'Pierre Martin',
-        score: 14,
-        totalPoints: 20,
-        percentage: 70,
-        timeSpent: 28,
-        completedAt: '2024-12-15T11:15:00',
-        answers: {}
-      },
-      {
-        id: '3',
-        quizId: '2',
-        studentId: '1',
-        studentName: 'Marie Dubois',
-        score: 13,
-        totalPoints: 15,
-        percentage: 87,
-        timeSpent: 22,
-        completedAt: '2024-12-14T14:20:00',
-        answers: {}
-      }
-    ];
-
-    setQuizzes(mockQuizzes);
-    setAttempts(mockAttempts);
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/quizzes`);
+        const json = await res.json();
+        const mapped: Quiz[] = (json.items || []).map((q: any) => ({
+          id: String(q.id),
+          title: q.title,
+          description: q.description || '',
+          subject: q.subject,
+          level: q.level,
+          duration: q.duration || 0,
+          questions: [],
+          totalPoints: q.total_points || 0,
+          attempts: q.attempts || 0,
+          averageScore: Number(q.average_score || 0),
+          passScore: q.pass_score || 0,
+          status: q.status,
+          createdDate: q.created_at?.slice(0,10) || '',
+          lastModified: q.updated_at?.slice(0,10) || '',
+          tags: q.tags || [],
+          isTimeLimited: !!q.is_time_limited,
+          allowRetake: !!q.allow_retake,
+          showResults: !!q.show_results,
+          randomizeQuestions: !!q.randomize_questions,
+        }));
+        setQuizzes(mapped);
+      } catch (e) {}
+      try {
+        const resA = await fetch(`${API_BASE}/quizzes/1/attempts`);
+        const arr = await resA.json();
+        const mappedA: QuizAttempt[] = (arr || []).map((a: any) => ({
+          id: String(a.id),
+          quizId: String(a.quiz_id),
+          studentId: String(a.student_id),
+          studentName: a.student_name,
+          score: a.score,
+          totalPoints: a.total_points,
+          percentage: a.percentage,
+          timeSpent: a.time_spent,
+          completedAt: a.completed_at,
+          answers: a.answers || {}
+        }));
+        setAttempts(mappedA);
+      } catch(e) {}
+      setIsLoading(false);
+    };
+    load();
   }, []);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
@@ -242,7 +165,8 @@ const QuizzesManagementTab = () => {
   const handleDeleteQuiz = async (quiz: Quiz) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      await fetch(`${API_BASE}/quizzes/${quiz.id}`, { method: 'DELETE' });
       setQuizzes(prev => prev.filter(q => q.id !== quiz.id));
       showNotification('success', 'Quiz supprimé avec succès');
       setShowDeleteModal(false);
@@ -257,7 +181,21 @@ const QuizzesManagementTab = () => {
   const handleEditQuiz = async (updatedQuiz: Quiz) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      await fetch(`${API_BASE}/quizzes/${updatedQuiz.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: updatedQuiz.title,
+          description: updatedQuiz.description,
+          subject: updatedQuiz.subject,
+          level: updatedQuiz.level,
+          duration: updatedQuiz.duration,
+          pass_score: updatedQuiz.passScore,
+          status: updatedQuiz.status,
+          tags: updatedQuiz.tags
+        })
+      });
       setQuizzes(prev => prev.map(q => q.id === updatedQuiz.id ? updatedQuiz : q));
       showNotification('success', 'Quiz modifié avec succès');
       setShowEditModal(false);
@@ -272,19 +210,48 @@ const QuizzesManagementTab = () => {
   const handleCreateQuiz = async (newQuiz: Partial<Quiz>) => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const quiz: Quiz = {
-        ...newQuiz,
-        id: Date.now().toString(),
-        createdDate: new Date().toISOString().split('T')[0],
-        lastModified: new Date().toISOString().split('T')[0],
-        attempts: 0,
-        averageScore: 0,
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${API_BASE}/quizzes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newQuiz.title,
+          description: newQuiz.description,
+          subject: newQuiz.subject,
+          level: newQuiz.level,
+          duration: newQuiz.duration,
+          pass_score: newQuiz.passScore,
+          status: newQuiz.status || 'Brouillon',
+          tags: newQuiz.tags || [],
+          is_time_limited: newQuiz.isTimeLimited,
+          allow_retake: newQuiz.allowRetake,
+          show_results: newQuiz.showResults,
+          randomize_questions: newQuiz.randomizeQuestions,
+        })
+      });
+      const created = await res.json();
+      const mapped: Quiz = {
+        id: String(created.id),
+        title: created.title,
+        description: created.description,
+        subject: created.subject,
+        level: created.level,
+        duration: created.duration,
         questions: [],
-        totalPoints: 0
-      } as Quiz;
-      
-      setQuizzes(prev => [...prev, quiz]);
+        totalPoints: created.total_points || 0,
+        attempts: created.attempts || 0,
+        averageScore: Number(created.average_score || 0),
+        passScore: created.pass_score || 0,
+        status: created.status,
+        createdDate: created.created_at?.slice(0,10) || '',
+        lastModified: created.updated_at?.slice(0,10) || '',
+        tags: created.tags || [],
+        isTimeLimited: !!created.is_time_limited,
+        allowRetake: !!created.allow_retake,
+        showResults: !!created.show_results,
+        randomizeQuestions: !!created.randomize_questions,
+      };
+      setQuizzes(prev => [...prev, mapped]);
       showNotification('success', 'Quiz créé avec succès');
       setShowCreateModal(false);
     } catch (error) {

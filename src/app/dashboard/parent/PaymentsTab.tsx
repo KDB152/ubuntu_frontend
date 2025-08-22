@@ -349,4 +349,20 @@ const PaymentForm: React.FC<{ initial?: Payment; onSave: (p: Payment) => void; o
           <label className="block text-sm text-blue-300 mb-1">Numéro de facture</label>
           <input className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white" value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} />
         </div>
-        <div></div>
+        <div className="md:col-span-2">
+          <label className="block text-sm text-blue-300 mb-1">Notes</label>
+          <textarea
+            rows={3}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white resize-none"
+            value={form.notes || ''}
+            onChange={e => setForm({ ...form, notes: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-3 pt-2">
+        <button onClick={onCancel} className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all">Annuler</button>
+        <button onClick={save} disabled={!form.description || !form.amount || !form.invoiceNumber} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white disabled:opacity-60">Enregistrer</button>
+      </div>
+    </div>
+  );
+};

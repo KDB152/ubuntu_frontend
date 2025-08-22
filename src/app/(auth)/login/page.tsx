@@ -50,9 +50,8 @@ const LoginPage = () => {
 
       const data = await res.json();
 
-      // Stockage du JWT
+      // Stockage du JWT et de l'utilisateur pour le dashboard
       localStorage.setItem('accessToken', data.accessToken);
-      // Stockage des détails de l'utilisateur
       localStorage.setItem('userDetails', JSON.stringify(data.user));
 
       // Redirection selon rôle

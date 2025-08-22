@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useParentDashboard } from '@/hooks/useDashboard';
 import {
   Home,
   TrendingUp,
@@ -8,240 +9,32 @@ import {
   MessageSquare,
   Calendar,
   ClipboardList,
-  Settings,
-  Bell,
   Users,
   CreditCard,
-  User,
+  Bell,
+  Settings,
   Search,
+  RefreshCw,
+  Plus,
+  ChevronLeft,
   Menu,
-  X,
+  User,
   ChevronDown,
   LogOut,
-  HelpCircle,
-  Shield,
-  Zap,
-  Star,
-  Heart,
-  Award,
-  Target,
-  BookOpen,
-  GraduationCap,
-  School,
-  UserCheck,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  Info,
-  Plus,
-  Filter,
-  Download,
-  Share2,
-  Eye,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  ChevronRight,
-  ChevronLeft,
-  Maximize2,
-  Minimize2,
-  RefreshCw,
-  ExternalLink,
-  Mail,
-  Phone,
-  MapPin,
-  Globe,
-  Camera,
-  Upload,
-  Save,
-  Cancel,
-  Check,
-  AlertTriangle,
-  XCircle,
-  Loader,
-  Wifi,
-  WifiOff,
-  Battery,
-  Signal,
-  Volume2,
-  VolumeX,
-  Brightness,
-  Moon,
-  Sun,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Laptop,
-  Desktop,
-  Headphones,
-  Mic,
-  Video,
-  Image,
-  File,
-  Folder,
-  Archive,
-  Bookmark,
-  Tag,
-  Link,
-  Hash,
-  AtSign,
-  DollarSign,
-  Euro,
-  Pound,
-  Yen,
-  Bitcoin,
-  TrendingDown,
-  BarChart,
-  PieChart,
-  LineChart,
-  Activity,
-  Pulse,
-  Thermometer,
-  Gauge,
-  Speedometer,
-  Timer,
-  Stopwatch,
-  Hourglass,
-  Sunrise,
-  Sunset,
-  CloudRain,
-  CloudSnow,
-  Wind,
-  Umbrella,
-  Rainbow,
-  Snowflake,
-  Flame,
-  Droplets,
-  Waves,
-  Mountain,
-  TreePine,
-  Flower,
-  Leaf,
-  Seedling,
-  Sprout,
-  Cactus,
-  PalmTree,
-  Evergreen,
-  Deciduous,
-  Mushroom,
-  Shell,
-  Bug,
-  Butterfly,
-  Bird,
-  Fish,
-  Rabbit,
-  Turtle,
-  Snail,
-  Ant,
-  Bee,
-  Spider,
-  Worm,
-  Microbe,
-  Dna,
-  Atom,
-  Molecule,
-  Magnet,
-  Zap as Lightning,
-  Flashlight,
-  Lightbulb,
-  Candle,
-  Fire,
-  Sparkles,
-  Fireworks,
-  Confetti,
-  Balloon,
-  Gift,
-  Party,
-  Cake,
-  IceCream,
-  Coffee,
-  Tea,
-  Wine,
-  Beer,
-  Cocktail,
-  Juice,
-  Milk,
-  Egg,
-  Bread,
-  Croissant,
-  Bagel,
-  Pretzel,
-  Cheese,
-  Meat,
-  Poultry,
-  Bacon,
-  Ham,
-  Sausage,
-  Pizza,
-  Hamburger,
-  Hotdog,
-  Sandwich,
-  Taco,
-  Burrito,
-  Salad,
-  Soup,
-  Stew,
-  Curry,
-  Spaghetti,
-  Ramen,
-  Sushi,
-  Dumpling,
-  Fortune,
-  Cookie,
-  Donut,
-  Cupcake,
-  Pie,
-  Candy,
-  Chocolate,
-  Honey,
-  Jam,
-  Peanut,
-  Coconut,
-  Avocado,
-  Eggplant,
-  Potato,
-  Carrot,
-  Corn,
-  Pepper,
-  Cucumber,
-  Lettuce,
-  Broccoli,
-  Garlic,
-  Onion,
-  Mushroom as MushroomFood,
-  Tomato,
-  Apple,
-  Banana,
-  Orange,
-  Lemon,
-  Lime,
-  Grapefruit,
-  Strawberry,
-  Blueberry,
-  Grape,
-  Watermelon,
-  Melon,
-  Pineapple,
-  Mango,
-  Peach,
-  Pear,
-  Cherry,
-  Plum,
-  Kiwi,
-  Pomegranate
+  HelpCircle
 } from 'lucide-react';
 
-// Import des composants des onglets
+// Import des composants d'onglets
 import DashboardOverviewTab from './DashboardOverviewTab';
 import ChildrenProgressTab from './ChildrenProgressTab';
 import QuizResultsTab from './QuizResultsTab';
 import MessagesTab from './MessagesTab';
 import CalendarTab from './CalendarTab';
 import ReportsTab from './ReportsTab';
-import SettingsTab from './SettingsTab';
-import NotificationsTab from './NotificationsTab';
 import MeetingsTab from './MeetingsTab';
 import PaymentsTab from './PaymentsTab';
+import NotificationsTab from './NotificationsTab';
+import SettingsTab from './SettingsTab';
 
 interface Child {
   id: string;
@@ -295,23 +88,44 @@ interface MenuItem {
   id: string;
   label: string;
   icon: any;
-  component: React.ComponentType;
+  component: React.ComponentType<any>;
   badge?: number;
-  isActive?: boolean;
 }
 
 const ParentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedChild, setSelectedChild] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [childSelectorOpen, setChildSelectorOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Use the parent dashboard hook
+  const {
+    children,
+    selectedChild,
+    messages,
+    conversations,
+    notifications,
+    loading,
+    error,
+    setSelectedChild,
+    loadChildren,
+    loadConversations,
+    loadMessages,
+    loadNotifications,
+    sendMessage,
+    createConversation,
+    markNotificationAsRead,
+    logout,
+    clearError,
+  } = useParentDashboard();
+
+  // Mock parent data - in real app this would come from API
   const [parent, setParent] = useState<Parent | null>(null);
 
-  // Données simulées du parent
   useEffect(() => {
+    // Simulate loading
     setTimeout(() => {
       const mockParent: Parent = {
         id: 'parent-1',
@@ -388,8 +202,14 @@ const ParentDashboard: React.FC = () => {
       setParent(mockParent);
       setSelectedChild(mockParent.children[0].id);
       setIsLoading(false);
+
+      // Load dashboard data
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      loadChildren(userDetails.id);
+      loadConversations(userDetails.id);
+      loadNotifications(userDetails.id);
     }, 1000);
-  }, []);
+  }, [setSelectedChild, loadChildren, loadConversations, loadNotifications]);
 
   const menuItems: MenuItem[] = [
     {
@@ -470,6 +290,19 @@ const ParentDashboard: React.FC = () => {
     return `Bonsoir ${firstName}`;
   };
 
+  const handleLogout = () => {
+    if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+      logout();
+    }
+  };
+
+  const handleRefresh = () => {
+    const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+    loadChildren(userDetails.id);
+    loadConversations(userDetails.id);
+    loadNotifications(userDetails.id);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -483,9 +316,11 @@ const ParentDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-20'} transition-all duration-300 bg-white/10 backdrop-blur-md border-r border-white/20 flex flex-col`}>
+      <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
+        sidebarOpen ? 'w-80' : 'w-20'
+      } bg-white/10 backdrop-blur-md border-r border-white/20 flex flex-col`}>
         {/* Header de la sidebar */}
         <div className="p-6 border-b border-white/20">
           <div className="flex items-center justify-between">
@@ -579,25 +414,24 @@ const ParentDashboard: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-all ${
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
                     isActive
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
+                      ? 'bg-blue-600 text-white shadow-lg'
                       : 'text-blue-200 hover:bg-white/10 hover:text-white'
                   }`}
-                  title={!sidebarOpen ? item.label : undefined}
                 >
-                  <div className="relative">
-                    <IconComponent className="w-5 h-5" />
-                    {item.badge && item.badge > 0 && (
-                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">
+                  <IconComponent className="w-5 h-5" />
+                  {sidebarOpen && (
+                    <>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold">{item.label}</div>
+                      </div>
+                      {item.badge && item.badge > 0 && (
+                        <span className="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded-full">
                           {item.badge > 9 ? '9+' : item.badge}
                         </span>
-                      </div>
-                    )}
-                  </div>
-                  {sidebarOpen && (
-                    <span className="font-medium">{item.label}</span>
+                      )}
+                    </>
                   )}
                 </button>
               );
@@ -606,31 +440,23 @@ const ParentDashboard: React.FC = () => {
         </div>
 
         {/* Profil utilisateur */}
-        {sidebarOpen && parent && (
+        {sidebarOpen && (
           <div className="p-4 border-t border-white/20">
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="w-full flex items-center space-x-3 p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-all"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-all"
               >
-                {parent.avatar ? (
-                  <img
-                    src={parent.avatar}
-                    alt={`${parent.firstName} ${parent.lastName}`}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                )}
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">{parent.firstName} {parent.lastName}</div>
-                  <div className="text-xs text-blue-200">Parent</div>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
                 </div>
-                <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <div className="flex-1 text-left">
+                  <div className="text-white font-semibold text-sm">{parent?.firstName} {parent?.lastName}</div>
+                  <div className="text-blue-300 text-xs">Parent</div>
+                </div>
               </button>
 
+              {/* Menu utilisateur */}
               {userMenuOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 rounded-xl border border-white/20 shadow-xl">
                   <div className="p-2">
@@ -647,7 +473,10 @@ const ParentDashboard: React.FC = () => {
                       <span>Aide</span>
                     </button>
                     <hr className="my-2 border-white/20" />
-                    <button className="w-full flex items-center space-x-3 p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-all">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full flex items-center space-x-3 p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
+                    >
                       <LogOut className="w-4 h-4" />
                       <span>Se déconnecter</span>
                     </button>
@@ -660,7 +489,9 @@ const ParentDashboard: React.FC = () => {
       </div>
 
       {/* Contenu principal */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`transition-all duration-300 ${
+        sidebarOpen ? 'ml-80' : 'ml-20'
+      } flex flex-col overflow-hidden`}>
         {/* Header */}
         <div className="bg-white/10 backdrop-blur-md border-b border-white/20 p-6">
           <div className="flex items-center justify-between">
@@ -704,7 +535,11 @@ const ParentDashboard: React.FC = () => {
 
               {/* Actions rapides */}
               <div className="flex items-center space-x-2">
-                <button className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-all">
+                <button 
+                  onClick={handleRefresh}
+                  className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-all"
+                  title="Actualiser"
+                >
                   <RefreshCw className="w-5 h-5" />
                 </button>
                 <button className="p-3 bg-blue-500 hover:bg-blue-600 rounded-xl text-white transition-all">

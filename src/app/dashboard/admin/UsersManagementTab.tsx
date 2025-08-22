@@ -40,43 +40,63 @@ import {
 } from 'lucide-react';
 
 interface Student {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  class: string;
-  level: string;
-  registrationDate: string;
-  lastLogin: string;
-  status: 'Actif' | 'Inactif' | 'Suspendu';
+  phoneNumber: string;
+  classLevel: string;
+  birthDate: string;
+  progressPercentage: number;
   averageScore: number;
-  completedCourses: number;
-  totalCourses: number;
-  parentEmail?: string;
-  parentPhone?: string;
-  parentName?: string;
+  role: string;
+  isActive: boolean;
+  isApproved: boolean;
+  createdAt: string;
   notes?: string;
-  avatar?: string;
 }
 
 interface Parent {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  studentIds: string[];
-  registrationDate: string;
-  lastLogin: string;
-  status: 'Actif' | 'Inactif';
+  phoneNumber: string;
+  address: string;
+  occupation: string;
+  role: string;
+  isActive: boolean;
+  isApproved: boolean;
+  createdAt: string;
   notes?: string;
 }
 
-const UsersManagementTab = () => {
+interface UsersManagementTabProps {
+  students: any[];
+  parents: any[];
+  loading: boolean;
+  onCreateStudent: (data: any) => Promise<any>;
+  onUpdateStudent: (id: number, data: any) => Promise<any>;
+  onDeleteStudent: (id: number) => Promise<void>;
+  onCreateParent: (data: any) => Promise<any>;
+  onUpdateParent: (id: number, data: any) => Promise<any>;
+  onDeleteParent: (id: number) => Promise<void>;
+  onApproveUser: (id: number, approve: boolean) => Promise<void>;
+}
+
+const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
+  students,
+  parents,
+  loading,
+  onCreateStudent,
+  onUpdateStudent,
+  onDeleteStudent,
+  onCreateParent,
+  onUpdateParent,
+  onDeleteParent,
+  onApproveUser,
+}) => {
   const [activeTab, setActiveTab] = useState<'students' | 'parents'>('students');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [parents, setParents] = useState<Parent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('Tous');
   const [filterClass, setFilterClass] = useState('Tous');
@@ -89,107 +109,6 @@ const UsersManagementTab = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
-  // Données simulées
-  useEffect(() => {
-    const mockStudents: Student[] = [
-      {
-        id: '1',
-        firstName: 'Marie',
-        lastName: 'Dubois',
-        email: 'marie.dubois@email.com',
-        phone: '0123456789',
-        class: 'Terminale S',
-        level: 'Terminale',
-        registrationDate: '2024-09-01',
-        lastLogin: '2024-12-20',
-        status: 'Actif',
-        averageScore: 16.5,
-        completedCourses: 12,
-        totalCourses: 15,
-        parentEmail: 'parent.dubois@email.com',
-        parentPhone: '0123456790',
-        parentName: 'Jean Dubois',
-        notes: 'Excellente élève, très motivée'
-      },
-      {
-        id: '2',
-        firstName: 'Pierre',
-        lastName: 'Martin',
-        email: 'pierre.martin@email.com',
-        phone: '0123456791',
-        class: 'Terminale ES',
-        level: 'Terminale',
-        registrationDate: '2024-09-01',
-        lastLogin: '2024-12-19',
-        status: 'Actif',
-        averageScore: 14.2,
-        completedCourses: 10,
-        totalCourses: 15,
-        parentEmail: 'parent.martin@email.com',
-        parentPhone: '0123456792',
-        parentName: 'Sophie Martin'
-      },
-      {
-        id: '3',
-        firstName: 'Julie',
-        lastName: 'Leroy',
-        email: 'julie.leroy@email.com',
-        phone: '0123456793',
-        class: 'Première L',
-        level: 'Première',
-        registrationDate: '2024-09-15',
-        lastLogin: '2024-12-18',
-        status: 'Inactif',
-        averageScore: 12.8,
-        completedCourses: 8,
-        totalCourses: 12,
-        parentEmail: 'parent.leroy@email.com',
-        parentPhone: '0123456794',
-        parentName: 'Michel Leroy',
-        notes: 'Besoin d\'encouragements'
-      }
-    ];
-
-    const mockParents: Parent[] = [
-      {
-        id: '1',
-        firstName: 'Jean',
-        lastName: 'Dubois',
-        email: 'parent.dubois@email.com',
-        phone: '0123456790',
-        studentIds: ['1'],
-        registrationDate: '2024-09-01',
-        lastLogin: '2024-12-20',
-        status: 'Actif'
-      },
-      {
-        id: '2',
-        firstName: 'Sophie',
-        lastName: 'Martin',
-        email: 'parent.martin@email.com',
-        phone: '0123456792',
-        studentIds: ['2'],
-        registrationDate: '2024-09-01',
-        lastLogin: '2024-12-19',
-        status: 'Actif'
-      },
-      {
-        id: '3',
-        firstName: 'Michel',
-        lastName: 'Leroy',
-        email: 'parent.leroy@email.com',
-        phone: '0123456794',
-        studentIds: ['3'],
-        registrationDate: '2024-09-15',
-        lastLogin: '2024-12-15',
-        status: 'Inactif'
-      }
-    ];
-
-    setStudents(mockStudents);
-    setParents(mockParents);
-  }, []);
-
   const classes = ['Seconde', 'Première L', 'Première ES', 'Première S', 'Terminale L', 'Terminale ES', 'Terminale S'];
   const levels = ['Seconde', 'Première', 'Terminale'];
 
@@ -198,107 +117,196 @@ const UsersManagementTab = () => {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const handleDeleteUser = async (user: Student | Parent) => {
-    setIsLoading(true);
+  // Handle student creation
+  const handleCreateStudent = async (studentData: any) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (activeTab === 'students') {
-        setStudents(prev => prev.filter(s => s.id !== user.id));
-      } else {
-        setParents(prev => prev.filter(p => p.id !== user.id));
-      }
-      
-      showNotification('success', 'Utilisateur supprimé avec succès');
+      setIsLoading(true);
+      await onCreateStudent(studentData);
+      showNotification('success', 'Étudiant créé avec succès');
+      setShowAddModal(false);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la création de l\'étudiant');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle student update
+  const handleUpdateStudent = async (id: number, studentData: any) => {
+    try {
+      setIsLoading(true);
+      await onUpdateStudent(id, studentData);
+      showNotification('success', 'Étudiant mis à jour avec succès');
+      setShowEditModal(false);
+      setUserToEdit(null);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la mise à jour de l\'étudiant');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle student deletion
+  const handleDeleteStudent = async (id: number) => {
+    try {
+      setIsLoading(true);
+      await onDeleteStudent(id);
+      showNotification('success', 'Étudiant supprimé avec succès');
       setShowDeleteModal(false);
       setUserToDelete(null);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la suppression');
+      showNotification('error', 'Erreur lors de la suppression de l\'étudiant');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle parent creation
+  const handleCreateParent = async (parentData: any) => {
+    try {
+      setIsLoading(true);
+      await onCreateParent(parentData);
+      showNotification('success', 'Parent créé avec succès');
+      setShowAddModal(false);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la création du parent');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle parent update
+  const handleUpdateParent = async (id: number, parentData: any) => {
+    try {
+      setIsLoading(true);
+      await onUpdateParent(id, parentData);
+      showNotification('success', 'Parent mis à jour avec succès');
+      setShowEditModal(false);
+      setUserToEdit(null);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la mise à jour du parent');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle parent deletion
+  const handleDeleteParent = async (id: number) => {
+    try {
+      setIsLoading(true);
+      await onDeleteParent(id);
+      showNotification('success', 'Parent supprimé avec succès');
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de la suppression du parent');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle user approval
+  const handleApproveUser = async (id: number, approve: boolean) => {
+    try {
+      setIsLoading(true);
+      await onApproveUser(id, approve);
+      showNotification('success', `Utilisateur ${approve ? 'approuvé' : 'désapprouvé'} avec succès`);
+    } catch (error) {
+      showNotification('error', 'Erreur lors de l\'approbation de l\'utilisateur');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: Student | Parent) => {
+    if (activeTab === 'students') {
+      await handleDeleteStudent(user.id);
+    } else {
+      await handleDeleteParent(user.id);
     }
   };
 
   const handleEditUser = async (updatedUser: Student | Parent) => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (activeTab === 'students') {
-        setStudents(prev => prev.map(s => s.id === updatedUser.id ? updatedUser as Student : s));
-      } else {
-        setParents(prev => prev.map(p => p.id === updatedUser.id ? updatedUser as Parent : p));
-      }
-      
-      showNotification('success', 'Utilisateur modifié avec succès');
-      setShowEditModal(false);
-      setUserToEdit(null);
-    } catch (error) {
-      showNotification('error', 'Erreur lors de la modification');
-    } finally {
-      setIsLoading(false);
+    if (activeTab === 'students') {
+      await handleUpdateStudent(updatedUser.id, {
+        firstName: (updatedUser as Student).firstName,
+        lastName: (updatedUser as Student).lastName,
+        email: (updatedUser as Student).email,
+        phone: (updatedUser as Student).phoneNumber,
+        class: (updatedUser as Student).classLevel,
+        level: (updatedUser as Student).classLevel,
+        averageScore: (updatedUser as Student).averageScore,
+        completedCourses: 0,
+        totalCourses: 0,
+      });
+    } else {
+      await handleUpdateParent(updatedUser.id, {
+        firstName: (updatedUser as Parent).firstName,
+        lastName: (updatedUser as Parent).lastName,
+        email: (updatedUser as Parent).email,
+        phone: (updatedUser as Parent).phoneNumber,
+        address: (updatedUser as Parent).address || '',
+        occupation: (updatedUser as Parent).occupation || '',
+      });
     }
   };
 
   const handleAddUser = async (newUser: Partial<Student | Parent>) => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const user = {
-        ...newUser,
-        id: Date.now().toString(),
-        registrationDate: new Date().toISOString().split('T')[0],
-        lastLogin: new Date().toISOString().split('T')[0],
-        status: 'Actif' as const
-      };
-      
-      if (activeTab === 'students') {
-        setStudents(prev => [...prev, user as Student]);
-      } else {
-        setParents(prev => [...prev, user as Parent]);
-      }
-      
-      showNotification('success', 'Utilisateur ajouté avec succès');
-      setShowAddModal(false);
-    } catch (error) {
-      showNotification('error', 'Erreur lors de l\'ajout');
-    } finally {
-      setIsLoading(false);
+    if (activeTab === 'students') {
+      await handleCreateStudent({
+        firstName: (newUser as any).firstName,
+        lastName: (newUser as any).lastName,
+        email: (newUser as any).email,
+        phone: (newUser as any).phoneNumber,
+        class: (newUser as any).classLevel,
+        level: (newUser as any).classLevel,
+        averageScore: (newUser as any).averageScore || 0,
+        completedCourses: 0,
+        totalCourses: 0,
+      });
+    } else {
+      await handleCreateParent({
+        firstName: (newUser as any).firstName,
+        lastName: (newUser as any).lastName,
+        email: (newUser as any).email,
+        phone: (newUser as any).phoneNumber,
+        address: (newUser as any).address || '',
+        occupation: (newUser as any).occupation || '',
+      });
     }
   };
 
   const toggleUserStatus = async (user: Student | Parent) => {
-    const newStatus = user.status === 'Actif' ? 'Inactif' : 'Actif';
-    const updatedUser = { ...user, status: newStatus };
+    const newStatus = user.isActive ? false : true;
+    const updatedUser = { ...user, isActive: newStatus };
     await handleEditUser(updatedUser);
   };
 
   const filteredStudents = students.filter(student => {
-    const matchesSearch = student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'Tous' || student.status === filterStatus;
-    const matchesClass = filterClass === 'Tous' || student.class === filterClass;
+    const matchesSearch = (student.firstName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (student.lastName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (student.email?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'Tous' || (student.isActive ? 'Actif' : 'Inactif') === filterStatus;
+    const matchesClass = filterClass === 'Tous' || student.classLevel === filterClass;
     
     return matchesSearch && matchesStatus && matchesClass;
   });
 
   const filteredParents = parents.filter(parent => {
-    const matchesSearch = parent.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         parent.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         parent.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'Tous' || parent.status === filterStatus;
+    const matchesSearch = (parent.firstName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (parent.lastName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (parent.email?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'Tous' || (parent.isActive ? 'Actif' : 'Inactif') === filterStatus;
     
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Actif': return 'bg-green-100 text-green-800';
-      case 'Inactif': return 'bg-gray-100 text-gray-800';
-      case 'Suspendu': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Actif': return 'bg-green-500/20 text-green-300 border border-green-500/30';
+      case 'Inactif': return 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
+      case 'Suspendu': return 'bg-red-500/20 text-red-300 border border-red-500/30';
+      default: return 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
     }
   };
 
@@ -341,7 +349,10 @@ const UsersManagementTab = () => {
             <div className="flex items-center space-x-4 mt-3 text-sm text-blue-300">
               <span>Étudiants: {students.length}</span>
               <span>Parents: {parents.length}</span>
-              <span>Actifs: {[...students, ...parents].filter(u => u.status === 'Actif').length}</span>
+              <span>Actifs: {[...students, ...parents].filter(u => u.isActive).length}</span>
+              <span className={`${[...students, ...parents].filter(u => !u.isApproved).length > 0 ? 'text-yellow-300' : ''}`}>
+                En attente: {[...students, ...parents].filter(u => !u.isApproved).length}
+              </span>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -352,6 +363,24 @@ const UsersManagementTab = () => {
               <RefreshCw className="w-4 h-4" />
               <span>Actualiser</span>
             </button>
+            {[...students, ...parents].filter(u => !u.isApproved).length > 0 && (
+              <button
+                onClick={async () => {
+                  const pendingUsers = [...students, ...parents].filter(u => !u.isApproved);
+                  for (const user of pendingUsers) {
+                    try {
+                      await handleApproveUser(user.id, true);
+                    } catch (error) {
+                      console.error('Erreur lors de l\'approbation:', error);
+                    }
+                  }
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Approuver tous ({[...students, ...parents].filter(u => !u.isApproved).length})</span>
+              </button>
+            )}
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
@@ -468,6 +497,7 @@ const UsersManagementTab = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Inscription</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Dernière connexion</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Statut</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Approbation</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -478,11 +508,11 @@ const UsersManagementTab = () => {
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
                         <span className="text-white font-bold text-sm">
-                          {user.firstName[0]}{user.lastName[0]}
+                          {user.firstName?.[0] || 'U'}{user.lastName?.[0] || 'U'}
                         </span>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">{user.firstName} {user.lastName}</p>
+                        <p className="text-sm font-medium text-white">{user.firstName || 'Prénom'} {user.lastName || 'Nom'}</p>
                         <p className="text-xs text-blue-300">{user.email}</p>
                       </div>
                     </div>
@@ -491,7 +521,7 @@ const UsersManagementTab = () => {
                     <div className="text-sm text-blue-200">
                       <div className="flex items-center space-x-1">
                         <Phone className="w-3 h-3" />
-                        <span>{user.phone}</span>
+                        <span>{user.phoneNumber}</span>
                       </div>
                       <div className="flex items-center space-x-1 mt-1">
                         <Mail className="w-3 h-3" />
@@ -502,7 +532,7 @@ const UsersManagementTab = () => {
                   {activeTab === 'students' && (
                     <>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-blue-200">{(user as Student).class}</span>
+                        <span className="text-sm text-blue-200">{(user as Student).classLevel}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
@@ -517,36 +547,63 @@ const UsersManagementTab = () => {
                             />
                           </div>
                           <div className="text-xs text-blue-300">
-                            {(user as Student).completedCourses}/{(user as Student).totalCourses} cours
+                            Progression: {(user as Student).progressPercentage}%
                           </div>
                         </div>
                       </td>
                     </>
                   )}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-blue-200">{user.registrationDate}</span>
+                    <span className="text-sm text-blue-200">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : '-'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-blue-200">{user.lastLogin}</span>
+                    <span className="text-sm text-blue-200">-</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user.status)}`}>
-                      {user.status}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user.isActive ? 'Actif' : 'Inactif')}`}>
+                      {user.isActive ? 'Actif' : 'Inactif'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      user.isApproved 
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                        : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                    }`}>
+                      {user.isApproved ? 'Approuvé' : 'En attente'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
+                      {/* Bouton d'approbation */}
+                      <button
+                        onClick={() => handleApproveUser(user.id, !user.isApproved)}
+                        className={`p-2 rounded-lg transition-all ${
+                          user.isApproved 
+                            ? 'text-green-300 hover:text-white hover:bg-green-500/20' 
+                            : 'text-yellow-300 hover:text-white hover:bg-yellow-500/20'
+                        }`}
+                        title={user.isApproved ? 'Approuvé' : 'En attente d\'approbation'}
+                      >
+                        {user.isApproved ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                      </button>
+                      
+                      {/* Bouton d'activation/désactivation */}
                       <button
                         onClick={() => toggleUserStatus(user)}
                         className={`p-2 rounded-lg transition-all ${
-                          user.status === 'Actif' 
+                          user.isActive 
                             ? 'text-orange-300 hover:text-white hover:bg-orange-500/20' 
                             : 'text-green-300 hover:text-white hover:bg-green-500/20'
                         }`}
-                        title={user.status === 'Actif' ? 'Désactiver' : 'Activer'}
+                        title={user.isActive ? 'Désactiver' : 'Activer'}
                       >
-                        {user.status === 'Actif' ? <Ban className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                        {user.isActive ? <Ban className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
+                      
+                      {/* Bouton de modification */}
                       <button
                         onClick={() => {
                           setUserToEdit(user);
@@ -557,6 +614,8 @@ const UsersManagementTab = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
+                      
+                      {/* Bouton de suppression */}
                       <button
                         onClick={() => {
                           setUserToDelete(user);
@@ -641,19 +700,15 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     ...(userType === 'students' ? {
-      class: 'Terminale S',
-      level: 'Terminale',
+      classLevel: 'Terminale S',
       averageScore: 0,
-      completedCourses: 0,
-      totalCourses: 0,
-      parentEmail: '',
-      parentPhone: '',
-      parentName: '',
+      progressPercentage: 0,
       notes: ''
     } : {
-      studentIds: [],
+      address: '',
+      occupation: '',
       notes: ''
     })
   });
@@ -726,8 +781,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                 <div>
                   <label className="block text-sm font-semibold text-white mb-2">Classe</label>
                   <select
-                    value={formData.class}
-                    onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
+                    value={formData.classLevel}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, classLevel: e.target.value }))}
                     className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
                   >
                     {classes.map(cls => (
@@ -1074,7 +1129,7 @@ const DeleteUserModal: React.FC<DeleteUserModalProps> = ({ user, onConfirm, onCl
           </div>
           
           <p className="text-blue-200 mb-6">
-            Êtes-vous sûr de vouloir supprimer l'utilisateur <strong className="text-white">"{user.firstName} {user.lastName}"</strong> ?
+            Êtes-vous sûr de vouloir supprimer l'utilisateur <strong className="text-white">"{user.firstName || 'Prénom'} {user.lastName || 'Nom'}"</strong> ?
           </p>
           
           <div className="flex items-center space-x-3">

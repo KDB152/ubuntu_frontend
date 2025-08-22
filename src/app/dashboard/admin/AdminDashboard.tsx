@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAdminDashboard } from '@/hooks/useDashboard';
 import {
   BarChart3,
   Users,
@@ -77,6 +78,42 @@ const AdminDashboard = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Use the admin dashboard hook
+  const {
+    stats,
+    students,
+    parents,
+    quizzes,
+    files,
+    notifications,
+    loading,
+    error,
+    loadStats,
+    loadStudents,
+    loadParents,
+    loadQuizzes,
+    loadFiles,
+    loadNotifications,
+    createStudent,
+    updateStudent,
+    deleteStudent,
+    createParent,
+    updateParent,
+    deleteParent,
+    approveUser,
+    createQuiz,
+    updateQuiz,
+    deleteQuiz,
+    uploadFile,
+    deleteFile,
+    bulkDeleteFiles,
+    markNotificationAsRead,
+    deleteNotification,
+    logout,
+    clearError,
+  } = useAdminDashboard();
 
   // Données de l'utilisateur admin connecté
   const currentUser: AdminUser = {
@@ -151,27 +188,60 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      // Logique de déconnexion
-      window.location.href = '/login';
+      logout();
     }
   };
+
+  const handleRefresh = () => {
+    loadStats();
+    loadStudents();
+    loadParents();
+    loadQuizzes();
+    loadFiles();
+    loadNotifications();
+  };
+
+  const unreadNotifications = notifications.filter(n => !n.isRead).length;
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <DashboardOverviewTab />;
+        return <DashboardOverviewTab stats={stats} loading={loading} />;
       case 'users':
-        return <UsersManagementTab />;
+        return <UsersManagementTab 
+          students={students}
+          parents={parents}
+          loading={loading}
+          onCreateStudent={createStudent}
+          onUpdateStudent={updateStudent}
+          onDeleteStudent={deleteStudent}
+          onCreateParent={createParent}
+          onUpdateParent={updateParent}
+          onDeleteParent={deleteParent}
+          onApproveUser={approveUser}
+        />;
       case 'quizzes':
-        return <QuizzesManagementTab />;
+        return <QuizzesManagementTab 
+          quizzes={quizzes}
+          loading={loading}
+          onCreateQuiz={createQuiz}
+          onUpdateQuiz={updateQuiz}
+          onDeleteQuiz={deleteQuiz}
+        />;
       case 'messages':
         return <MessagesManagementTab />;
       case 'files':
-        return <FileManagementTab />;
+        return <FileManagementTab 
+          files={files}
+          loading={loading}
+          onUploadFile={uploadFile}
+          onDeleteFile={deleteFile}
+          onBulkDeleteFiles={bulkDeleteFiles}
+        />;
       case 'settings':
         return <SettingsManagementTab />;
       default:
-        return <DashboardOverviewTab />;
+        return <DashboardOverviewTab stats={stats} loading={loading} />;
     }
   };
 
@@ -185,7 +255,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
-        sidebarCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'w-80'
+        sidebarCollapsed ? 'w-20' : 'w-80'
       }`}>
         <div className="h-full bg-white/10 backdrop-blur-xl border-r border-white/20">
           {/* Header du sidebar */}
@@ -199,7 +269,7 @@ const AdminDashboard = () => {
               )}
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all lg:hidden"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
               >
                 {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
               </button>
@@ -292,29 +362,15 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Overlay pour mobile */}
-      {!sidebarCollapsed && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarCollapsed(true)}
-        />
-      )}
-
       {/* Contenu principal */}
       <div className={`transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'
+        sidebarCollapsed ? 'ml-20' : 'ml-80'
       }`}>
         {/* Header principal */}
         <header className="bg-white/10 backdrop-blur-xl border-b border-white/20 sticky top-0 z-30">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all lg:hidden"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
                 
                 <div>
                   <div className="flex items-center space-x-2">
@@ -348,12 +404,77 @@ const AdminDashboard = () => {
                     {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                   </button>
                   
-                  <button className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all relative">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all relative"
+                    >
+                      <Bell className="w-5 h-5" />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Menu des notifications */}
+                    {showNotifications && (
+                      <div className="absolute right-0 top-full mt-2 w-80 backdrop-blur-xl rounded-xl border shadow-xl z-50 bg-white/10 border-white/20">
+                        <div className="p-4 border-b border-white/20">
+                          <h3 className="font-semibold text-white">Notifications</h3>
+                        </div>
+                        <div className="max-h-96 overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <div className="p-4 text-center text-blue-200">
+                              Aucune notification
+                            </div>
+                          ) : (
+                            notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                className={`p-4 border-b transition-all cursor-pointer ${
+                                  !notification.isRead ? 'bg-blue-500/10' : ''
+                                } border-white/10 hover:bg-white/5`}
+                                onClick={() => markNotificationAsRead(notification.id)}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                                    !notification.isRead ? 'bg-blue-500' : 'bg-transparent'
+                                  }`} />
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-sm text-white">
+                                      {notification.title}
+                                    </h4>
+                                    <p className="text-xs mt-1 text-blue-200">
+                                      {notification.message}
+                                    </p>
+                                    <p className="text-xs mt-1 text-blue-300">
+                                      {new Date(notification.createdAt).toLocaleString('fr-FR')}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification.id);
+                                    }}
+                                    className="text-red-300 hover:text-red-200"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
-                  <button className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                  <button 
+                    onClick={handleRefresh}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                    title="Actualiser"
+                  >
                     <RefreshCw className="w-5 h-5" />
                   </button>
                 </div>

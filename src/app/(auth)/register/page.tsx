@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ToastProvider } from '@/components/ui/toast';
-import { Mail, Lock, User, Eye, EyeOff, UserPlus, Globe, MapPin, BookOpen, CheckCircle, AlertCircle, GraduationCap, Phone } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, UserPlus, Globe, MapPin, BookOpen, CheckCircle, AlertCircle, GraduationCap, Phone, Calendar, Baby } from 'lucide-react';
 
 // Export viewport configuration
 export const viewport = {
@@ -19,9 +19,22 @@ const RegisterPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     userType: 'student',
-    acceptTerms: false
+    acceptTerms: false,
+    // Student-specific fields
+    studentBirthDate: '',
+    studentClass: '',
+    // Parent-specific fields
+    childFirstName: '',
+    childLastName: '',
+    childBirthDate: '',
+    childClass: '',
+    // Parent contact fields (for students)
+    parentFirstName: '',
+    parentLastName: '',
+    parentEmail: '',
+    parentPhone: ''
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,13 +56,13 @@ const RegisterPage: React.FC = () => {
     setPasswordStrength(strength);
   }, [formData.password]);
 
-  const validateEmail = (email) => {
+  const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'Le prénom est requis';
@@ -77,6 +90,46 @@ const RegisterPage: React.FC = () => {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     }
 
+    // Validation spécifique aux étudiants
+    if (formData.userType === 'student') {
+      if (!formData.studentBirthDate) {
+        newErrors.studentBirthDate = 'La date de naissance est requise';
+      }
+      if (!formData.studentClass) {
+        newErrors.studentClass = 'La classe est requise';
+      }
+      if (!formData.parentFirstName) {
+        newErrors.parentFirstName = 'Le prénom du parent est requis';
+      }
+      if (!formData.parentLastName) {
+        newErrors.parentLastName = 'Le nom du parent est requis';
+      }
+      if (!formData.parentEmail) {
+        newErrors.parentEmail = 'L\'email du parent est requis';
+      } else if (!validateEmail(formData.parentEmail)) {
+        newErrors.parentEmail = 'Veuillez entrer une adresse email valide pour le parent';
+      }
+      if (!formData.parentPhone) {
+        newErrors.parentPhone = 'Le téléphone du parent est requis';
+      }
+    }
+
+    // Validation spécifique aux parents
+    if (formData.userType === 'parent') {
+      if (!formData.childFirstName) {
+        newErrors.childFirstName = 'Le prénom de l\'enfant est requis';
+      }
+      if (!formData.childLastName) {
+        newErrors.childLastName = 'Le nom de l\'enfant est requis';
+      }
+      if (!formData.childBirthDate) {
+        newErrors.childBirthDate = 'La date de naissance de l\'enfant est requise';
+      }
+      if (!formData.childClass) {
+        newErrors.childClass = 'La classe de l\'enfant est requise';
+      }
+    }
+
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = 'Vous devez accepter les conditions d\'utilisation';
     }
@@ -84,7 +137,7 @@ const RegisterPage: React.FC = () => {
     return newErrors;
   };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors = validateForm();
     
@@ -98,10 +151,33 @@ const handleSubmit = async (e) => {
     setSuccessMessage('');
 
     try {
+      // Prepare the data to send to the backend
+      const requestData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        userType: formData.userType,
+        // Student-specific fields
+        studentBirthDate: formData.userType === 'student' ? formData.studentBirthDate : undefined,
+        studentClass: formData.userType === 'student' ? formData.studentClass : undefined,
+        // Parent-specific fields
+        childFirstName: formData.userType === 'parent' ? formData.childFirstName : undefined,
+        childLastName: formData.userType === 'parent' ? formData.childLastName : undefined,
+        childBirthDate: formData.userType === 'parent' ? formData.childBirthDate : undefined,
+        childClass: formData.userType === 'parent' ? formData.childClass : undefined,
+        // Parent contact fields (for students)
+        parentFirstName: formData.userType === 'student' ? formData.parentFirstName : undefined,
+        parentLastName: formData.userType === 'student' ? formData.parentLastName : undefined,
+        parentEmail: formData.userType === 'student' ? formData.parentEmail : undefined,
+        parentPhone: formData.userType === 'student' ? formData.parentPhone : undefined,
+      };
+
       const response = await fetch('http://localhost:3001/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestData),
       });
 
       const data = await response.json();
@@ -119,15 +195,25 @@ const handleSubmit = async (e) => {
         confirmPassword: '',
         userType: 'student',
         acceptTerms: false,
+        studentBirthDate: '',
+        studentClass: '',
+        childFirstName: '',
+        childLastName: '',
+        childBirthDate: '',
+        childClass: '',
+        parentFirstName: '',
+        parentLastName: '',
+        parentEmail: '',
+        parentPhone: ''
       });
     } catch (error) {
-      setErrors({ ...errors, global: error.message });
+      setErrors({ ...errors, global: (error as Error).message });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -191,20 +277,20 @@ const handleSubmit = async (e) => {
         <div className="relative z-10 flex min-h-screen">
           {/* Panneau droit - formulaire */}
           <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-8">
-            <div className="w-full max-w-2xl"> {/* Élargi de md à 2xl comme la page login */}
+            <div className="w-full max-w-4xl"> {/* Élargi pour accommoder plus de champs */}
               <div className="text-center mb-10">
                 <div className="flex justify-center mb-6">
                   <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
                     <BookOpen className="w-10 h-10 text-white" />
                   </div>
                 </div>
-                <h2 className="text-5xl font-bold text-white mb-3">Inscription</h2> {/* Titre plus grand */}
+                <h2 className="text-5xl font-bold text-white mb-3">Inscription</h2>
                 <p className="text-blue-200 text-lg">Créez votre compte d'apprentissage</p>
               </div>
 
               <form
                 onSubmit={handleSubmit}
-                className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl space-y-8" /* Padding élargi et espacement augmenté */
+                className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl space-y-8"
               >
                 {/* Messages d'erreur et de succès */}
                 {errors.global && (
@@ -257,187 +343,451 @@ const handleSubmit = async (e) => {
                   </div>
                 </div>
 
-                {/* Nom et prénom */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Prénom</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                      </div>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                          errors.firstName ? 'border-red-400' : 'border-white/20'
-                        }`}
-                        placeholder="Votre prénom"
-                        required
-                      />
-                    </div>
-                    {errors.firstName && (
-                      <p className="mt-2 text-sm text-red-400">{errors.firstName}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Nom</label>
-                    <div className="relative group">
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                          errors.lastName ? 'border-red-400' : 'border-white/20'
-                        }`}
-                        placeholder="Votre nom"
-                        required
-                      />
-                    </div>
-                    {errors.lastName && (
-                      <p className="mt-2 text-sm text-red-400">{errors.lastName}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-3">Adresse email</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                    </div>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                        errors.email ? 'border-red-400' : 'border-white/20'
-                      }`}
-                      placeholder="votre@email.com"
-                      required
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-2 text-sm text-red-400">{errors.email}</p>
-                  )}
-                </div>
-
-                {/* Téléphone */}
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-3">Numéro de téléphone</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                    </div>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                        errors.phone ? 'border-red-400' : 'border-white/20'
-                      }`}
-                      placeholder="Votre numéro de téléphone"
-                      required
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p className="mt-2 text-sm text-red-400">{errors.phone}</p>
-                  )}
-                </div>
-
-                {/* Mot de passe */}
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                    </div>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                        errors.password ? 'border-red-400' : 'border-white/20'
-                      }`}
-                      placeholder="Votre mot de passe"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                      )}
-                    </button>
-                  </div>
+                {/* Informations personnelles */}
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-amber-300" />
+                    Informations personnelles
+                  </h3>
                   
-                  {/* Indicateur de force du mot de passe */}
-                  {formData.password && (
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-white/70">Force du mot de passe</span>
-                        <span className={`text-xs font-medium ${getPasswordStrengthText().color}`}>
-                          {getPasswordStrengthText().text}
-                        </span>
-                      </div>
-                      <div className="w-full bg-white/10 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                          style={{ width: getPasswordStrengthWidth() }}
+                  {/* Nom et prénom */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Prénom</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.firstName ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Votre prénom"
+                          required
                         />
                       </div>
+                      {errors.firstName && (
+                        <p className="mt-2 text-sm text-red-400">{errors.firstName}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Nom</label>
+                      <div className="relative group">
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.lastName ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Votre nom"
+                          required
+                        />
+                      </div>
+                      {errors.lastName && (
+                        <p className="mt-2 text-sm text-red-400">{errors.lastName}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Email et téléphone */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Adresse email</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.email ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="votre@email.com"
+                          required
+                        />
+                      </div>
+                      {errors.email && (
+                        <p className="mt-2 text-sm text-red-400">{errors.email}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Numéro de téléphone</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.phone ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Votre numéro de téléphone"
+                          required
+                        />
+                      </div>
+                      {errors.phone && (
+                        <p className="mt-2 text-sm text-red-400">{errors.phone}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Champs spécifiques selon le type d'utilisateur */}
+                  {formData.userType === 'student' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="date"
+                            name="studentBirthDate"
+                            value={formData.studentBirthDate}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.studentBirthDate ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            required
+                          />
+                        </div>
+                        {errors.studentBirthDate && (
+                          <p className="mt-2 text-sm text-red-400">{errors.studentBirthDate}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Classe</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            name="studentClass"
+                            value={formData.studentClass}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.studentClass ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Ex: 6ème A, 3ème B..."
+                            required
+                          />
+                        </div>
+                        {errors.studentClass && (
+                          <p className="mt-2 text-sm text-red-400">{errors.studentClass}</p>
+                        )}
+                      </div>
                     </div>
                   )}
-                  
-                  {errors.password && (
-                    <p className="mt-2 text-sm text-red-400">{errors.password}</p>
+
+                  {formData.userType === 'parent' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            name="childFirstName"
+                            value={formData.childFirstName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childFirstName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Prénom de l'enfant"
+                            required
+                          />
+                        </div>
+                        {errors.childFirstName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childFirstName}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant</label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            name="childLastName"
+                            value={formData.childLastName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childLastName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Nom de l'enfant"
+                            required
+                          />
+                        </div>
+                        {errors.childLastName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childLastName}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.userType === 'parent' && (
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="date"
+                            name="childBirthDate"
+                            value={formData.childBirthDate}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childBirthDate ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            required
+                          />
+                        </div>
+                        {errors.childBirthDate && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childBirthDate}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            name="childClass"
+                            value={formData.childClass}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childClass ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Ex: 6ème A, 3ème B..."
+                            required
+                          />
+                        </div>
+                        {errors.childClass && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childClass}</p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Confirmation mot de passe */}
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                {/* Informations des parents (pour les étudiants) */}
+                {formData.userType === 'student' && (
+                  <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <User className="w-5 h-5 mr-2 text-amber-300" />
+                      Informations des parents
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom du parent</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            name="parentFirstName"
+                            value={formData.parentFirstName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentFirstName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Prénom du parent"
+                            required
+                          />
+                        </div>
+                        {errors.parentFirstName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentFirstName}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom du parent</label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            name="parentLastName"
+                            value={formData.parentLastName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentLastName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Nom du parent"
+                            required
+                          />
+                        </div>
+                        {errors.parentLastName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentLastName}</p>
+                        )}
+                      </div>
                     </div>
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                        errors.confirmPassword ? 'border-red-400' : 'border-white/20'
-                      }`}
-                      placeholder="Confirmez votre mot de passe"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                      )}
-                    </button>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Email du parent</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="email"
+                            name="parentEmail"
+                            value={formData.parentEmail}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentEmail ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="parent@email.com"
+                            required
+                          />
+                        </div>
+                        {errors.parentEmail && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentEmail}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="tel"
+                            name="parentPhone"
+                            value={formData.parentPhone}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentPhone ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Téléphone du parent"
+                            required
+                          />
+                        </div>
+                        {errors.parentPhone && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentPhone}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
-                  )}
+                )}
+
+                {/* Mot de passe */}
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Lock className="w-5 h-5 mr-2 text-amber-300" />
+                    Sécurité
+                  </h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                          errors.password ? 'border-red-400' : 'border-white/20'
+                        }`}
+                        placeholder="Votre mot de passe"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Indicateur de force du mot de passe */}
+                    {formData.password && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-white/70">Force du mot de passe</span>
+                          <span className={`text-xs font-medium ${getPasswordStrengthText().color}`}>
+                            {getPasswordStrengthText().text}
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                            style={{ width: getPasswordStrengthWidth() }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {errors.password && (
+                      <p className="mt-2 text-sm text-red-400">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                          errors.confirmPassword ? 'border-red-400' : 'border-white/20'
+                        }`}
+                        placeholder="Confirmez votre mot de passe"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Conditions d'utilisation */}

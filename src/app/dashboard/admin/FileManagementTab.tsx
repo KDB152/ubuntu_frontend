@@ -210,25 +210,47 @@ const FileManagementTabImproved = () => {
         return;
       }
       
-      // Créer les nouveaux cours
-      const newCourses: Course[] = currentFiles.map((fileUpload, index) => ({
-        id: Date.now() + index + '',
-        name: fileUpload.file.name,
-        title: courseTitle,
-        type: acceptedTypes[fileUpload.file.type as keyof typeof acceptedTypes]?.label || 'Inconnu',
-        subject: courseSubject,
-        level: courseLevel,
-        size: formatFileSize(fileUpload.file.size),
-        uploadDate: new Date().toISOString().split('T')[0],
-        views: 0,
-        status: 'Publié',
-        description: courseDescription,
-        tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean),
-        fileName: fileUpload.file.name,
-        fileUrl: results[index].url
-      }));
-      
-      setUploadedFiles(prev => [...prev, ...newCourses]);
+      // Créer côté backend puis rafraîchir la liste
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      await Promise.all(currentFiles.map((fileUpload, index) => fetch(`${API_BASE}/content/courses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fileUpload.file.name,
+          title: courseTitle,
+          type: acceptedTypes[fileUpload.file.type as keyof typeof acceptedTypes]?.label || 'Inconnu',
+          subject: courseSubject,
+          level: courseLevel,
+          size: formatFileSize(fileUpload.file.size),
+          status: 'Publié',
+          description: courseDescription,
+          tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean),
+          file_name: fileUpload.file.name,
+          file_url: results[index].url
+        })
+      })));
+      // Reload list
+      try {
+        const res = await fetch(`${API_BASE}/content/courses`);
+        const json = await res.json();
+        const mapped: Course[] = (json.items || []).map((c: any) => ({
+          id: String(c.id),
+          name: c.name,
+          title: c.title,
+          type: c.type,
+          subject: c.subject,
+          level: c.level,
+          size: c.size,
+          uploadDate: c.upload_date?.slice(0,10) || '',
+          views: c.views || 0,
+          status: c.status,
+          description: c.description,
+          tags: c.tags || [],
+          fileName: c.file_name,
+          fileUrl: c.file_url,
+        }));
+        setUploadedFiles(mapped);
+      } catch {}
       
       // Reset du formulaire
       setCourseTitle('');
@@ -249,9 +271,8 @@ const FileManagementTabImproved = () => {
   const handleDelete = async (course: Course) => {
     setIsLoading(true);
     try {
-      // Simulation d'appel API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      await fetch(`${API_BASE}/content/courses/${course.id}`, { method: 'DELETE' });
       setUploadedFiles(prev => prev.filter(f => f.id !== course.id));
       
       showNotification('success', 'Cours supprimé avec succès');
@@ -268,8 +289,20 @@ const FileManagementTabImproved = () => {
   const handleEdit = async (updatedCourse: Course) => {
     setIsLoading(true);
     try {
-      // Simulation d'appel API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      await fetch(`${API_BASE}/content/courses/${updatedCourse.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: updatedCourse.name,
+          title: updatedCourse.title,
+          subject: updatedCourse.subject,
+          level: updatedCourse.level,
+          description: updatedCourse.description,
+          tags: updatedCourse.tags || [],
+          status: updatedCourse.status,
+        })
+      });
       setUploadedFiles(prev => prev.map(f => f.id === updatedCourse.id ? updatedCourse : f));
       
       showNotification('success', 'Cours modifié avec succès');

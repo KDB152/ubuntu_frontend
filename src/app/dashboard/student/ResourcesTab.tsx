@@ -231,308 +231,43 @@ const ResourcesTab: React.FC = () => {
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    // Données simulées des ressources
-    const mockResources: Resource[] = [
-      {
-        id: 'res-1',
-        title: 'La Révolution française - Cours complet',
-        description: 'Cours détaillé sur la Révolution française de 1789 à 1799, incluant les causes, les événements majeurs et les conséquences.',
-        type: 'document',
-        category: 'course',
-        subject: 'history',
-        level: 'intermediate',
-        url: '/resources/revolution-francaise.pdf',
-        thumbnail: '/thumbnails/revolution-francaise.jpg',
-        fileSize: 2500000, // 2.5 MB
-        author: 'Mme Martin',
-        createdAt: '2024-12-15T10:00:00',
-        tags: ['révolution', 'france', '18ème siècle', 'politique', 'société'],
-        rating: 4.8,
-        ratingsCount: 156,
-        downloads: 1240,
-        views: 3450,
-        isFavorite: true,
-        isBookmarked: true,
-        isDownloaded: false,
-        language: 'fr',
-        difficulty: 3,
-        format: 'PDF',
-        prerequisites: ['Histoire de France - Ancien Régime']
-      },
-      {
-        id: 'res-2',
-        title: 'Les climats européens - Vidéo explicative',
-        description: 'Vidéo interactive expliquant les différents types de climats en Europe avec des cartes animées.',
-        type: 'video',
-        category: 'multimedia',
-        subject: 'geography',
-        level: 'beginner',
-        url: '/resources/climats-europeens.mp4',
-        thumbnail: '/thumbnails/climats-europeens.jpg',
-        fileSize: 125000000, // 125 MB
-        duration: 1200, // 20 minutes
-        author: 'M. Dubois',
-        createdAt: '2024-12-18T14:30:00',
-        tags: ['climat', 'europe', 'météorologie', 'géographie physique'],
-        rating: 4.6,
-        ratingsCount: 89,
-        downloads: 567,
-        views: 2100,
-        isFavorite: false,
-        isBookmarked: true,
-        isDownloaded: true,
-        language: 'fr',
-        difficulty: 2,
-        format: 'MP4',
-        quality: 'high'
-      },
-      {
-        id: 'res-3',
-        title: 'Atlas interactif de l\'Europe',
-        description: 'Atlas numérique interactif permettant d\'explorer les pays, capitales et reliefs européens.',
-        type: 'interactive',
-        category: 'tool',
-        subject: 'geography',
-        level: 'intermediate',
-        url: 'https://atlas-europe-interactif.com',
-        thumbnail: '/thumbnails/atlas-europe.jpg',
-        author: 'Équipe pédagogique',
-        createdAt: '2024-12-10T09:15:00',
-        tags: ['atlas', 'europe', 'interactif', 'cartographie', 'pays'],
-        rating: 4.9,
-        ratingsCount: 234,
-        downloads: 0, // Pas de téléchargement pour les liens
-        views: 5670,
-        isFavorite: true,
-        isBookmarked: false,
-        isDownloaded: false,
-        language: 'fr',
-        difficulty: 2,
-        format: 'Web'
-      },
-      {
-        id: 'res-4',
-        title: 'Exercices - Empire napoléonien',
-        description: 'Série d\'exercices et de questions sur l\'Empire de Napoléon avec corrections détaillées.',
-        type: 'document',
-        category: 'exercise',
-        subject: 'history',
-        level: 'advanced',
-        url: '/resources/exercices-napoleon.pdf',
-        thumbnail: '/thumbnails/exercices-napoleon.jpg',
-        fileSize: 1800000, // 1.8 MB
-        author: 'Mme Martin',
-        createdAt: '2024-12-20T11:45:00',
-        tags: ['napoléon', 'empire', 'exercices', 'évaluation'],
-        rating: 4.4,
-        ratingsCount: 67,
-        downloads: 890,
-        views: 1560,
-        isFavorite: false,
-        isBookmarked: false,
-        isDownloaded: false,
-        language: 'fr',
-        difficulty: 4,
-        format: 'PDF',
-        prerequisites: ['La Révolution française']
-      },
-      {
-        id: 'res-5',
-        title: 'Podcast - Histoire de France',
-        description: 'Série de podcasts sur l\'histoire de France, épisode sur la Révolution française.',
-        type: 'audio',
-        category: 'multimedia',
-        subject: 'history',
-        level: 'intermediate',
-        url: '/resources/podcast-histoire-france-ep5.mp3',
-        thumbnail: '/thumbnails/podcast-histoire.jpg',
-        fileSize: 45000000, // 45 MB
-        duration: 2700, // 45 minutes
-        author: 'Radio Histoire',
-        createdAt: '2024-12-12T16:20:00',
-        tags: ['podcast', 'audio', 'histoire', 'france', 'révolution'],
-        rating: 4.7,
-        ratingsCount: 123,
-        downloads: 456,
-        views: 1890,
-        isFavorite: true,
-        isBookmarked: true,
-        isDownloaded: true,
-        language: 'fr',
-        difficulty: 3,
-        format: 'MP3',
-        quality: 'high'
-      },
-      {
-        id: 'res-6',
-        title: 'Cartes historiques - Révolution',
-        description: 'Collection de cartes historiques montrant l\'évolution de la France pendant la Révolution.',
-        type: 'image',
-        category: 'reference',
-        subject: 'history',
-        level: 'intermediate',
-        url: '/resources/cartes-revolution/',
-        thumbnail: '/thumbnails/cartes-revolution.jpg',
-        fileSize: 15000000, // 15 MB (collection)
-        author: 'Archives nationales',
-        createdAt: '2024-12-08T13:10:00',
-        tags: ['cartes', 'révolution', 'france', 'géographie historique'],
-        rating: 4.5,
-        ratingsCount: 78,
-        downloads: 234,
-        views: 987,
-        isFavorite: false,
-        isBookmarked: true,
-        isDownloaded: false,
-        language: 'fr',
-        difficulty: 3,
-        format: 'JPG/PNG'
-      },
-      {
-        id: 'res-7',
-        title: 'Quiz interactif - Capitales européennes',
-        description: 'Quiz interactif pour apprendre et tester ses connaissances sur les capitales européennes.',
-        type: 'interactive',
-        category: 'exercise',
-        subject: 'geography',
-        level: 'beginner',
-        url: 'https://quiz-capitales-europe.com',
-        thumbnail: '/thumbnails/quiz-capitales.jpg',
-        author: 'EduGeo',
-        createdAt: '2024-12-14T08:30:00',
-        tags: ['quiz', 'capitales', 'europe', 'interactif', 'géographie'],
-        rating: 4.3,
-        ratingsCount: 145,
-        downloads: 0,
-        views: 2340,
-        isFavorite: false,
-        isBookmarked: false,
-        isDownloaded: false,
-        language: 'fr',
-        difficulty: 1,
-        format: 'Web'
-      },
-      {
-        id: 'res-8',
-        title: 'Documentaire - Napoléon Bonaparte',
-        description: 'Documentaire complet sur la vie et l\'œuvre de Napoléon Bonaparte.',
-        type: 'video',
-        category: 'multimedia',
-        subject: 'history',
-        level: 'advanced',
-        url: '/resources/documentaire-napoleon.mp4',
-        thumbnail: '/thumbnails/documentaire-napoleon.jpg',
-        fileSize: 850000000, // 850 MB
-        duration: 5400, // 90 minutes
-        author: 'France Télévisions',
-        createdAt: '2024-12-05T20:00:00',
-        tags: ['documentaire', 'napoléon', 'biographie', 'histoire'],
-        rating: 4.9,
-        ratingsCount: 312,
-        downloads: 1567,
-        views: 8900,
-        isFavorite: true,
-        isBookmarked: true,
-        isDownloaded: false,
-        language: 'fr',
-        difficulty: 4,
-        format: 'MP4',
-        quality: 'ultra'
-      }
-    ];
-
-    const mockFolders: ResourceFolder[] = [
-      {
-        id: 'folder-1',
-        name: 'Histoire',
-        description: 'Ressources d\'histoire',
-        children: ['folder-2', 'folder-3'],
-        resources: [],
-        color: 'from-amber-500 to-orange-600',
-        icon: 'history',
-        isExpanded: true,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: false
-      },
-      {
-        id: 'folder-2',
-        name: 'Révolution française',
-        description: 'Ressources sur la Révolution française',
-        parentId: 'folder-1',
-        children: [],
-        resources: ['res-1', 'res-5', 'res-6'],
-        color: 'from-red-500 to-pink-600',
-        icon: 'flag',
-        isExpanded: false,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: false
-      },
-      {
-        id: 'folder-3',
-        name: 'Empire napoléonien',
-        description: 'Ressources sur l\'Empire de Napoléon',
-        parentId: 'folder-1',
-        children: [],
-        resources: ['res-4', 'res-8'],
-        color: 'from-purple-500 to-violet-600',
-        icon: 'crown',
-        isExpanded: false,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: false
-      },
-      {
-        id: 'folder-4',
-        name: 'Géographie',
-        description: 'Ressources de géographie',
-        children: ['folder-5'],
-        resources: [],
-        color: 'from-green-500 to-emerald-600',
-        icon: 'globe',
-        isExpanded: true,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: false
-      },
-      {
-        id: 'folder-5',
-        name: 'Europe',
-        description: 'Ressources sur l\'Europe',
-        parentId: 'folder-4',
-        children: [],
-        resources: ['res-2', 'res-3', 'res-7'],
-        color: 'from-blue-500 to-indigo-600',
-        icon: 'map',
-        isExpanded: false,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: false
-      },
-      {
-        id: 'folder-6',
-        name: 'Mes favoris',
-        description: 'Ressources favorites',
-        children: [],
-        resources: ['res-1', 'res-3', 'res-5', 'res-8'],
-        color: 'from-yellow-500 to-orange-600',
-        icon: 'star',
-        isExpanded: false,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: true
-      },
-      {
-        id: 'folder-7',
-        name: 'Téléchargés',
-        description: 'Ressources téléchargées',
-        children: [],
-        resources: ['res-2', 'res-5'],
-        color: 'from-gray-500 to-slate-600',
-        icon: 'download',
-        isExpanded: false,
-        createdAt: '2024-12-01T00:00:00',
-        isEditable: false
-      }
-    ];
-
-    setResources(mockResources);
-    setFolders(mockFolders);
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/content/courses`);
+        const json = await res.json();
+        const mapped: Resource[] = (json.items || []).map((c: any) => ({
+          id: String(c.id),
+          title: c.title || c.name,
+          description: c.description || '',
+          type: (c.type?.toLowerCase() === 'pdf' ? 'document' : c.type?.toLowerCase() === 'vidéo' ? 'video' : 'document') as any,
+          category: 'course',
+          subject: (c.subject?.toLowerCase() === 'histoire' ? 'history' : c.subject?.toLowerCase() === 'géographie' ? 'geography' : 'general') as any,
+          level: 'intermediate',
+          url: c.file_url || '#',
+          thumbnail: undefined,
+          fileSize: undefined,
+          duration: undefined,
+          author: 'Administration',
+          createdAt: c.upload_date || new Date().toISOString(),
+          updatedAt: c.updated_at,
+          tags: c.tags || [],
+          rating: 0,
+          ratingsCount: 0,
+          downloads: 0,
+          views: c.views || 0,
+          isFavorite: false,
+          isBookmarked: false,
+          isDownloaded: false,
+          language: 'fr',
+          difficulty: 2,
+          format: c.type || 'Document',
+        }));
+        setResources(mapped);
+      } catch {}
+      setFolders([]);
+    };
+    load();
   }, []);
 
   const getTypeIcon = (type: string) => {
