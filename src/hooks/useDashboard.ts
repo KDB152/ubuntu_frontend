@@ -389,7 +389,7 @@ export const useAdminDashboard = () => {
 
   // Logout function
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
     localStorage.removeItem('userDetails');
     window.location.href = '/login';
   }, []);
@@ -575,7 +575,7 @@ export const useStudentDashboard = () => {
 
   // Logout function
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
     localStorage.removeItem('userDetails');
     window.location.href = '/login';
   }, []);
@@ -712,7 +712,7 @@ export const useParentDashboard = () => {
 
   // Logout function
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
     localStorage.removeItem('userDetails');
     window.location.href = '/login';
   }, []);

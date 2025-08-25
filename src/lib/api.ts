@@ -3,7 +3,7 @@ const API_BASE_URL = 'http://localhost:3001';
 
 // Generic API request function
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('accessToken');
   
   const config: RequestInit = {
     headers: {
@@ -58,6 +58,12 @@ export const authAPI = {
     apiRequest('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
+    }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiRequest('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
     }),
 };
 
@@ -152,47 +158,7 @@ export const quizzesAPI = {
 };
 
 // Messaging API
-export const messagingAPI = {
-  getConversations: (userId: number) =>
-    apiRequest(`/messaging/conversations?userId=${userId}`),
-
-  getConversation: (id: number) => apiRequest(`/messaging/conversations/${id}`),
-
-  createConversation: (conversationData: any) =>
-    apiRequest('/messaging/conversations', {
-      method: 'POST',
-      body: JSON.stringify(conversationData),
-    }),
-
-  getMessages: (conversationId: number) =>
-    apiRequest(`/messaging/conversations/${conversationId}/messages`),
-
-  sendMessage: (messageData: any) =>
-    apiRequest('/messaging/messages', {
-      method: 'POST',
-      body: JSON.stringify(messageData),
-    }),
-
-  markMessageAsRead: (messageId: number) =>
-    apiRequest(`/messaging/messages/${messageId}/read`, {
-      method: 'PATCH',
-    }),
-
-  deleteConversation: (id: number) =>
-    apiRequest(`/messaging/conversations/${id}`, {
-      method: 'DELETE',
-    }),
-
-  deleteMessage: (id: number) =>
-    apiRequest(`/messaging/messages/${id}`, {
-      method: 'DELETE',
-    }),
-
-  getContacts: (userId: number) => apiRequest(`/messaging/users/${userId}/contacts`),
-
-  searchMessages: (conversationId: number, query: string) =>
-    apiRequest(`/messaging/search?conversationId=${conversationId}&query=${query}`),
-};
+// Removed duplicate declaration of messagingAPI
 
 // Files API
 export const filesAPI = {
@@ -307,6 +273,8 @@ export const parentsAPI = {
 
   getParent: (id: number) => apiRequest(`/parents/${id}`),
 
+  getParentByUserId: (userId: number) => apiRequest(`/parents/by-user/${userId}`),
+
   updateParent: (id: number, parentData: any) =>
     apiRequest(`/parents/${id}`, {
       method: 'PATCH',
@@ -356,6 +324,169 @@ export const analyticsAPI = {
 
   getProgressStats: (timeframe: string) =>
     apiRequest(`/analytics/progress?timeframe=${timeframe}`),
+};
+
+// Settings API
+export const settingsAPI = {
+  // System Settings
+  getSystemSettings: () => apiRequest('/settings/system'),
+  
+  getSystemSettingsAsObject: () => apiRequest('/settings/system/object'),
+  
+  getSystemSetting: (key: string) => apiRequest(`/settings/system/${key}`),
+  
+  getSystemSettingsByCategory: (category: string) => 
+    apiRequest(`/settings/system/category/${category}`),
+  
+  setSystemSetting: (settingData: any) =>
+    apiRequest('/settings/system', {
+      method: 'POST',
+      body: JSON.stringify(settingData),
+    }),
+  
+  updateSystemSetting: (key: string, settingData: any) =>
+    apiRequest(`/settings/system/${key}`, {
+      method: 'PATCH',
+      body: JSON.stringify(settingData),
+    }),
+  
+  bulkUpdateSystemSettings: (settings: any[]) =>
+    apiRequest('/settings/system/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ settings }),
+    }),
+  
+  deleteSystemSetting: (key: string) =>
+    apiRequest(`/settings/system/${key}`, {
+      method: 'DELETE',
+    }),
+  
+  initializeSystemSettings: () =>
+    apiRequest('/settings/system/initialize', {
+      method: 'POST',
+    }),
+
+  // User Preferences
+  getUserPreferences: (userId: number) => apiRequest(`/settings/user/${userId}`),
+  
+  getUserPreferencesAsObject: (userId: number) => 
+    apiRequest(`/settings/user/${userId}/object`),
+  
+  getUserPreference: (userId: number, key: string) => 
+    apiRequest(`/settings/user/${userId}/${key}`),
+  
+  getUserPreferencesByCategory: (userId: number, category: string) => 
+    apiRequest(`/settings/user/${userId}/category/${category}`),
+  
+  setUserPreference: (userId: number, preferenceData: any) =>
+    apiRequest(`/settings/user/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(preferenceData),
+    }),
+  
+  updateUserPreference: (userId: number, key: string, preferenceData: any) =>
+    apiRequest(`/settings/user/${userId}/${key}`, {
+      method: 'PATCH',
+      body: JSON.stringify(preferenceData),
+    }),
+  
+  bulkUpdateUserPreferences: (userId: number, preferences: any[]) =>
+    apiRequest(`/settings/user/${userId}/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ preferences }),
+    }),
+  
+  deleteUserPreference: (userId: number, key: string) =>
+    apiRequest(`/settings/user/${userId}/${key}`, {
+      method: 'DELETE',
+    }),
+};
+
+// Messaging API
+export const messagingAPI = {
+  // Conversations
+  getConversations: (userId: number) =>
+    apiRequest(`/messaging/conversations?userId=${userId}`),
+
+  getConversation: (conversationId: number) =>
+    apiRequest(`/messaging/conversations/${conversationId}`),
+
+  createConversation: (conversationData: {
+    participant1Id: number;
+    participant2Id: number;
+    title?: string;
+    type?: 'direct' | 'group';
+  }) =>
+    apiRequest('/messaging/conversations', {
+      method: 'POST',
+      body: JSON.stringify(conversationData),
+    }),
+
+  createOrGetConversation: (participant1Id: number, participant2Id: number) =>
+    apiRequest('/messaging/conversations/create-or-get', {
+      method: 'POST',
+      body: JSON.stringify({ participant1Id, participant2Id }),
+    }),
+
+  deleteConversation: (conversationId: number) =>
+    apiRequest(`/messaging/conversations/${conversationId}`, {
+      method: 'DELETE',
+    }),
+
+  // Messages
+  getMessages: (conversationId: number) =>
+    apiRequest(`/messaging/conversations/${conversationId}/messages`),
+
+  sendMessage: (messageData: {
+    conversationId: number;
+    senderId: number;
+    content: string;
+    messageType?: 'text' | 'image' | 'file' | 'audio';
+  }) =>
+    apiRequest('/messaging/messages', {
+      method: 'POST',
+      body: JSON.stringify(messageData),
+    }),
+
+  uploadFile: (formData: FormData) => {
+    const token = localStorage.getItem('token');
+    return fetch(`${API_BASE_URL}/messaging/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    });
+  },
+
+  markMessageAsRead: (messageId: number) =>
+    apiRequest(`/messaging/messages/${messageId}/read`, {
+      method: 'PATCH',
+    }),
+
+  deleteMessage: (messageId: number) =>
+    apiRequest(`/messaging/messages/${messageId}`, {
+      method: 'DELETE',
+    }),
+
+  // Contacts and Users
+  getContacts: (userId: number) =>
+    apiRequest(`/messaging/users/${userId}/contacts`),
+
+  getAvailableRecipients: (userId: number) =>
+    apiRequest(`/messaging/users/${userId}/available-recipients`),
+
+  // Search
+  searchMessages: (conversationId: number, query: string) =>
+    apiRequest(`/messaging/search?conversationId=${conversationId}&query=${encodeURIComponent(query)}`),
+
+  // Test
+  test: () => apiRequest('/messaging/test'),
 };
 
 export default {

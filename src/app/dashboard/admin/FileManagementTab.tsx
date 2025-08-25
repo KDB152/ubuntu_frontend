@@ -85,6 +85,49 @@ const FileManagementTabImproved = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Charger les cours existants au démarrage
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        // Test de connexion à l'API
+        const testResponse = await fetch(`${API_BASE}/content/courses`);
+        if (!testResponse.ok) {
+          throw new Error(`Erreur de connexion à l'API: ${testResponse.status}`);
+        }
+        
+        const json = await testResponse.json();
+        const mapped: Course[] = (json.items || []).map((c: any) => ({
+          id: String(c.id),
+          name: c.name,
+          title: c.title,
+          type: c.type,
+          subject: c.subject,
+          level: c.level,
+          size: c.size,
+          uploadDate: c.upload_date?.slice(0,10) || '',
+          views: c.views || 0,
+          status: c.status,
+          description: c.description,
+          tags: c.tags || [],
+          fileName: c.file_name,
+          fileUrl: c.file_url,
+        }));
+        setUploadedFiles(mapped);
+        
+        if (mapped.length > 0) {
+          showNotification('success', `${mapped.length} cours chargé(s) avec succès`);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des cours:', error);
+        showNotification('error', `Erreur lors du chargement des cours: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      }
+    };
+    
+    loadCourses();
+  }, []);
+
   // Types de fichiers acceptés
   const acceptedTypes = {
     'application/pdf': { label: 'PDF', icon: FileText, color: 'text-red-500 bg-red-100' },
@@ -191,8 +234,24 @@ const FileManagementTabImproved = () => {
 
   // Soumission améliorée avec gestion d'erreurs
   const handleSubmit = async () => {
-    if (!courseTitle.trim() || currentFiles.length === 0) {
-      showNotification('error', 'Veuillez remplir le titre et ajouter au moins un fichier');
+    if (!courseTitle.trim()) {
+      showNotification('error', 'Veuillez remplir le titre du cours');
+      return;
+    }
+    
+    if (currentFiles.length === 0) {
+      showNotification('error', 'Veuillez ajouter au moins un fichier');
+      return;
+    }
+
+    // Validation des fichiers
+    const invalidFiles = currentFiles.filter(fileUpload => {
+      const file = fileUpload.file;
+      return !Object.keys(acceptedTypes).includes(file.type) || file.size > 100 * 1024 * 1024;
+    });
+    
+    if (invalidFiles.length > 0) {
+      showNotification('error', `${invalidFiles.length} fichier(s) invalide(s). Vérifiez le type et la taille (max 100MB)`);
       return;
     }
 
@@ -212,26 +271,41 @@ const FileManagementTabImproved = () => {
       
       // Créer côté backend puis rafraîchir la liste
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      await Promise.all(currentFiles.map((fileUpload, index) => fetch(`${API_BASE}/content/courses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: fileUpload.file.name,
-          title: courseTitle,
-          type: acceptedTypes[fileUpload.file.type as keyof typeof acceptedTypes]?.label || 'Inconnu',
-          subject: courseSubject,
-          level: courseLevel,
-          size: formatFileSize(fileUpload.file.size),
-          status: 'Publié',
-          description: courseDescription,
-          tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean),
-          file_name: fileUpload.file.name,
-          file_url: results[index].url
-        })
-      })));
-      // Reload list
+      
       try {
+        const createdCourses = await Promise.all(currentFiles.map(async (fileUpload, index) => {
+          const response = await fetch(`${API_BASE}/content/courses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: fileUpload.file.name,
+              title: courseTitle,
+              type: acceptedTypes[fileUpload.file.type as keyof typeof acceptedTypes]?.label || 'Inconnu',
+              subject: courseSubject,
+              level: courseLevel,
+              size: formatFileSize(fileUpload.file.size),
+              status: 'Publié',
+              description: courseDescription,
+              tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean),
+              file_name: fileUpload.file.name,
+              file_url: results[index].url
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Erreur lors de la création du cours ${fileUpload.file.name}`);
+          }
+          
+          return response.json();
+        }));
+        
+        // Reload list
         const res = await fetch(`${API_BASE}/content/courses`);
+        if (!res.ok) {
+          throw new Error('Erreur lors du rechargement de la liste');
+        }
+        
         const json = await res.json();
         const mapped: Course[] = (json.items || []).map((c: any) => ({
           id: String(c.id),
@@ -250,7 +324,10 @@ const FileManagementTabImproved = () => {
           fileUrl: c.file_url,
         }));
         setUploadedFiles(mapped);
-      } catch {}
+      } catch (error) {
+        console.error('Erreur lors de la création des cours:', error);
+        throw error;
+      }
       
       // Reset du formulaire
       setCourseTitle('');
@@ -259,7 +336,7 @@ const FileManagementTabImproved = () => {
       setCurrentFiles([]);
       setShowUploadModal(false);
       
-      showNotification('success', `${newCourses.length} cours ajouté(s) avec succès !`);
+      showNotification('success', `${currentFiles.length} cours ajouté(s) avec succès !`);
     } catch (error) {
       showNotification('error', 'Erreur lors de l\'upload');
     } finally {
@@ -272,14 +349,24 @@ const FileManagementTabImproved = () => {
     setIsLoading(true);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      await fetch(`${API_BASE}/content/courses/${course.id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE}/content/courses/${course.id}`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la suppression');
+      }
+      
       setUploadedFiles(prev => prev.filter(f => f.id !== course.id));
       
       showNotification('success', 'Cours supprimé avec succès');
       setShowDeleteModal(false);
       setFileToDelete(null);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la suppression');
+      console.error('Erreur lors de la suppression:', error);
+      showNotification('error', error instanceof Error ? error.message : 'Erreur lors de la suppression');
     } finally {
       setIsLoading(false);
     }
@@ -290,7 +377,7 @@ const FileManagementTabImproved = () => {
     setIsLoading(true);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      await fetch(`${API_BASE}/content/courses/${updatedCourse.id}`, {
+      const response = await fetch(`${API_BASE}/content/courses/${updatedCourse.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -303,13 +390,20 @@ const FileManagementTabImproved = () => {
           status: updatedCourse.status,
         })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la modification');
+      }
+      
       setUploadedFiles(prev => prev.map(f => f.id === updatedCourse.id ? updatedCourse : f));
       
       showNotification('success', 'Cours modifié avec succès');
       setShowEditModal(false);
       setFileToEdit(null);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la modification');
+      console.error('Erreur lors de la modification:', error);
+      showNotification('error', error instanceof Error ? error.message : 'Erreur lors de la modification');
     } finally {
       setIsLoading(false);
     }

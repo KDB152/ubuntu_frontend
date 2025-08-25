@@ -1,13 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Mail, ArrowLeft, CheckCircle, Globe, MapPin, BookOpen, Send, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, ArrowLeft, CheckCircle, Globe, MapPin, BookOpen, Send, Clock, Shield, Zap, Users, ArrowRight } from 'lucide-react';
 
 const ForgotPasswordPage = () => {
   const [formData, setFormData] = useState({ email: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState(0);
+
+  const quotes = [
+    { text: "L'éducation est l'arme la plus puissante qu'on puisse utiliser pour changer le monde", author: "Nelson Mandela" },
+    { text: "Celui qui ne connaît pas l'histoire est condamné à la répéter", author: "George Santayana" },
+    { text: "La géographie, c'est ce qui reste quand on a tout oublié", author: "Paul Vidal de La Blache" }
+  ];
+
+  const features = [
+    { icon: Shield, title: "Sécurité renforcée", description: "Protection de vos données" },
+    { icon: Zap, title: "Récupération rapide", description: "Email envoyé en quelques secondes" },
+    { icon: Users, title: "Support 24/7", description: "Assistance disponible" }
+  ];
+
+  useEffect(() => {
+    setIsVisible(true);
+    const quoteInterval = setInterval(() => {
+      setCurrentQuote((prev) => (prev + 1) % quotes.length);
+    }, 4000);
+
+    return () => clearInterval(quoteInterval);
+  }, [quotes.length]);
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -77,12 +100,13 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      {/* ✅ Animations de fond */}
+      {/* ✅ Animations de fond améliorées */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Cercles lumineux */}
         <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-amber-200/20 to-yellow-300/20 rounded-full animate-pulse blur-xl"></div>
         <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-emerald-200/20 to-green-300/20 rounded-full animate-bounce blur-lg"></div>
         <div className="absolute bottom-1/4 left-1/3 w-20 h-20 bg-gradient-to-br from-purple-200/20 to-violet-300/20 rounded-full animate-ping blur-lg"></div>
+        <div className="absolute top-3/4 right-1/3 w-16 h-16 bg-gradient-to-br from-blue-200/20 to-cyan-300/20 rounded-full animate-pulse blur-md"></div>
         
         {/* Icônes décoratives */}
         <div className="absolute top-20 right-20 opacity-10">
@@ -90,6 +114,9 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
         <div className="absolute bottom-20 left-20 opacity-10">
           <MapPin className="w-32 h-32 text-white animate-pulse" />
+        </div>
+        <div className="absolute top-1/2 left-10 opacity-10">
+          <BookOpen className="w-24 h-24 text-white animate-bounce" style={{ animationDelay: '1s' }} />
         </div>
 
         {/* Lignes de temps */}
@@ -100,80 +127,106 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
       </div>
 
-      {/* ✅ Contenu principal */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-xl"> {/* plus large */}
-          
-          {/* Bouton retour */}
-          <div className="mb-8">
-            <button
-              onClick={() => window.history.back()}
-              className="inline-flex items-center text-white/80 hover:text-white transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-              Retour à la connexion
-            </button>
-          </div>
-
-          {/* En-tête */}
-          <div className="text-center mb-10">
-            <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                <BookOpen className="w-12 h-12 text-white" />
+      {/* Contenu principal */}
+      <div className="relative z-10 flex min-h-screen">
+        {/* Panneau gauche - contenu informatif */}
+        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-12 py-12">
+          <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="mb-8">
+              <div className="flex items-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mr-4 shadow-2xl">
+                  <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">Chrono-Carto</h1>
+                  <p className="text-white/60">Plateforme éducative nouvelle génération</p>
+                </div>
               </div>
             </div>
-            <h2 className="text-5xl font-bold text-white mb-3">Récupération</h2>
-            <p className="text-blue-200 text-lg">
-              {isSuccess ? "Email envoyé avec succès !" : "Réinitialisez votre mot de passe"}
-            </p>
-          </div>
 
-          {/* Formulaire */}
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl">
-            {isSuccess ? (
-              <div className="text-center space-y-8">
-                <div className="mx-auto w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-14 h-14 text-green-400" />
+            <div className="mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                Récupérez votre
+                <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"> accès</span>
+              </h2>
+              <p className="text-xl text-white/80 mb-8 leading-relaxed">
+                Pas de panique ! Nous vous aidons à récupérer votre mot de passe en toute sécurité
+              </p>
+            </div>
+
+            {/* Quote Section */}
+            <div className="mb-12">
+              <div className="p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+                <div className="text-white/90 text-lg italic mb-3 transition-all duration-500">
+                  "{quotes[currentQuote].text}"
                 </div>
-                <h3 className="text-2xl font-semibold text-white">Email envoyé !</h3>
-                <p className="text-white/80">Nous avons envoyé un lien de récupération à :</p>
-                <p className="text-amber-300 font-medium text-lg">{formData.email}</p>
+                <div className="text-amber-300 font-medium">
+                  — {quotes[currentQuote].author}
+                </div>
+              </div>
+            </div>
 
-                <div className="bg-blue-500/10 border border-blue-400/20 rounded-xl p-6 text-left">
-                  <div className="flex items-start space-x-3">
-                    <Clock className="w-6 h-6 text-blue-400 mt-1 flex-shrink-0" />
-                    <ul className="text-white/80 space-y-1 text-sm">
-                      <li>• Vérifiez votre boîte de réception</li>
-                      <li>• Cliquez sur le lien de récupération</li>
-                      <li>• Créez un nouveau mot de passe</li>
-                      <li>• Le lien expire dans 24 heures</li>
-                    </ul>
+            {/* Features */}
+            <div className="space-y-4">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-xl flex items-center justify-center mr-4">
+                    <feature.icon className="w-6 h-6 text-amber-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">{feature.title}</h3>
+                    <p className="text-white/60 text-sm">{feature.description}</p>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-                <button
-                  onClick={() => {
-                    setIsSuccess(false);
-                    setFormData({ email: '' });
-                  }}
-                  className="w-full py-5 px-6 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-200"
+        {/* Panneau droit - formulaire */}
+        <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-8">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
+                  <BookOpen className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              <h2 className="text-4xl font-bold text-white mb-3">Mot de passe oublié</h2>
+              <p className="text-blue-200 text-lg">Nous vous enverrons un lien de réinitialisation</p>
+            </div>
+
+            {isSuccess ? (
+              <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-2xl text-center">
+                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="w-8 h-8 text-green-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Email envoyé !</h3>
+                <p className="text-white/80 mb-6 leading-relaxed">
+                  Nous avons envoyé un lien de réinitialisation à <span className="text-amber-300 font-semibold">{formData.email}</span>
+                </p>
+                <div className="bg-white/5 rounded-xl p-4 mb-6">
+                  <div className="flex items-center justify-center text-white/60 text-sm">
+                    <Clock className="w-4 h-4 mr-2" />
+                    <span>Vérifiez votre boîte de réception dans les 5 minutes</span>
+                  </div>
+                </div>
+                <a 
+                  href="/login" 
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                 >
-                  Envoyer un autre email
-                </button>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <span>Retour à la connexion</span>
+                </a>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="text-center">
-                  <p className="text-white/80 text-sm">
-                    Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-                  </p>
-                </div>
-
-                {/* Champ Email */}
+              <form
+                onSubmit={handleSubmit}
+                className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-2xl space-y-6"
+              >
+                {/* Email */}
                 <div>
-                  <label className="block text-base font-medium text-white/90 mb-3">
-                    Adresse email
-                  </label>
+                  <label className="block text-sm font-medium text-white/90 mb-3">Adresse email</label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -183,63 +236,75 @@ const handleSubmit = async (e: React.FormEvent) => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full pl-12 pr-4 py-5 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                        errors.email ? 'border-red-400' : 'border-white/20'
+                      className={`w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm hover:bg-white/15 ${
+                        errors.email ? 'border-red-400' : ''
                       }`}
                       placeholder="votre@email.com"
                       required
                     />
                   </div>
-                  {errors.email && <p className="mt-2 text-sm text-red-400">{errors.email}</p>}
+                  {errors.email && (
+                    <div className="mt-2 p-3 bg-red-500/20 border border-red-500/30 rounded-xl">
+                      <p className="text-sm text-red-300">{errors.email}</p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Bouton */}
+                {/* Bouton d'envoi */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center py-5 px-6 text-lg font-medium rounded-xl text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                  className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isLoading ? (
                     <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                       Envoi en cours...
                     </div>
                   ) : (
                     <div className="flex items-center">
-                      <Send className="w-6 h-6 mr-2 group-hover:translate-x-1 transition-transform" />
-                      Envoyer le lien de récupération
+                      <Send className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" />
+                      Envoyer le lien
                     </div>
                   )}
                 </button>
 
-                {/* Liens */}
-                <div className="text-center pt-6 border-t border-white/20 space-y-2">
-                  <p className="text-white/80 text-sm">
-                    Vous avez votre mot de passe ?{' '}
-                    <a href="/login" className="font-medium text-amber-300 hover:text-amber-200">Se connecter</a>
-                  </p>
-                  <p className="text-white/80 text-sm">
-                    Pas encore de compte ?{' '}
-                    <a href="/register" className="font-medium text-amber-300 hover:text-amber-200">Créer un compte</a>
-                  </p>
+                {/* Lien de retour */}
+                <div className="text-center pt-6 border-t border-white/20">
+                  <a 
+                    href="/login" 
+                    className="inline-flex items-center text-white/80 hover:text-white transition-colors group"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                    <span>Retour à la connexion</span>
+                  </a>
                 </div>
               </form>
             )}
-          </div>
 
-          {/* Note */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-white/60">🔒 Connexion sécurisée • Données protégées RGPD</p>
+            <div className="mt-8 text-center">
+              <div className="flex items-center justify-center space-x-4 text-xs text-white/60">
+                <div className="flex items-center">
+                  <Shield className="w-4 h-4 mr-1" />
+                  <span>Connexion sécurisée</span>
+                </div>
+                <div className="w-px h-4 bg-white/30"></div>
+                <div className="flex items-center">
+                  <Users className="w-4 h-4 mr-1" />
+                  <span>Données protégées RGPD</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ Particules flottantes */}
+      {/* Particules flottantes améliorées */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full animate-pulse"
+            className="absolute w-1 h-1 bg-white/30 rounded-full animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -249,6 +314,23 @@ const handleSubmit = async (e: React.FormEvent) => {
           />
         ))}
       </div>
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 1s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

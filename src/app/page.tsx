@@ -2,17 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BookOpen, Users, Award, ArrowRight, Play, CheckCircle, Globe, Clock, MapPin, Star, Menu, X, ChevronDown } from 'lucide-react';
+import { BookOpen, Users, Award, ArrowRight, Play, CheckCircle, Globe, Clock, MapPin, Star, Menu, X, ChevronDown, TrendingUp, Target, Zap, Shield, BookMarked, Calendar, BarChart3, MessageCircle, Video, FileText, Headphones, Smartphone, Monitor } from 'lucide-react';
 
 const HomePage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
+    setIsVisible(true);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -21,19 +24,29 @@ const HomePage = () => {
       name: "Sophie L.",
       grade: "Terminale",
       text: "Grâce à Chrono-Carto, j'ai enfin compris les enjeux géopolitiques contemporains. Les cartes interactives sont fantastiques !",
-      rating: 5
+      rating: 5,
+      avatar: "SL"
     },
     {
       name: "Thomas M.",
       grade: "1ère",
       text: "Les quiz m'ont aidé à réviser efficacement. J'ai progressé de 3 points de moyenne en histoire !",
-      rating: 5
+      rating: 5,
+      avatar: "TM"
     },
     {
       name: "Marie D.",
       grade: "Terminale",
       text: "La préparation au Grand Oral avec les vidéos explicatives m'a donné confiance pour mon examen.",
-      rating: 5
+      rating: 5,
+      avatar: "MD"
+    },
+    {
+      name: "Lucas B.",
+      grade: "Seconde",
+      text: "L'IA pédagogique m'aide vraiment à comprendre mes erreurs. Je progresse beaucoup plus vite maintenant !",
+      rating: 5,
+      avatar: "LB"
     }
   ];
 
@@ -42,6 +55,65 @@ const HomePage = () => {
     { text: "La géographie, c'est ce qui reste quand on a tout oublié", author: "Paul Vidal de La Blache" },
     { text: "Celui qui ne connaît pas l'histoire est condamné à la répéter", author: "George Santayana" },
     { text: "L'éducation est l'arme la plus puissante qu'on puisse utiliser pour changer le monde", author: "Nelson Mandela" }
+  ];
+
+  const features = [
+    {
+      icon: Globe,
+      title: "Cartes Interactives",
+      description: "Explorez l'histoire et la géographie à travers des cartes dynamiques et des chronologies immersives",
+      benefits: ["Cartes historiques animées", "Timeline interactive", "Zoom sur les événements clés"]
+    },
+    {
+      icon: Zap,
+      title: "IA Pédagogique",
+      description: "Un assistant intelligent qui s'adapte à votre rythme et identifie vos points forts et faibles",
+      benefits: ["Recommandations personnalisées", "Analyse des difficultés", "Parcours adaptatif"]
+    },
+    {
+      icon: Award,
+      title: "Préparation Complète",
+      description: "Entraînez-vous avec des simulations d'examen et préparez votre Grand Oral avec confiance",
+      benefits: ["Sujets type Bac corrigés", "Coaching Grand Oral", "Fiches méthodologiques"]
+    }
+  ];
+
+  const stats = [
+    { number: "15,000+", label: "Élèves actifs", icon: Users },
+    { number: "95%", label: "Taux de réussite", icon: TrendingUp },
+    { number: "500+", label: "Ressources pédagogiques", icon: BookMarked },
+    { number: "24/7", label: "Accès disponible", icon: Clock }
+  ];
+
+  const subjects = [
+    {
+      title: "Histoire",
+      description: "De l'Antiquité à nos jours",
+      topics: ["Révolution française", "Guerres mondiales", "Décolonisation"],
+      icon: BookOpen,
+      color: "from-amber-400 to-orange-500"
+    },
+    {
+      title: "Géographie",
+      description: "Comprendre le monde contemporain",
+      topics: ["Géopolitique", "Développement durable", "Mondialisation"],
+      icon: MapPin,
+      color: "from-emerald-400 to-green-500"
+    },
+    {
+      title: "EMC",
+      description: "Éducation morale et civique",
+      topics: ["Démocratie", "Citoyenneté", "Valeurs républicaines"],
+      icon: Shield,
+      color: "from-blue-400 to-indigo-500"
+    }
+  ];
+
+  const resources = [
+    { icon: Video, title: "Vidéos explicatives", count: "200+" },
+    { icon: FileText, title: "Fiches de révision", count: "150+" },
+    { icon: BarChart3, title: "Quiz interactifs", count: "300+" },
+    { icon: MessageCircle, title: "Forum d'entraide", count: "24/7" }
   ];
 
   useEffect(() => {
@@ -53,21 +125,26 @@ const HomePage = () => {
       setCurrentQuote((prev) => (prev + 1) % quotes.length);
     }, 4000);
 
+    const featureInterval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 3000);
+
     return () => {
       clearInterval(testimonialInterval);
       clearInterval(quoteInterval);
+      clearInterval(featureInterval);
     };
-  }, [testimonials.length, quotes.length]);
-
+  }, [testimonials.length, quotes.length, features.length]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
-      {/* Animations de fond - Éléments historiques flottants */}
+      {/* Animations de fond améliorées */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Cartes anciennes en arrière-plan */}
         <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-amber-200/20 to-yellow-300/20 rounded-full animate-pulse blur-xl"></div>
         <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-emerald-200/20 to-green-300/20 rounded-full animate-bounce blur-lg"></div>
         <div className="absolute bottom-1/4 left-1/3 w-20 h-20 bg-gradient-to-br from-purple-200/20 to-violet-300/20 rounded-full animate-ping blur-lg"></div>
+        <div className="absolute top-3/4 right-1/3 w-16 h-16 bg-gradient-to-br from-blue-200/20 to-cyan-300/20 rounded-full animate-pulse blur-md"></div>
         
         {/* Éléments décoratifs historiques */}
         <div className="absolute top-20 right-20 opacity-10">
@@ -75,6 +152,9 @@ const HomePage = () => {
         </div>
         <div className="absolute bottom-20 left-20 opacity-10">
           <MapPin className="w-32 h-32 text-white animate-pulse" />
+        </div>
+        <div className="absolute top-1/2 left-10 opacity-10">
+          <BookOpen className="w-24 h-24 text-white animate-bounce" style={{ animationDelay: '1s' }} />
         </div>
         
         {/* Lignes de temps animées */}
@@ -85,12 +165,12 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Particules flottantes */}
+      {/* Particules flottantes améliorées */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full animate-pulse"
+            className="absolute w-1 h-1 bg-white/30 rounded-full animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -116,7 +196,16 @@ const HomePage = () => {
               </h1>
             </div>
 
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-6">
+              <a href="#features" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
+                Fonctionnalités
+              </a>
+              <a href="#subjects" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
+                Matières
+              </a>
+              <a href="#testimonials" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
+                Témoignages
+              </a>
               <Link href="/login" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
                 Connexion
               </Link>
@@ -142,6 +231,9 @@ const HomePage = () => {
               <a href="#features" className="block text-white/80 hover:text-amber-300 font-medium">
                 Fonctionnalités
               </a>
+              <a href="#subjects" className="block text-white/80 hover:text-amber-300 font-medium">
+                Matières
+              </a>
               <a href="#testimonials" className="block text-white/80 hover:text-amber-300 font-medium">
                 Témoignages
               </a>
@@ -156,10 +248,15 @@ const HomePage = () => {
         )}
       </header>
 
-      {/* Hero Section avec animations */}
-      <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden pt-8 pb-8">
+      {/* Hero Section avec animations améliorées */}
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-8 pb-8">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="animate-fade-in-up">
+          <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="mb-6">
+              <span className="inline-block bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 px-4 py-2 rounded-full text-sm font-medium border border-amber-500/30">
+                🎓 Plateforme éducative nouvelle génération
+              </span>
+            </div>
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
               Maîtrisez l'
               <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
@@ -171,34 +268,49 @@ const HomePage = () => {
                 Géographie
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed">
-              La plateforme d'apprentissage nouvelle génération qui transforme vos cours d'histoire-géographie en aventures passionnantes, entièrement gratuite
+            <p className="text-xl md:text-2xl text-white/80 mb-8 max-w-4xl mx-auto leading-relaxed">
+              La plateforme d'apprentissage révolutionnaire qui transforme vos cours d'histoire-géographie en aventures passionnantes. 
+              <span className="text-amber-300 font-semibold"> 100% gratuit et sans abonnement.</span>
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
               <Link href="/register" className="group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center space-x-2">
                 <span>Commencer gratuitement</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
+              <button className="group border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300 flex items-center space-x-2">
+                <Play className="w-5 h-5" />
+                <span>Voir la démo</span>
+              </button>
+            </div>
+            
+            {/* Statistiques rapides */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-2xl md:text-3xl font-bold text-amber-300 mb-1">{stat.number}</div>
+                  <div className="text-sm text-white/60">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quote Section */}
-      <section className="py-0 relative z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 text-center">
-            <div className="text-white/90 text-lg italic mb-3 transition-all duration-500">
+      {/* Quote Section améliorée */}
+      <section className="py-12 relative z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="p-8 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 text-center hover:bg-white/15 transition-all duration-300">
+            <div className="text-white/90 text-xl md:text-2xl italic mb-4 transition-all duration-500">
               "{quotes[currentQuote].text}"
             </div>
-            <div className="text-amber-300 font-medium">
+            <div className="text-amber-300 font-medium text-lg">
               — {quotes[currentQuote].author}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section améliorée */}
+      {/* Features Section améliorée avec animation */}
       <section id="features" className="py-20 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -207,121 +319,194 @@ const HomePage = () => {
               <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> révolutionnaire</span>
             </h2>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Découvrez nos outils innovants conçus pour transformer votre façon d'apprendre l'histoire et la géographie, entièrement gratuitement
+              Découvrez nos outils innovants conçus pour transformer votre façon d'apprendre l'histoire et la géographie
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Cours Interactifs */}
-            <div className="group bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <div className="w-20 h-20 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Globe className="w-10 h-10 text-amber-300" />
+            {features.map((feature, index) => (
+              <div 
+                key={index}
+                className={`group bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${
+                  activeFeature === index ? 'ring-2 ring-amber-400/50' : ''
+                }`}
+                onMouseEnter={() => setActiveFeature(index)}
+              >
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <feature.icon className="w-10 h-10 text-amber-300" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4 text-center">
+                  {feature.title}
+                </h3>
+                <p className="text-white/80 mb-6 text-center">
+                  {feature.description}
+                </p>
+                <div className="space-y-3">
+                  {feature.benefits.map((benefit, benefitIndex) => (
+                    <div key={benefitIndex} className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
+                      <span className="text-sm text-white/80">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4 text-center">
-                Cartes Interactives
-              </h3>
-              <p className="text-white/80 mb-6 text-center">
-                Explorez l'histoire et la géographie à travers des cartes dynamiques et des chronologies immersives
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Cartes historiques animées</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Timeline interactive</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Zoom sur les événements clés</span>
-                </div>
-              </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Suivi Personnalisé */}
-            <div className="group bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400/30 to-green-400/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Users className="w-10 h-10 text-emerald-300" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 text-center">
-                IA Pédagogique
-              </h3>
-              <p className="text-white/80 mb-6 text-center">
-                Un assistant intelligent qui s'adapte à votre rythme et identifie vos points forts et faibles
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Recommandations personnalisées</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Analyse des difficultés</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Parcours adaptatif</span>
-                </div>
-              </div>
-            </div>
+      {/* Matières Section */}
+      <section id="subjects" className="py-20 relative z-10 bg-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Nos <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">matières</span>
+            </h2>
+            <p className="text-xl text-white/80 max-w-3xl mx-auto">
+              Une approche complète et interactive pour maîtriser l'histoire-géographie et l'EMC
+            </p>
+          </div>
 
-            {/* Préparation Examens */}
-            <div className="group bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-400/30 to-violet-400/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Award className="w-10 h-10 text-purple-300" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {subjects.map((subject, index) => (
+              <div key={index} className="group bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+                <div className={`w-20 h-20 bg-gradient-to-br ${subject.color} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <subject.icon className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2 text-center">
+                  {subject.title}
+                </h3>
+                <p className="text-white/60 mb-6 text-center">
+                  {subject.description}
+                </p>
+                <div className="space-y-2">
+                  {subject.topics.map((topic, topicIndex) => (
+                    <div key={topicIndex} className="flex items-center">
+                      <div className="w-2 h-2 bg-amber-300 rounded-full mr-3"></div>
+                      <span className="text-sm text-white/80">{topic}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4 text-center">
-                Préparation Complète
-              </h3>
-              <p className="text-white/80 mb-6 text-center">
-                Entraînez-vous avec des simulations d'examen et préparez votre Grand Oral avec confiance
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Ressources Section */}
+      <section className="py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Des <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">ressources</span> riches
+            </h2>
+            <p className="text-xl text-white/80 max-w-3xl mx-auto">
+              Accédez à une bibliothèque complète de contenus pédagogiques de qualité
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {resources.map((resource, index) => (
+              <div key={index} className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-400/30 to-violet-400/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <resource.icon className="w-8 h-8 text-purple-300" />
+                </div>
+                <div className="text-2xl font-bold text-purple-300 mb-2">{resource.count}</div>
+                <div className="text-white/80 text-sm">{resource.title}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Témoignages Section améliorée */}
+      <section id="testimonials" className="py-20 relative z-10 bg-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Ce que disent nos <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">élèves</span>
+            </h2>
+            <p className="text-xl text-white/80 max-w-3xl mx-auto">
+              Découvrez les témoignages d'élèves qui ont transformé leur apprentissage avec Chrono-Carto
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <div className="flex items-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
+                  {testimonials[currentTestimonial].avatar}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">{testimonials[currentTestimonial].name}</h3>
+                  <p className="text-white/60">{testimonials[currentTestimonial].grade}</p>
+                  <div className="flex items-center mt-1">
+                    {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-amber-400 fill-current" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-white/90 text-lg italic leading-relaxed">
+                "{testimonials[currentTestimonial].text}"
               </p>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Sujets type Bac corrigés</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Coaching Grand Oral</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-300 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-white/80">Fiches méthodologiques</span>
-                </div>
-              </div>
+            </div>
+            
+            {/* Indicateurs de navigation */}
+            <div className="flex justify-center mt-8 space-x-2">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    currentTestimonial === index ? 'bg-amber-400' : 'bg-white/30'
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section améliorée */}
       <section className="py-20 relative z-10">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Prêt à révolutionner vos révisions ?
-          </h2>
-          <p className="text-xl text-white/80 mb-8 leading-relaxed">
-            Rejoignez des milliers d'élèves qui ont déjà transformé leur façon d'apprendre l'histoire-géographie, entièrement gratuitement
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/register" className="group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2">
-              <span>Commencer gratuitement</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300">
-              Découvrir les fonctionnalités
-            </button>
-          </div>
-          
-          <div className="mt-8 text-white/60">
-            <p>✨ 100% gratuit • 🚫 Sans abonnement ni paiement • 📚 Accès illimité</p>
+          <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-3xl p-12 border border-amber-500/30">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Prêt à révolutionner vos révisions ?
+            </h2>
+            <p className="text-xl text-white/80 mb-8 leading-relaxed">
+              Rejoignez des milliers d'élèves qui ont déjà transformé leur façon d'apprendre l'histoire-géographie
+            </p>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
+              <Link href="/register" className="group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2">
+                <span>Commencer gratuitement</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300">
+                Découvrir les fonctionnalités
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white/60 text-sm">
+              <div className="flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-400 mr-2" />
+                <span>100% gratuit</span>
+              </div>
+              <div className="flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-400 mr-2" />
+                <span>Sans abonnement</span>
+              </div>
+              <div className="flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-400 mr-2" />
+                <span>Accès illimité</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer moderne */}
+      {/* Footer moderne amélioré */}
       <footer className="bg-slate-950 text-white py-16 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -335,6 +520,20 @@ const HomePage = () => {
               <p className="text-white/60 mb-6 max-w-md">
                 L'avenir de l'éducation en histoire-géographie. Transformez votre façon d'apprendre avec nos outils innovants et notre pédagogie adaptative, entièrement gratuitement.
               </p>
+              <div className="flex space-x-4">
+                <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-amber-500 transition-colors">
+                  <span className="sr-only">Facebook</span>
+                  <div className="w-5 h-5 bg-white rounded-full"></div>
+                </a>
+                <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-amber-500 transition-colors">
+                  <span className="sr-only">Twitter</span>
+                  <div className="w-5 h-5 bg-white rounded-full"></div>
+                </a>
+                <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-amber-500 transition-colors">
+                  <span className="sr-only">Instagram</span>
+                  <div className="w-5 h-5 bg-white rounded-full"></div>
+                </a>
+              </div>
             </div>
             
             <div>
@@ -347,7 +546,7 @@ const HomePage = () => {
                   <Globe className="w-4 h-4 mr-2" /> Géographie
                 </a></li>
                 <li><a href="#" className="text-white/60 hover:text-amber-300 transition-colors flex items-center">
-                  <Users className="w-4 h-4 mr-2" /> EMC
+                  <Shield className="w-4 h-4 mr-2" /> EMC
                 </a></li>
               </ul>
             </div>

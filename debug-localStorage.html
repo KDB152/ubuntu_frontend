@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug localStorage - Chrono Carto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug localStorage - Chrono Carto</h1>
+        
+        <div class="section info">
+            <h3>📋 État Actuel</h3>
+            <div id="currentState"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔧 Test de Connexion</h3>
+            <input type="email" id="email" placeholder="Email" value="mehdielabed69@gmail.com">
+            <input type="password" id="password" placeholder="Mot de passe" value="password123">
+            <button onclick="testLogin()">Test Login</button>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔐 Test Changement de Mot de Passe</h3>
+            <input type="password" id="currentPassword" placeholder="Mot de passe actuel">
+            <input type="password" id="newPassword" placeholder="Nouveau mot de passe">
+            <input type="password" id="confirmPassword" placeholder="Confirmation">
+            <button onclick="testChangePassword()">Test Change Password</button>
+            <div id="changePasswordResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>🧹 Actions</h3>
+            <button onclick="clearLocalStorage()">Clear localStorage</button>
+            <button onclick="refreshState()">Refresh State</button>
+        </div>
+    </div>
+
+    <script>
+        function refreshState() {
+            const stateDiv = document.getElementById('currentState');
+            const accessToken = localStorage.getItem('accessToken');
+            const userDetails = localStorage.getItem('userDetails');
+            
+            let html = '<h4>localStorage Contents:</h4>';
+            html += '<pre>';
+            html += `accessToken: ${accessToken ? '✅ Present' : '❌ Missing'}\n`;
+            if (accessToken) {
+                html += `Token (first 50 chars): ${accessToken.substring(0, 50)}...\n`;
+            }
+            html += `userDetails: ${userDetails ? '✅ Present' : '❌ Missing'}\n`;
+            if (userDetails) {
+                try {
+                    const user = JSON.parse(userDetails);
+                    html += `User ID: ${user.id}\n`;
+                    html += `User Name: ${user.firstName} ${user.lastName}\n`;
+                    html += `User Role: ${user.role}\n`;
+                } catch (e) {
+                    html += `Error parsing userDetails: ${e.message}\n`;
+                }
+            }
+            html += '</pre>';
+            
+            stateDiv.innerHTML = html;
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.innerHTML = '<p>🔄 Logging in...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store the token and user details
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('userDetails', JSON.stringify(data.user));
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Login Successful</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Login Failed</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+            
+            refreshState();
+        }
+
+        async function testChangePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const resultDiv = document.getElementById('changePasswordResult');
+            
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                resultDiv.innerHTML = '<div class="error"><h4>❌ Error</h4><p>Please fill all fields</p></div>';
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                resultDiv.innerHTML = '<div class="error"><h4>❌ Error</h4><p>New passwords do not match</p></div>';
+                return;
+            }
+            
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                resultDiv.innerHTML = '<div class="error"><h4>❌ Error</h4><p>No access token found. Please login first.</p></div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>🔄 Changing password...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Password Changed Successfully</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Password Change Failed</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('userDetails');
+            refreshState();
+            alert('localStorage cleared!');
+        }
+
+        // Initialize on page load
+        refreshState();
+    </script>
+</body>
+</html>

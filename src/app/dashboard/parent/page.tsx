@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParentDashboard } from '@/hooks/useDashboard';
+import { parentsAPI } from '../../../lib/api';
 import {
   Home,
   TrendingUp,
@@ -121,95 +122,71 @@ const ParentDashboard: React.FC = () => {
     clearError,
   } = useParentDashboard();
 
-  // Mock parent data - in real app this would come from API
+  // Parent data - fetched from API
   const [parent, setParent] = useState<Parent | null>(null);
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      const mockParent: Parent = {
-        id: 'parent-1',
-        firstName: 'Marie',
-        lastName: 'Dubois',
-        email: 'marie.dubois@email.com',
-        phone: '+33 6 12 34 56 78',
-        avatar: '/avatars/parent-marie.jpg',
-        children: [
-          {
-            id: 'child-1',
-            firstName: 'Lucas',
-            lastName: 'Dubois',
-            avatar: '/avatars/lucas.jpg',
-            class: '5ème A',
-            level: 'Collège',
-            school: 'Collège Jean Moulin',
-            teacher: 'Mme Martin',
-            stats: {
-              averageScore: 87,
-              totalQuizzes: 24,
-              completedQuizzes: 22,
-              currentStreak: 5,
-              totalXP: 2450,
-              badges: 8,
-              rank: 3
-            },
-            recentActivity: {
-              lastQuiz: 'La Révolution française',
-              lastScore: 92,
-              lastActive: '2024-12-20T16:30:00'
-            }
-          },
-          {
-            id: 'child-2',
-            firstName: 'Emma',
-            lastName: 'Dubois',
-            avatar: '/avatars/emma.jpg',
-            class: '3ème B',
-            level: 'Collège',
-            school: 'Collège Jean Moulin',
-            teacher: 'M. Leroy',
-            stats: {
-              averageScore: 94,
-              totalQuizzes: 31,
-              completedQuizzes: 29,
-              currentStreak: 12,
-              totalXP: 3890,
-              badges: 15,
-              rank: 1
-            },
-            recentActivity: {
-              lastQuiz: 'Les climats européens',
-              lastScore: 98,
-              lastActive: '2024-12-20T18:45:00'
-            }
-          }
-        ],
-        notifications: {
-          unread: 7,
-          urgent: 2
-        },
-        preferences: {
-          theme: 'dark',
-          language: 'fr',
+    loadParentData();
+  }, []);
+
+  const loadParentData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get current user from localStorage
+      const userData = localStorage.getItem('userDetails');
+      if (!userData) {
+        console.error('No user data found in localStorage');
+        return;
+      }
+      
+      const user = JSON.parse(userData);
+      console.log('Loading parent data for user:', user);
+      
+      // Fetch parent data from API
+      const parentData = await parentsAPI.getParentByUserId(user.id);
+      console.log('Fetched parent data:', parentData);
+      
+      if (parentData) {
+        // Transform API data to match our Parent interface
+        const transformedParent: Parent = {
+          id: parentData.id.toString(),
+          firstName: parentData.firstName,
+          lastName: parentData.lastName,
+          email: parentData.email,
+          phone: parentData.phone || '',
+          avatar: '/avatars/parent-default.jpg', // Default avatar
+          children: [], // Will be loaded separately
           notifications: {
-            email: true,
-            sms: true,
-            push: true
+            unread: 0,
+            urgent: 0
+          },
+          preferences: {
+            theme: 'dark',
+            language: 'fr',
+            notifications: {
+              email: true,
+              sms: true,
+              push: true
+            }
           }
-        }
-      };
-
-      setParent(mockParent);
-      setSelectedChild(mockParent.children[0].id);
+        };
+        
+        setParent(transformedParent);
+        
+        // Load dashboard data
+        loadChildren(user.id);
+        loadConversations(user.id);
+        loadNotifications(user.id);
+      } else {
+        console.error('No parent data found for user:', user.id);
+      }
+    } catch (error) {
+      console.error('Error loading parent data:', error);
+    } finally {
       setIsLoading(false);
-
-      // Load dashboard data
-      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
-      loadChildren(userDetails.id);
-      loadConversations(userDetails.id);
-      loadNotifications(userDetails.id);
-    }, 1000);
-  }, [setSelectedChild, loadChildren, loadConversations, loadNotifications]);
+    }
+  };
 
   const menuItems: MenuItem[] = [
     {
@@ -297,10 +274,7 @@ const ParentDashboard: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
-    loadChildren(userDetails.id);
-    loadConversations(userDetails.id);
-    loadNotifications(userDetails.id);
+    loadParentData();
   };
 
   if (isLoading) {

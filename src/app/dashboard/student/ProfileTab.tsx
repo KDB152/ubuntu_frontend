@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { settingsAPI, studentsAPI, authAPI } from '../../../lib/api';
 import {
   User,
   Mail,
@@ -167,32 +168,28 @@ interface StudentProfile {
 const ProfileTab: React.FC = () => {
   const [profile, setProfile] = useState<StudentProfile>({
     personal: {
-      firstName: 'Marie',
-      lastName: 'Dubois',
-      email: 'marie.dubois@email.com',
-      phone: '+33 6 12 34 56 78',
-      dateOfBirth: '2008-03-15',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: '',
       address: {
-        street: '123 Rue de la République',
-        city: 'Lyon',
-        postalCode: '69000',
+        street: '',
+        city: '',
+        postalCode: '',
         country: 'France'
       },
-      bio: 'Passionnée d\'histoire et de géographie, j\'aime découvrir le monde à travers les quiz et les cartes.'
+      bio: ''
     },
     academic: {
-      studentId: 'STU-2024-001',
-      class: '3ème A',
-      level: 'Collège',
-      school: 'Collège Jean Moulin',
-      startDate: '2024-09-01',
-      subjects: ['Histoire', 'Géographie', 'Français', 'Mathématiques', 'Sciences'],
-      favoriteSubjects: ['Histoire', 'Géographie'],
-      academicGoals: [
-        'Améliorer mes connaissances en histoire contemporaine',
-        'Maîtriser la cartographie',
-        'Obtenir une moyenne de 85% aux quiz'
-      ]
+      studentId: '',
+      class: '',
+      level: '',
+      school: '',
+      startDate: '',
+      subjects: [],
+      favoriteSubjects: [],
+      academicGoals: []
     },
     preferences: {
       language: 'fr',
@@ -252,10 +249,144 @@ const ProfileTab: React.FC = () => {
     new: '',
     confirm: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
 
-  const handleSave = () => {
+  // Load user data on component mount
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      // Get current user ID from localStorage or context
+      const userData = localStorage.getItem('userDetails');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setUserId(user.id);
+        
+        // Load student data
+        const studentData = await studentsAPI.getStudent(user.id);
+        if (studentData) {
+          // Load user preferences
+          const userPreferences = await settingsAPI.getUserPreferencesAsObject(user.id);
+          
+          const updatedProfile = {
+            ...profile,
+            personal: {
+              firstName: studentData.user?.first_name || '',
+              lastName: studentData.user?.last_name || '',
+              email: studentData.user?.email || '',
+              phone: studentData.phone_number || '',
+              dateOfBirth: studentData.birth_date || '',
+              address: {
+                street: studentData.address || '',
+                city: '',
+                postalCode: '',
+                country: 'France'
+              },
+              bio: ''
+            },
+            academic: {
+              studentId: studentData.id?.toString() || '',
+              class: studentData.class_level || '',
+              level: '',
+              school: '',
+              startDate: '',
+              subjects: [],
+              favoriteSubjects: [],
+              academicGoals: []
+            },
+            preferences: {
+              language: userPreferences['preferences.language'] || 'fr',
+              timezone: userPreferences['preferences.timezone'] || 'Europe/Paris',
+              theme: (userPreferences['preferences.theme'] as 'light' | 'dark' | 'auto') || 'dark',
+              notifications: {
+                email: userPreferences['preferences.notifications.email'] !== 'false',
+                push: userPreferences['preferences.notifications.push'] !== 'false',
+                sms: userPreferences['preferences.notifications.sms'] === 'true',
+                quizReminders: userPreferences['preferences.notifications.quiz_reminders'] !== 'false',
+                resultsNotifications: userPreferences['preferences.notifications.results'] !== 'false',
+                messageNotifications: userPreferences['preferences.notifications.messages'] !== 'false'
+              },
+              privacy: {
+                profileVisibility: (userPreferences['preferences.privacy.visibility'] as 'public' | 'friends' | 'private') || 'friends',
+                showProgress: userPreferences['preferences.privacy.show_progress'] !== 'false',
+                showAchievements: userPreferences['preferences.privacy.show_achievements'] !== 'false',
+                allowMessages: userPreferences['preferences.privacy.allow_messages'] !== 'false'
+              },
+              learning: {
+                studyReminders: userPreferences['preferences.learning.study_reminders'] !== 'false',
+                difficultyPreference: (userPreferences['preferences.learning.difficulty'] as 'adaptive' | 'easy' | 'medium' | 'hard') || 'adaptive',
+                timePreference: (userPreferences['preferences.learning.time_preference'] as 'morning' | 'afternoon' | 'evening' | 'flexible') || 'evening',
+                sessionDuration: parseInt(userPreferences['preferences.learning.session_duration']) || 30
+              }
+            },
+            stats: {
+              level: Math.floor((studentData.progress_percentage || 0) / 10) + 1,
+              xp: Math.floor((studentData.progress_percentage || 0) * 10),
+              totalQuizzes: studentData.total_quiz_attempts || 0,
+              averageScore: studentData.average_score || 0,
+              timeSpent: 0,
+              streak: 0,
+              badges: [],
+              achievements: [],
+              rank: 0,
+              totalStudents: 0
+            }
+          };
+          
+          setProfile(updatedProfile);
+          setEditedProfile(updatedProfile);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!userId) return;
+    
+    setIsLoading(true);
+    try {
+      // Save student data
+      await studentsAPI.updateStudent(userId, {
+        phone_number: editedProfile.personal.phone,
+        address: editedProfile.personal.address.street,
+        birth_date: editedProfile.personal.dateOfBirth
+      });
+
+      // Save user preferences
+      const preferencesToSave = [
+        { key: 'preferences.language', value: editedProfile.preferences.language, category: 'preferences' },
+        { key: 'preferences.timezone', value: editedProfile.preferences.timezone, category: 'preferences' },
+        { key: 'preferences.theme', value: editedProfile.preferences.theme, category: 'preferences' },
+        { key: 'preferences.notifications.email', value: editedProfile.preferences.notifications.email.toString(), category: 'preferences' },
+        { key: 'preferences.notifications.push', value: editedProfile.preferences.notifications.push.toString(), category: 'preferences' },
+        { key: 'preferences.notifications.sms', value: editedProfile.preferences.notifications.sms.toString(), category: 'preferences' },
+        { key: 'preferences.notifications.quiz_reminders', value: editedProfile.preferences.notifications.quizReminders.toString(), category: 'preferences' },
+        { key: 'preferences.notifications.results', value: editedProfile.preferences.notifications.resultsNotifications.toString(), category: 'preferences' },
+        { key: 'preferences.notifications.messages', value: editedProfile.preferences.notifications.messageNotifications.toString(), category: 'preferences' },
+        { key: 'preferences.privacy.visibility', value: editedProfile.preferences.privacy.profileVisibility, category: 'preferences' },
+        { key: 'preferences.privacy.show_progress', value: editedProfile.preferences.privacy.showProgress.toString(), category: 'preferences' },
+        { key: 'preferences.privacy.show_achievements', value: editedProfile.preferences.privacy.showAchievements.toString(), category: 'preferences' },
+        { key: 'preferences.privacy.allow_messages', value: editedProfile.preferences.privacy.allowMessages.toString(), category: 'preferences' },
+        { key: 'preferences.learning.study_reminders', value: editedProfile.preferences.learning.studyReminders.toString(), category: 'preferences' },
+        { key: 'preferences.learning.difficulty', value: editedProfile.preferences.learning.difficultyPreference, category: 'preferences' },
+        { key: 'preferences.learning.time_preference', value: editedProfile.preferences.learning.timePreference, category: 'preferences' },
+        { key: 'preferences.learning.session_duration', value: editedProfile.preferences.learning.sessionDuration.toString(), category: 'preferences' }
+      ];
+
+      await settingsAPI.bulkUpdateUserPreferences(userId, preferencesToSave);
+      
     setProfile(editedProfile);
     setIsEditing(false);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -263,11 +394,42 @@ const ProfileTab: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handlePasswordChange = () => {
-    // Logique de changement de mot de passe
-    console.log('Changement de mot de passe');
+  const handlePasswordChange = async () => {
+    // Validation des champs
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+
+    if (passwordData.new !== passwordData.confirm) {
+      alert('Les nouveaux mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (passwordData.new.length < 8) {
+      alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+
+    try {
+      // Appel à l'API de changement de mot de passe
+      await authAPI.changePassword(passwordData.current, passwordData.new);
+      
+      // Succès
+      alert('Mot de passe modifié avec succès');
     setShowPasswordModal(false);
     setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      // Gestion des erreurs
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      if (errorMessage.includes('Mot de passe actuel incorrect')) {
+        alert('Mot de passe actuel incorrect');
+      } else if (errorMessage.includes('différent de l\'actuel')) {
+        alert('Le nouveau mot de passe doit être différent de l\'actuel');
+      } else {
+        alert('Erreur lors du changement de mot de passe: ' + errorMessage);
+      }
+    }
   };
 
   const tabs = [

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ToastProvider } from '@/components/ui/toast';
-import { Mail, Lock, User, Eye, EyeOff, UserPlus, Globe, MapPin, BookOpen, CheckCircle, AlertCircle, GraduationCap, Phone, Calendar, Baby } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, UserPlus, Globe, MapPin, BookOpen, CheckCircle, AlertCircle, GraduationCap, Phone, Calendar, Baby, ArrowRight, Shield, Zap, Users, Star, Award } from 'lucide-react';
 
 // Export viewport configuration
 export const viewport = {
@@ -41,6 +41,20 @@ const RegisterPage: React.FC = () => {
   const [currentQuote, setCurrentQuote] = useState(0);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+
+  const quotes = [
+    { text: "L'éducation est l'arme la plus puissante qu'on puisse utiliser pour changer le monde", author: "Nelson Mandela" },
+    { text: "Celui qui ne connaît pas l'histoire est condamné à la répéter", author: "George Santayana" },
+    { text: "La géographie, c'est ce qui reste quand on a tout oublié", author: "Paul Vidal de La Blache" }
+  ];
+
+  const benefits = [
+    { icon: Zap, title: "IA Pédagogique", description: "Apprentissage personnalisé" },
+    { icon: Globe, title: "Cartes Interactives", description: "Exploration immersive" },
+    { icon: Award, title: "Préparation Examens", description: "Succès garanti" },
+    { icon: Shield, title: "Sécurité RGPD", description: "Données protégées" }
+  ];
 
   // Calculer la force du mot de passe
   useEffect(() => {
@@ -55,6 +69,15 @@ const RegisterPage: React.FC = () => {
     
     setPasswordStrength(strength);
   }, [formData.password]);
+
+  useEffect(() => {
+    setIsVisible(true);
+    const quoteInterval = setInterval(() => {
+      setCurrentQuote((prev) => (prev + 1) % quotes.length);
+    }, 4000);
+
+    return () => clearInterval(quoteInterval);
+  }, [quotes.length]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -275,35 +298,105 @@ const RegisterPage: React.FC = () => {
 
         {/* Contenu principal */}
         <div className="relative z-10 flex min-h-screen">
+          {/* Panneau gauche - contenu informatif */}
+          <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-12 py-12">
+            <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="mb-8">
+                <div className="flex items-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mr-4 shadow-2xl">
+                    <BookOpen className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-white">Chrono-Carto</h1>
+                    <p className="text-white/60">Plateforme éducative nouvelle génération</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-12">
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                  Rejoignez l'aventure
+                  <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"> d'apprentissage</span>
+                </h2>
+                <p className="text-xl text-white/80 mb-8 leading-relaxed">
+                  Créez votre compte et accédez à des ressources pédagogiques innovantes, entièrement gratuites
+                </p>
+              </div>
+
+              {/* Quote Section */}
+              <div className="mb-12">
+                <div className="p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+                  <div className="text-white/90 text-lg italic mb-3 transition-all duration-500">
+                    "{quotes[currentQuote].text}"
+                  </div>
+                  <div className="text-amber-300 font-medium">
+                    — {quotes[currentQuote].author}
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefits */}
+              <div className="space-y-4 mb-12">
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-xl flex items-center justify-center mr-4">
+                      <benefit.icon className="w-6 h-6 text-amber-300" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">{benefit.title}</h3>
+                      <p className="text-white/60 text-sm">{benefit.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Statistiques */}
+              <div className="grid grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-300 mb-1">15,000+</div>
+                  <div className="text-white/60 text-sm">Élèves actifs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-300 mb-1">95%</div>
+                  <div className="text-white/60 text-sm">Taux de réussite</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-300 mb-1">500+</div>
+                  <div className="text-white/60 text-sm">Ressources</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Panneau droit - formulaire */}
           <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-8">
-            <div className="w-full max-w-4xl"> {/* Élargi pour accommoder plus de champs */}
-              <div className="text-center mb-10">
+            <div className="w-full max-w-2xl">
+              <div className="text-center mb-8">
                 <div className="flex justify-center mb-6">
                   <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
                     <BookOpen className="w-10 h-10 text-white" />
                   </div>
                 </div>
-                <h2 className="text-5xl font-bold text-white mb-3">Inscription</h2>
+                <h2 className="text-4xl font-bold text-white mb-3">Inscription</h2>
                 <p className="text-blue-200 text-lg">Créez votre compte d'apprentissage</p>
               </div>
 
               <form
                 onSubmit={handleSubmit}
-                className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl space-y-8"
+                className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-2xl space-y-6"
               >
                 {/* Messages d'erreur et de succès */}
                 {errors.global && (
-                  <div className="text-center">
-                    <p className="text-sm text-red-400 flex items-center justify-center">
+                  <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-xl mb-6">
+                    <p className="text-sm text-red-300 flex items-center justify-center">
                       <AlertCircle className="w-4 h-4 mr-2" />
                       {errors.global}
                     </p>
                   </div>
                 )}
                 {successMessage && (
-                  <div className="text-center">
-                    <p className="text-sm text-green-400 flex items-center justify-center">
+                  <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-xl mb-6">
+                    <p className="text-sm text-green-300 flex items-center justify-center">
                       <CheckCircle className="w-4 h-4 mr-2" />
                       {successMessage}
                     </p>
@@ -319,32 +412,32 @@ const RegisterPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, userType: 'student' }))}
-                      className={`p-4 rounded-xl border transition-all duration-200 flex items-center justify-center space-x-2 ${
+                      className={`p-4 rounded-xl border transition-all duration-200 flex items-center justify-center space-x-2 group ${
                         formData.userType === 'student'
-                          ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                          : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
+                          ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-lg'
+                          : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15 hover:border-white/30'
                       }`}
                     >
-                      <GraduationCap className="w-5 h-5" />
+                      <GraduationCap className={`w-5 h-5 ${formData.userType === 'student' ? 'text-amber-300' : 'group-hover:text-white'} transition-colors`} />
                       <span className="text-sm font-medium">Élève</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, userType: 'parent' }))}
-                      className={`p-4 rounded-xl border transition-all duration-200 flex items-center justify-center space-x-2 ${
+                      className={`p-4 rounded-xl border transition-all duration-200 flex items-center justify-center space-x-2 group ${
                         formData.userType === 'parent'
-                          ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                          : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
+                          ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-lg'
+                          : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15 hover:border-white/30'
                       }`}
                     >
-                      <User className="w-5 h-5" />
+                      <User className={`w-5 h-5 ${formData.userType === 'parent' ? 'text-amber-300' : 'group-hover:text-white'} transition-colors`} />
                       <span className="text-sm font-medium">Parent</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Informations personnelles */}
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                     <User className="w-5 h-5 mr-2 text-amber-300" />
                     Informations personnelles
@@ -363,7 +456,7 @@ const RegisterPage: React.FC = () => {
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleInputChange}
-                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm hover:bg-white/15 ${
                             errors.firstName ? 'border-red-400' : 'border-white/20'
                           }`}
                           placeholder="Votre prénom"
@@ -855,12 +948,12 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Particules flottantes */}
+        {/* Particules flottantes améliorées */}
         <div className="absolute inset-0 pointer-events-none">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(30)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-white/20 rounded-full animate-pulse"
+              className="absolute w-1 h-1 bg-white/30 rounded-full animate-pulse"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -870,6 +963,23 @@ const RegisterPage: React.FC = () => {
             />
           ))}
         </div>
+
+        <style jsx>{`
+          @keyframes fade-in-up {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .animate-fade-in-up {
+            animation: fade-in-up 1s ease-out;
+          }
+        `}</style>
       </div>
     </ToastProvider>
   );

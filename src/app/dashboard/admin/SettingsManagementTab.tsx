@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { settingsAPI, authAPI } from '../../../lib/api';
 import {
   Settings,
   User,
@@ -120,17 +121,17 @@ interface SystemSettings {
 const SettingsManagementTab = () => {
   const [settings, setSettings] = useState<SystemSettings>({
     general: {
-      siteName: 'Chrono-Carto',
-      siteDescription: 'Plateforme pédagogique pour l\'Histoire-Géographie',
-      siteUrl: 'https://chronocarto.fr',
-      adminEmail: 'admin@chronocarto.fr',
-      timezone: 'Europe/Paris',
-      language: 'fr',
-      dateFormat: 'DD/MM/YYYY',
-      timeFormat: '24h'
+      siteName: '',
+      siteDescription: '',
+      siteUrl: '',
+      adminEmail: '',
+      timezone: '',
+      language: '',
+      dateFormat: '',
+      timeFormat: ''
     },
     security: {
-      enableTwoFactor: true,
+      enableTwoFactor: false,
       sessionTimeout: 30,
       maxLoginAttempts: 5,
       passwordMinLength: 8,
@@ -193,6 +194,87 @@ const SettingsManagementTab = () => {
   });
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
+  // Load settings from database on component mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const systemSettings = await settingsAPI.getSystemSettingsAsObject();
+      
+      // Map database settings to component state
+      const mappedSettings: SystemSettings = {
+        general: {
+          siteName: systemSettings['site.name'] || '',
+          siteDescription: systemSettings['site.description'] || '',
+          siteUrl: systemSettings['site.url'] || '',
+          adminEmail: systemSettings['site.admin_email'] || '',
+          timezone: systemSettings['site.timezone'] || '',
+          language: systemSettings['site.language'] || '',
+          dateFormat: systemSettings['site.date_format'] || 'DD/MM/YYYY',
+          timeFormat: systemSettings['site.time_format'] || '24h'
+        },
+        security: {
+          enableTwoFactor: systemSettings['security.enable_two_factor'] === 'true',
+          sessionTimeout: parseInt(systemSettings['security.session_timeout']) || 30,
+          maxLoginAttempts: parseInt(systemSettings['security.max_login_attempts']) || 5,
+          passwordMinLength: parseInt(systemSettings['security.password_min_length']) || 8,
+          requirePasswordChange: systemSettings['security.require_password_change'] === 'true',
+          allowRegistration: systemSettings['security.allow_registration'] !== 'false',
+          emailVerification: systemSettings['security.email_verification'] !== 'false',
+          ipWhitelist: systemSettings['security.ip_whitelist'] ? JSON.parse(systemSettings['security.ip_whitelist']) : []
+        },
+        notifications: {
+          emailNotifications: systemSettings['notifications.email'] !== 'false',
+          smsNotifications: systemSettings['notifications.sms'] === 'true',
+          pushNotifications: systemSettings['notifications.push'] !== 'false',
+          newUserRegistration: systemSettings['notifications.new_user_registration'] !== 'false',
+          newMessage: systemSettings['notifications.new_message'] !== 'false',
+          quizCompleted: systemSettings['notifications.quiz_completed'] !== 'false',
+          systemAlerts: systemSettings['notifications.system_alerts'] !== 'false',
+          maintenanceMode: systemSettings['notifications.maintenance_mode'] === 'true'
+        },
+        appearance: {
+          theme: (systemSettings['appearance.theme'] as 'light' | 'dark' | 'auto') || 'dark',
+          primaryColor: systemSettings['appearance.primary_color'] || '#3B82F6',
+          secondaryColor: systemSettings['appearance.secondary_color'] || '#6366F1',
+          accentColor: systemSettings['appearance.accent_color'] || '#F59E0B',
+          logoUrl: systemSettings['appearance.logo_url'] || '',
+          faviconUrl: systemSettings['appearance.favicon_url'] || '',
+          customCss: systemSettings['appearance.custom_css'] || '',
+          showBranding: systemSettings['appearance.show_branding'] !== 'false'
+        },
+        storage: {
+          maxFileSize: parseInt(systemSettings['storage.max_file_size']) || 100,
+          allowedFileTypes: systemSettings['storage.allowed_file_types'] ? JSON.parse(systemSettings['storage.allowed_file_types']) : ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'mp4', 'avi', 'mov'],
+          storageProvider: (systemSettings['storage.provider'] as 'local' | 'aws' | 'gcp' | 'azure') || 'local',
+          storageQuota: parseInt(systemSettings['storage.quota']) || 10000,
+          autoBackup: systemSettings['storage.auto_backup'] !== 'false',
+          backupFrequency: (systemSettings['storage.backup_frequency'] as 'daily' | 'weekly' | 'monthly') || 'daily',
+          retentionPeriod: parseInt(systemSettings['storage.retention_period']) || 30
+        },
+        integrations: {
+          googleAnalytics: systemSettings['integrations.google_analytics'] || '',
+          googleMaps: systemSettings['integrations.google_maps'] || '',
+          emailProvider: (systemSettings['integrations.email_provider'] as 'smtp' | 'sendgrid' | 'mailgun') || 'smtp',
+          smsProvider: (systemSettings['integrations.sms_provider'] as 'twilio' | 'nexmo' | 'aws') || 'twilio',
+          paymentProvider: (systemSettings['integrations.payment_provider'] as 'stripe' | 'paypal' | 'square') || 'stripe',
+          socialLogin: {
+            google: systemSettings['integrations.social_login.google'] === 'true',
+            facebook: systemSettings['integrations.social_login.facebook'] === 'true',
+            microsoft: systemSettings['integrations.social_login.microsoft'] === 'true'
+          }
+        }
+      };
+      
+      setSettings(mappedSettings);
+    } catch (error) {
+      console.error('Erreur lors du chargement des paramètres:', error);
+      showNotification('error', 'Erreur lors du chargement des paramètres');
+    }
+  };
+
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
@@ -226,12 +308,74 @@ const SettingsManagementTab = () => {
   const saveSettings = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      // Simulation de sauvegarde
+      // Convert component state to database format
+      const settingsToSave = [
+        // General settings
+        { key: 'site.name', value: settings.general.siteName, category: 'general' },
+        { key: 'site.description', value: settings.general.siteDescription, category: 'general' },
+        { key: 'site.url', value: settings.general.siteUrl, category: 'general' },
+        { key: 'site.admin_email', value: settings.general.adminEmail, category: 'general' },
+        { key: 'site.timezone', value: settings.general.timezone, category: 'general' },
+        { key: 'site.language', value: settings.general.language, category: 'general' },
+        { key: 'site.date_format', value: settings.general.dateFormat, category: 'general' },
+        { key: 'site.time_format', value: settings.general.timeFormat, category: 'general' },
+        
+        // Security settings
+        { key: 'security.enable_two_factor', value: settings.security.enableTwoFactor.toString(), category: 'security' },
+        { key: 'security.session_timeout', value: settings.security.sessionTimeout.toString(), category: 'security' },
+        { key: 'security.max_login_attempts', value: settings.security.maxLoginAttempts.toString(), category: 'security' },
+        { key: 'security.password_min_length', value: settings.security.passwordMinLength.toString(), category: 'security' },
+        { key: 'security.require_password_change', value: settings.security.requirePasswordChange.toString(), category: 'security' },
+        { key: 'security.allow_registration', value: settings.security.allowRegistration.toString(), category: 'security' },
+        { key: 'security.email_verification', value: settings.security.emailVerification.toString(), category: 'security' },
+        { key: 'security.ip_whitelist', value: JSON.stringify(settings.security.ipWhitelist), category: 'security' },
+        
+        // Notifications settings
+        { key: 'notifications.email', value: settings.notifications.emailNotifications.toString(), category: 'notifications' },
+        { key: 'notifications.sms', value: settings.notifications.smsNotifications.toString(), category: 'notifications' },
+        { key: 'notifications.push', value: settings.notifications.pushNotifications.toString(), category: 'notifications' },
+        { key: 'notifications.new_user_registration', value: settings.notifications.newUserRegistration.toString(), category: 'notifications' },
+        { key: 'notifications.new_message', value: settings.notifications.newMessage.toString(), category: 'notifications' },
+        { key: 'notifications.quiz_completed', value: settings.notifications.quizCompleted.toString(), category: 'notifications' },
+        { key: 'notifications.system_alerts', value: settings.notifications.systemAlerts.toString(), category: 'notifications' },
+        { key: 'notifications.maintenance_mode', value: settings.notifications.maintenanceMode.toString(), category: 'notifications' },
+        
+        // Appearance settings
+        { key: 'appearance.theme', value: settings.appearance.theme, category: 'appearance' },
+        { key: 'appearance.primary_color', value: settings.appearance.primaryColor, category: 'appearance' },
+        { key: 'appearance.secondary_color', value: settings.appearance.secondaryColor, category: 'appearance' },
+        { key: 'appearance.accent_color', value: settings.appearance.accentColor, category: 'appearance' },
+        { key: 'appearance.logo_url', value: settings.appearance.logoUrl, category: 'appearance' },
+        { key: 'appearance.favicon_url', value: settings.appearance.faviconUrl, category: 'appearance' },
+        { key: 'appearance.custom_css', value: settings.appearance.customCss, category: 'appearance' },
+        { key: 'appearance.show_branding', value: settings.appearance.showBranding.toString(), category: 'appearance' },
+        
+        // Storage settings
+        { key: 'storage.max_file_size', value: settings.storage.maxFileSize.toString(), category: 'storage' },
+        { key: 'storage.allowed_file_types', value: JSON.stringify(settings.storage.allowedFileTypes), category: 'storage' },
+        { key: 'storage.provider', value: settings.storage.storageProvider, category: 'storage' },
+        { key: 'storage.quota', value: settings.storage.storageQuota.toString(), category: 'storage' },
+        { key: 'storage.auto_backup', value: settings.storage.autoBackup.toString(), category: 'storage' },
+        { key: 'storage.backup_frequency', value: settings.storage.backupFrequency, category: 'storage' },
+        { key: 'storage.retention_period', value: settings.storage.retentionPeriod.toString(), category: 'storage' },
+        
+        // Integrations settings
+        { key: 'integrations.google_analytics', value: settings.integrations.googleAnalytics, category: 'integrations' },
+        { key: 'integrations.google_maps', value: settings.integrations.googleMaps, category: 'integrations' },
+        { key: 'integrations.email_provider', value: settings.integrations.emailProvider, category: 'integrations' },
+        { key: 'integrations.sms_provider', value: settings.integrations.smsProvider, category: 'integrations' },
+        { key: 'integrations.payment_provider', value: settings.integrations.paymentProvider, category: 'integrations' },
+        { key: 'integrations.social_login.google', value: settings.integrations.socialLogin.google.toString(), category: 'integrations' },
+        { key: 'integrations.social_login.facebook', value: settings.integrations.socialLogin.facebook.toString(), category: 'integrations' },
+        { key: 'integrations.social_login.microsoft', value: settings.integrations.socialLogin.microsoft.toString(), category: 'integrations' }
+      ];
+
+      await settingsAPI.bulkUpdateSystemSettings(settingsToSave);
       showNotification('success', 'Paramètres sauvegardés avec succès');
       setUnsavedChanges(false);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la sauvegarde');
+      console.error('Erreur lors de la sauvegarde:', error);
+      showNotification('error', 'Erreur lors de la sauvegarde des paramètres');
     } finally {
       setIsLoading(false);
     }
@@ -285,24 +429,49 @@ const SettingsManagementTab = () => {
   };
 
   const changePassword = async () => {
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      showNotification('error', 'Veuillez remplir tous les champs');
+      return;
+    }
+
     if (passwords.new !== passwords.confirm) {
       showNotification('error', 'Les mots de passe ne correspondent pas');
       return;
     }
     
-    if (passwords.new.length < settings.security.passwordMinLength) {
-      showNotification('error', `Le mot de passe doit contenir au moins ${settings.security.passwordMinLength} caractères`);
+    if (passwords.new.length < 8) {
+      showNotification('error', 'Le mot de passe doit contenir au moins 8 caractères');
       return;
     }
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Debug: Vérifier le token
+      const token = localStorage.getItem('accessToken');
+      console.log('🔍 Debug - Token exists:', !!token);
+      console.log('🔍 Debug - Token (first 50 chars):', token ? token.substring(0, 50) + '...' : 'No token');
+      console.log('🔍 Debug - Current password:', passwords.current);
+      console.log('🔍 Debug - New password:', passwords.new);
+
+      // Appel à l'API de changement de mot de passe
+      const result = await authAPI.changePassword(passwords.current, passwords.new);
+      console.log('🔍 Debug - API Response:', result);
+      
       showNotification('success', 'Mot de passe modifié avec succès');
       setPasswords({ current: '', new: '', confirm: '' });
       setShowPasswordFields(false);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la modification du mot de passe');
+      console.error('🔍 Debug - Error details:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      console.log('🔍 Debug - Error message:', errorMessage);
+      
+      if (errorMessage.includes('Mot de passe actuel incorrect')) {
+        showNotification('error', 'Mot de passe actuel incorrect');
+      } else if (errorMessage.includes('différent de l\'actuel')) {
+        showNotification('error', 'Le nouveau mot de passe doit être différent de l\'actuel');
+      } else {
+        showNotification('error', 'Erreur lors du changement de mot de passe: ' + errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

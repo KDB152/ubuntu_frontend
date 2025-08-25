@@ -234,7 +234,8 @@ const ResourcesTab: React.FC = () => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const load = async () => {
       try {
-        const res = await fetch(`${API_BASE}/content/courses`);
+        // Charger seulement les cours publiés
+        const res = await fetch(`${API_BASE}/content/courses?status=Publié`);
         const json = await res.json();
         const mapped: Resource[] = (json.items || []).map((c: any) => ({
           id: String(c.id),
@@ -264,7 +265,10 @@ const ResourcesTab: React.FC = () => {
           format: c.type || 'Document',
         }));
         setResources(mapped);
-      } catch {}
+        console.log(`✅ ${mapped.length} cours publiés chargés pour les étudiants`);
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des cours:', error);
+      }
       setFolders([]);
     };
     load();
