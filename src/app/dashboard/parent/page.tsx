@@ -213,7 +213,7 @@ const ParentDashboard: React.FC = () => {
       label: 'Messages',
       icon: MessageSquare,
       component: MessagesTab,
-      badge: parent?.notifications.unread || 0
+
     },
     {
       id: 'calendar',
@@ -244,7 +244,7 @@ const ParentDashboard: React.FC = () => {
       label: 'Notifications',
       icon: Bell,
       component: NotificationsTab,
-      badge: parent?.notifications.urgent || 0
+
     },
     {
       id: 'profile',
@@ -407,11 +407,7 @@ const ParentDashboard: React.FC = () => {
                       <div className="flex-1 text-left">
                         <div className="font-semibold">{item.label}</div>
                       </div>
-                      {item.badge && item.badge > 0 && (
-                        <span className="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded-full">
-                          {item.badge > 9 ? '9+' : item.badge}
-                        </span>
-                      )}
+
                     </>
                   )}
                 </button>

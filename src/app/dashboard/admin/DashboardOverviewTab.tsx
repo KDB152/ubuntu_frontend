@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getGenericUserName } from '@/lib/userUtils';
+import { useRealStats } from '@/hooks/useRealStats';
 import {
   BarChart3,
   Users,
@@ -103,11 +104,12 @@ interface SystemHealth {
 }
 
 const DashboardOverviewTab = () => {
+  const { stats: realStats } = useRealStats();
   const [stats, setStats] = useState<DashboardStats>({
-    users: { total: 1247, active: 892, new: 23, growth: 12.5 },
-    quizzes: { total: 156, completed: 2341, averageScore: 78.5, growth: 8.3 },
-    messages: { total: 489, unread: 12, replied: 445, growth: -2.1 },
-    engagement: { dailyActive: 234, weeklyActive: 567, monthlyActive: 892, averageSession: 24.5 }
+    users: { total: realStats.totalUsers, active: realStats.totalUsers, new: 0, growth: 0 },
+    quizzes: { total: realStats.totalQuizzes, completed: realStats.completedQuizzes, averageScore: realStats.averageScore, growth: 0 },
+    messages: { total: realStats.totalMessages, unread: realStats.userUnreadMessages, replied: realStats.totalMessages - realStats.userUnreadMessages, growth: 0 },
+    engagement: { dailyActive: 0, weeklyActive: 0, monthlyActive: 0, averageSession: 0 }
   });
 
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);

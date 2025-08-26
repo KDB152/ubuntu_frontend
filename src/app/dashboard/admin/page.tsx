@@ -61,6 +61,7 @@ import {
 
 // Import du composant AdminDashboard complet
 import AdminDashboard from './AdminDashboard';
+import { useRealStats } from '@/hooks/useRealStats';
 
 interface User {
   id: string;
@@ -103,6 +104,7 @@ interface DashboardStats {
 
 const AdminPage = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { stats: realStats } = useRealStats();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     activeUsers: 0,
@@ -122,16 +124,16 @@ const AdminPage = () => {
         // Simulation d'un appel API
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Données simulées
+        // Données réelles
         setStats({
-          totalUsers: 1247,
-          activeUsers: 892,
-          totalQuizzes: 156,
-          completedQuizzes: 2341,
-          unreadMessages: 12,
-          averageScore: 78.5,
-          userGrowth: 12.5,
-          engagementRate: 85.3
+          totalUsers: realStats.totalUsers,
+          activeUsers: realStats.totalUsers,
+          totalQuizzes: realStats.totalQuizzes,
+          completedQuizzes: realStats.completedQuizzes,
+          unreadMessages: realStats.userUnreadMessages,
+          averageScore: realStats.averageScore,
+          userGrowth: 0,
+          engagementRate: 0
         });
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);

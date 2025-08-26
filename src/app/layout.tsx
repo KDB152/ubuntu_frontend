@@ -19,7 +19,11 @@ export const metadata: Metadata = {
   description: 'Plateforme éducative dédiée aux élèves préparant le bac français en Histoire-Géographie. Accédez à des cours, quiz interactifs, et ressources pour réussir votre bac.',
   keywords: 'histoire, géographie, bac, éducation, cours, quiz, EMC, grand oral, parcoursup',
   authors: [{ name: 'Chrono-Carto' }],
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

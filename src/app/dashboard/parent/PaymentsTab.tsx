@@ -366,3 +366,5 @@ const PaymentForm: React.FC<{ initial?: Payment; onSave: (p: Payment) => void; o
     </div>
   );
 };
+
+export default PaymentsTab;

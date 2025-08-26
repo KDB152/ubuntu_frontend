@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getCurrentUserName } from '@/lib/userUtils';
+import { useRealStats } from '@/hooks/useRealStats';
 import {
   BookOpen,
   Clock,
@@ -90,6 +91,7 @@ interface DashboardHomeTabProps {
 }
 
 const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz }) => {
+  const { stats: realStats } = useRealStats();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState('');
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
@@ -218,7 +220,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
       icon: Play,
       color: 'from-green-500 to-emerald-600',
       action: () => onNavigateToQuiz('quiz-1'),
-      badge: '3 disponibles'
+
     },
     {
       id: 'view-results',
@@ -235,7 +237,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
       icon: MessageSquare,
       color: 'from-purple-500 to-violet-600',
       action: () => console.log('Navigate to messages'),
-      badge: '2 nouveaux'
+
     },
     {
       id: 'view-calendar',

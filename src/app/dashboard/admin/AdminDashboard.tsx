@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAdminDashboard } from '@/hooks/useDashboard';
+import { useRealStats } from '@/hooks/useRealStats';
 import {
   BarChart3,
   Users,
@@ -116,6 +117,9 @@ const AdminDashboard = () => {
     clearError,
   } = useAdminDashboard();
 
+  // Use real stats hook
+  const { stats: realStats } = useRealStats();
+
   // Données de l'utilisateur admin connecté
   const [currentUser, setCurrentUser] = useState<AdminUser>({
     id: '',
@@ -160,22 +164,19 @@ const AdminDashboard = () => {
       id: 'users',
       label: 'Utilisateurs',
       icon: Users,
-      description: 'Gestion des étudiants et parents',
-      badge: '1,247'
+      description: 'Gestion des étudiants et parents'
     },
     {
       id: 'quizzes',
       label: 'Quiz',
       icon: BookOpen,
-      description: 'Création et gestion des questionnaires',
-      badge: '156'
+      description: 'Création et gestion des questionnaires'
     },
     {
       id: 'messages',
       label: 'Messages',
       icon: MessageSquare,
-      description: 'Communication avec les utilisateurs',
-      badge: '12'
+      description: 'Communication avec les utilisateurs'
     },
     {
       id: 'profile',
@@ -195,8 +196,7 @@ const AdminDashboard = () => {
       id: 'settings',
       label: 'Paramètres',
       icon: Settings,
-      description: 'Configuration du système',
-      badge: null
+      description: 'Configuration du système'
     }
   ];
 
@@ -321,15 +321,7 @@ const AdminDashboard = () => {
                         <div className="font-semibold">{item.label}</div>
                         <div className="text-xs opacity-75">{item.description}</div>
                       </div>
-                      {item.badge && (
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          isActive 
-                            ? 'bg-white/20 text-white' 
-                            : 'bg-blue-500/20 text-blue-300'
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
+
                     </>
                   )}
                 </button>

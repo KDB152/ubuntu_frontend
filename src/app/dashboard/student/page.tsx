@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStudentDashboard } from '@/hooks/useDashboard';
+import { useRealStats } from '@/hooks/useRealStats';
 import {
   Home,
   BookOpen,
@@ -127,6 +128,9 @@ const StudentDashboard = () => {
     clearError,
   } = useStudentDashboard();
 
+  // Use real stats hook
+  const { stats: realStats } = useRealStats();
+
   useEffect(() => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     try {
@@ -168,7 +172,6 @@ const StudentDashboard = () => {
       label: 'Accueil',
       icon: Home,
       description: 'Vue d\'ensemble de vos activités',
-      badge: null,
       color: 'from-blue-500 to-indigo-600'
     },
     {
@@ -176,7 +179,7 @@ const StudentDashboard = () => {
       label: 'Quiz',
       icon: BookOpen,
       description: 'Quiz disponibles et à faire',
-      badge: '3',
+
       color: 'from-green-500 to-emerald-600'
     },
     {
@@ -184,7 +187,6 @@ const StudentDashboard = () => {
       label: 'Résultats',
       icon: BarChart3,
       description: 'Vos résultats et corrections',
-      badge: null,
       color: 'from-purple-500 to-violet-600'
     },
     {
@@ -192,7 +194,6 @@ const StudentDashboard = () => {
       label: 'Progrès',
       icon: TrendingUp,
       description: 'Suivi de votre progression',
-      badge: null,
       color: 'from-orange-500 to-red-600'
     },
     {
@@ -200,7 +201,7 @@ const StudentDashboard = () => {
       label: 'Messages',
       icon: MessageSquare,
       description: 'Communications avec vos professeurs',
-      badge: '2',
+
       color: 'from-pink-500 to-rose-600'
     },
     {
@@ -208,7 +209,6 @@ const StudentDashboard = () => {
       label: 'Récompenses',
       icon: Award,
       description: 'Vos badges et accomplissements',
-      badge: null,
       color: 'from-yellow-500 to-amber-600'
     },
     {
@@ -216,7 +216,6 @@ const StudentDashboard = () => {
       label: 'Calendrier',
       icon: Calendar,
       description: 'Planning et échéances',
-      badge: null,
       color: 'from-teal-500 to-cyan-600'
     },
     {
@@ -224,7 +223,6 @@ const StudentDashboard = () => {
       label: 'Ressources',
       icon: Library,
       description: 'Documents et supports de cours',
-      badge: null,
       color: 'from-indigo-500 to-blue-600'
     },
     {
@@ -232,7 +230,6 @@ const StudentDashboard = () => {
       label: 'Profil',
       icon: User,
       description: 'Vos informations personnelles',
-      badge: null,
       color: 'from-gray-500 to-slate-600'
     }
   ];
@@ -523,17 +520,7 @@ const StudentDashboard = () => {
                         <div className="font-semibold">{item.label}</div>
                         <div className="text-xs opacity-75">{item.description}</div>
                       </div>
-                      {item.badge && (
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          isActive 
-                            ? 'bg-white/20 text-white' 
-                            : darkMode
-                            ? 'bg-blue-500/20 text-blue-300'
-                            : 'bg-blue-100 text-blue-600'
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
+
                     </>
                   )}
                 </button>
