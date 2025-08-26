@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getCurrentUserFullName } from '@/lib/userUtils';
+import { quizzesAPI } from '@/lib/api';
 import {
   BookOpen,
   Clock,
@@ -92,172 +94,94 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    // Données simulées des quiz
-    const mockQuizzes: Quiz[] = [
-      {
-        id: 'quiz-1',
-        title: 'La Révolution française',
-        description: 'Découvrez les événements marquants de la Révolution française de 1789 à 1799',
-        subject: 'history',
-        difficulty: 'medium',
-        duration: 25,
-        questions: 15,
-        points: 150,
-        attempts: 0,
-        averageScore: 78,
-        completionRate: 85,
-        tags: ['révolution', '18ème siècle', 'france', 'politique'],
-        createdAt: '2024-12-20T08:00:00',
-        dueDate: '2024-12-25T23:59:59',
-        isCompleted: false,
-        isAvailable: true,
-        isNew: true,
-        isFavorite: false,
-        author: 'Mme Martin',
-        category: 'Histoire moderne',
-        rewards: {
-          xp: 150,
-          badges: ['Révolutionnaire']
+    const loadQuizzes = async () => {
+      try {
+        const response = await quizzesAPI.getQuizzes({ status: 'Publié' });
+        const originalQuizzes = response.items || [];
+        const apiQuizzes: Quiz[] = originalQuizzes.map((q: any) => ({
+          id: String(q.id),
+          title: q.title,
+          description: q.description || '',
+          subject: q.subject === 'Histoire' ? 'history' : q.subject === 'Géographie' ? 'geography' : 'both',
+          difficulty: 'medium', // Default difficulty
+          duration: q.duration || 30,
+          questions: 0, // Will be updated when questions are loaded
+          points: q.total_points || 0,
+          attempts: q.attempts || 0,
+          averageScore: Number(q.average_score || 0),
+          completionRate: 0, // Will be calculated
+          tags: q.tags || [],
+          createdAt: q.created_at || new Date().toISOString(),
+          isCompleted: false, // Will be updated based on user attempts
+          isAvailable: true,
+          isNew: new Date(q.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // New if created in last 7 days
+          isFavorite: false,
+          author: 'Admin',
+          category: q.subject,
+          rewards: {
+            xp: q.total_points || 100
+          }
+        }));
+        
+        // Load questions count for each quiz
+        for (const quiz of apiQuizzes) {
+          try {
+            const questionsResponse = await quizzesAPI.getQuestions(parseInt(quiz.id));
+            quiz.questions = questionsResponse?.length || 0;
+          } catch (error) {
+            console.error(`Error loading questions for quiz ${quiz.id}:`, error);
+          }
         }
-      },
-      {
-        id: 'quiz-2',
-        title: 'Les climats européens',
-        description: 'Étudiez la diversité climatique de l\'Europe et ses caractéristiques',
-        subject: 'geography',
-        difficulty: 'easy',
-        duration: 20,
-        questions: 12,
-        points: 120,
-        attempts: 2,
-        bestScore: 85,
-        averageScore: 72,
-        completionRate: 92,
-        tags: ['climat', 'europe', 'météorologie', 'environnement'],
-        createdAt: '2024-12-18T10:00:00',
-        isCompleted: true,
-        isAvailable: true,
-        isNew: false,
-        isFavorite: true,
-        author: 'M. Dubois',
-        category: 'Géographie physique',
-        rewards: {
-          xp: 120
+        
+        // Check user attempts and filter out quizzes that don't allow retakes
+        const userDetails = localStorage.getItem('userDetails');
+        if (userDetails) {
+          const user = JSON.parse(userDetails);
+          const studentId = user.id;
+          
+          // Check attempts for each quiz
+          for (let i = 0; i < apiQuizzes.length; i++) {
+            const quiz = apiQuizzes[i];
+            const originalQuiz = originalQuizzes[i];
+            
+            try {
+              const attemptsResponse = await fetch(`http://localhost:3001/quizzes/attempts?quiz_id=${quiz.id}&student_id=${studentId}`);
+              if (attemptsResponse.ok) {
+                const attempts = await attemptsResponse.json();
+                if (attempts && attempts.length > 0) {
+                  // User has attempted this quiz
+                  quiz.isCompleted = true;
+                  
+                  // If quiz doesn't allow retakes, mark it as not available
+                  if (!originalQuiz.allow_retake) {
+                    quiz.isAvailable = false;
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(`Error checking attempts for quiz ${quiz.id}:`, error);
+            }
+          }
         }
-      },
-      {
-        id: 'quiz-3',
-        title: 'L\'Empire de Napoléon',
-        description: 'Explorez l\'expansion et la chute de l\'Empire napoléonien en Europe',
-        subject: 'history',
-        difficulty: 'hard',
-        duration: 35,
-        questions: 20,
-        points: 200,
-        attempts: 0,
-        averageScore: 65,
-        completionRate: 68,
-        tags: ['napoléon', 'empire', '19ème siècle', 'guerre'],
-        createdAt: '2024-12-19T14:00:00',
-        dueDate: '2024-12-22T23:59:59',
-        isCompleted: false,
-        isAvailable: true,
-        isNew: true,
-        isFavorite: false,
-        author: 'Mme Martin',
-        category: 'Histoire moderne',
-        prerequisites: ['La Révolution française'],
-        rewards: {
-          xp: 200,
-          badges: ['Empereur', 'Stratège']
-        }
-      },
-      {
-        id: 'quiz-4',
-        title: 'Les grandes villes mondiales',
-        description: 'Testez vos connaissances sur les métropoles et leur géographie urbaine',
-        subject: 'geography',
-        difficulty: 'medium',
-        duration: 30,
-        questions: 18,
-        points: 180,
-        attempts: 1,
-        bestScore: 92,
-        averageScore: 81,
-        completionRate: 89,
-        tags: ['villes', 'urbanisation', 'population', 'monde'],
-        createdAt: '2024-12-17T16:00:00',
-        isCompleted: true,
-        isAvailable: true,
-        isNew: false,
-        isFavorite: true,
-        author: 'M. Dubois',
-        category: 'Géographie humaine',
-        rewards: {
-          xp: 180,
-          badges: ['Explorateur urbain']
-        }
-      },
-      {
-        id: 'quiz-5',
-        title: 'Histoire et Géographie de la France',
-        description: 'Quiz complet mêlant histoire et géographie françaises',
-        subject: 'both',
-        difficulty: 'hard',
-        duration: 45,
-        questions: 25,
-        points: 250,
-        attempts: 0,
-        averageScore: 70,
-        completionRate: 75,
-        tags: ['france', 'histoire', 'géographie', 'synthèse'],
-        createdAt: '2024-12-16T12:00:00',
-        isCompleted: false,
-        isAvailable: true,
-        isNew: false,
-        isFavorite: false,
-        author: 'Équipe pédagogique',
-        category: 'Quiz de synthèse',
-        rewards: {
-          xp: 250,
-          badges: ['Expert France', 'Polyvalent']
-        }
-      },
-      {
-        id: 'quiz-6',
-        title: 'La Première Guerre mondiale',
-        description: 'Les causes, le déroulement et les conséquences de la Grande Guerre',
-        subject: 'history',
-        difficulty: 'medium',
-        duration: 30,
-        questions: 16,
-        points: 160,
-        attempts: 0,
-        averageScore: 74,
-        completionRate: 82,
-        tags: ['guerre mondiale', '20ème siècle', 'conflit', 'europe'],
-        createdAt: '2024-12-15T09:00:00',
-        dueDate: '2024-12-30T23:59:59',
-        isCompleted: false,
-        isAvailable: false, // Pas encore disponible
-        isNew: false,
-        isFavorite: false,
-        author: 'Mme Martin',
-        category: 'Histoire contemporaine',
-        prerequisites: ['L\'Empire de Napoléon'],
-        rewards: {
-          xp: 160,
-          badges: ['Historien']
-        }
+        
+        setQuizzes(apiQuizzes);
+        setFilteredQuizzes(apiQuizzes);
+      } catch (error) {
+        console.error('Error loading quizzes:', error);
+        // No fallback to mock data - only show real quizzes from API
+        setQuizzes([]);
+        setFilteredQuizzes([]);
       }
-    ];
-
-    setQuizzes(mockQuizzes);
-    setFilteredQuizzes(mockQuizzes);
+    };
+    
+    loadQuizzes();
   }, []);
 
   useEffect(() => {
     let filtered = [...quizzes];
+
+    // Filtrage par défaut : ne montrer que les quiz disponibles
+    filtered = filtered.filter(quiz => quiz.isAvailable);
 
     // Filtrage par recherche
     if (searchQuery) {

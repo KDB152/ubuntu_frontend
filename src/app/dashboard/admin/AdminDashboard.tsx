@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdminDashboard } from '@/hooks/useDashboard';
 import {
   BarChart3,
@@ -58,10 +58,11 @@ import DashboardOverviewTab from './DashboardOverviewTab';
 import UsersManagementTab from './UsersManagementTab';
 import QuizzesManagementTab from './QuizzesManagementTab';
 import MessagesManagementTab from './MessagesManagementTab';
+import AdminProfileTab from './AdminProfileTab';
 import SettingsManagementTab from './SettingsManagementTab';
 import FileManagementTab from './FileManagementTab';
 
-type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'files' | 'settings';
+type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'profile' | 'files' | 'settings';
 
 interface AdminUser {
   id: string;
@@ -116,13 +117,36 @@ const AdminDashboard = () => {
   } = useAdminDashboard();
 
   // Données de l'utilisateur admin connecté
-  const currentUser: AdminUser = {
-    id: 'admin-1',
-    name: 'Professeur Admin',
-    email: 'admin@chronocarto.fr',
-    role: 'super_admin',
-    lastLogin: '2024-12-20T10:30:00'
-  };
+  const [currentUser, setCurrentUser] = useState<AdminUser>({
+    id: '',
+    name: '',
+    email: '',
+    role: 'admin',
+    lastLogin: ''
+  });
+
+  // Charger les données de l'utilisateur admin
+  useEffect(() => {
+    const loadAdminData = () => {
+      try {
+        const userData = localStorage.getItem('userDetails');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setCurrentUser({
+            id: String(user.id),
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Administrateur',
+            email: user.email || '',
+            role: user.role === 'super_admin' ? 'super_admin' : 'admin',
+            lastLogin: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données admin:', error);
+      }
+    };
+
+    loadAdminData();
+  }, []);
 
   const menuItems = [
     {
@@ -152,6 +176,13 @@ const AdminDashboard = () => {
       icon: MessageSquare,
       description: 'Communication avec les utilisateurs',
       badge: '12'
+    },
+    {
+      id: 'profile',
+      label: 'Mon Profil',
+      icon: User,
+      description: 'Gérer mes informations personnelles',
+      badge: null
     },
     {
       id: 'files',
@@ -206,7 +237,7 @@ const AdminDashboard = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <DashboardOverviewTab stats={stats} loading={loading} />;
+        return <DashboardOverviewTab />;
       case 'users':
         return <UsersManagementTab 
           students={students}
@@ -221,27 +252,17 @@ const AdminDashboard = () => {
           onApproveUser={approveUser}
         />;
       case 'quizzes':
-        return <QuizzesManagementTab 
-          quizzes={quizzes}
-          loading={loading}
-          onCreateQuiz={createQuiz}
-          onUpdateQuiz={updateQuiz}
-          onDeleteQuiz={deleteQuiz}
-        />;
+        return <QuizzesManagementTab />;
       case 'messages':
         return <MessagesManagementTab />;
+      case 'profile':
+        return <AdminProfileTab />;
       case 'files':
-        return <FileManagementTab 
-          files={files}
-          loading={loading}
-          onUploadFile={uploadFile}
-          onDeleteFile={deleteFile}
-          onBulkDeleteFiles={bulkDeleteFiles}
-        />;
+        return <FileManagementTab />;
       case 'settings':
         return <SettingsManagementTab />;
       default:
-        return <DashboardOverviewTab stats={stats} loading={loading} />;
+        return <DashboardOverviewTab />;
     }
   };
 

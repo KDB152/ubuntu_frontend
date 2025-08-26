@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getCurrentUserName } from '@/lib/userUtils';
 import {
   BookOpen,
   Clock,
@@ -287,7 +288,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                {greeting}, Marie ! 👋
+                {greeting}, {getCurrentUserName()} ! 👋
               </h1>
               <p className="text-blue-100 text-lg">
                 Prêt à continuer votre apprentissage aujourd'hui ?

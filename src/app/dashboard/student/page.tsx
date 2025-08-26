@@ -78,6 +78,7 @@ interface StudentUser {
   xp: number;
   streak: number;
   lastActivity: string;
+  birthDate?: string; // Ajout du champ date de naissance
 }
 
 interface Notification {
@@ -147,7 +148,7 @@ const StudentDashboard = () => {
       fetch(`${API_BASE}/students/by-user/${user.id}`)
         .then(r => r.json())
         .then(s => {
-          const student = { ...base, grade: s?.class_level || '' };
+          const student = { ...base, grade: s?.class_level || '', birthDate: s?.birth_date || '' };
           setCurrentStudent(student);
           // Load dashboard data
           loadProgress(user.id);

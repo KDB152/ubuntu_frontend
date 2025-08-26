@@ -23,6 +23,7 @@ import {
   Target,
   Star,
   Award,
+  Trophy,
   Zap,
   Heart,
   Brain,
@@ -93,6 +94,9 @@ interface QuizData {
   passingScore: number;
   attempts: number;
   instructions?: string;
+  allowRetake: boolean;
+  isTimeLimited: boolean;
+  showResults: boolean;
 }
 
 interface QuizTakeTabProps {
@@ -116,143 +120,108 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
   const [showProgress, setShowProgress] = useState(true);
   const [fontSize, setFontSize] = useState('medium');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showResults, setShowResults] = useState(false);
+  const [quizResults, setQuizResults] = useState<any>(null);
+  const [hasAttempted, setHasAttempted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (quizId) {
-      // Simulation des données du quiz
-      const mockQuiz: QuizData = {
-        id: quizId,
-        title: 'La Révolution française',
-        description: 'Testez vos connaissances sur la Révolution française de 1789 à 1799',
-        subject: 'Histoire',
-        difficulty: 'medium',
-        duration: 25,
-        totalPoints: 150,
-        passingScore: 60,
-        attempts: 0,
-        instructions: 'Lisez attentivement chaque question. Vous avez 25 minutes pour terminer ce quiz. Certaines questions peuvent avoir plusieurs bonnes réponses. Bonne chance !',
-        questions: [
-          {
-            id: 'q1',
-            type: 'multiple_choice',
-            question: 'En quelle année a commencé la Révolution française ?',
-            options: ['1788', '1789', '1790', '1791'],
-            correctAnswer: '1789',
-            explanation: 'La Révolution française a commencé en 1789 avec la convocation des États généraux et la prise de la Bastille le 14 juillet.',
-            points: 10,
-            difficulty: 'easy',
-            hint: 'C\'est l\'année de la prise de la Bastille.'
-          },
-          {
-            id: 'q2',
-            type: 'true_false',
-            question: 'La Déclaration des droits de l\'homme et du citoyen a été adoptée en 1789.',
-            correctAnswer: true,
-            explanation: 'La Déclaration des droits de l\'homme et du citoyen a effectivement été adoptée le 26 août 1789.',
-            points: 8,
-            difficulty: 'easy'
-          },
-          {
-            id: 'q3',
-            type: 'multiple_choice',
-            question: 'Qui était le roi de France au début de la Révolution ?',
-            options: ['Louis XIV', 'Louis XV', 'Louis XVI', 'Louis XVII'],
-            correctAnswer: 'Louis XVI',
-            explanation: 'Louis XVI était le roi de France de 1774 à 1792, période qui englobe le début de la Révolution française.',
-            points: 10,
-            difficulty: 'medium',
-            media: {
-              type: 'image',
-              url: '/images/louis-xvi.jpg',
-              alt: 'Portrait de Louis XVI'
-            }
-          },
-          {
-            id: 'q4',
-            type: 'short_answer',
-            question: 'Quel événement du 14 juillet 1789 marque symboliquement le début de la Révolution française ?',
-            correctAnswer: 'La prise de la Bastille',
-            explanation: 'La prise de la Bastille le 14 juillet 1789 est considérée comme l\'événement symbolique marquant le début de la Révolution française.',
-            points: 15,
-            difficulty: 'medium',
-            hint: 'C\'est une forteresse parisienne qui servait de prison.'
-          },
-          {
-            id: 'q5',
-            type: 'matching',
-            question: 'Associez chaque personnage à son rôle pendant la Révolution française :',
-            options: [
-              'Maximilien Robespierre',
-              'Georges Danton',
-              'Jean-Paul Marat',
-              'Jacques Necker'
-            ],
-            correctAnswer: {
-              'Maximilien Robespierre': 'Leader des Jacobins',
-              'Georges Danton': 'Orateur révolutionnaire',
-              'Jean-Paul Marat': 'Journaliste radical',
-              'Jacques Necker': 'Ministre des Finances'
-            },
-            explanation: 'Chaque personnage a joué un rôle spécifique dans la Révolution française.',
-            points: 20,
-            difficulty: 'hard'
-          },
-          {
-            id: 'q6',
-            type: 'essay',
-            question: 'Expliquez en quelques phrases les principales causes de la Révolution française.',
-            correctAnswer: 'Les principales causes incluent la crise financière, les inégalités sociales, l\'influence des Lumières, et la convocation des États généraux.',
-            explanation: 'Une bonne réponse devrait mentionner les causes économiques, sociales, politiques et intellectuelles.',
-            points: 25,
-            difficulty: 'hard',
-            timeLimit: 300 // 5 minutes pour cette question
-          },
-          {
-            id: 'q7',
-            type: 'ordering',
-            question: 'Remettez ces événements dans l\'ordre chronologique :',
-            options: [
-              'Exécution de Louis XVI',
-              'Prise de la Bastille',
-              'Déclaration des droits de l\'homme',
-              'Convocation des États généraux'
-            ],
-            correctAnswer: [
-              'Convocation des États généraux',
-              'Prise de la Bastille',
-              'Déclaration des droits de l\'homme',
-              'Exécution de Louis XVI'
-            ],
-            explanation: 'L\'ordre chronologique correct reflète la progression des événements révolutionnaires.',
-            points: 18,
-            difficulty: 'medium'
-          },
-          {
-            id: 'q8',
-            type: 'multiple_choice',
-            question: 'Quelle était la devise de la République française adoptée pendant la Révolution ?',
-            options: [
-              'Liberté, Égalité, Fraternité',
-              'Liberté, Justice, Vérité',
-              'Égalité, Justice, Liberté',
-              'Fraternité, Liberté, Justice'
-            ],
-            correctAnswer: 'Liberté, Égalité, Fraternité',
-            explanation: 'La devise "Liberté, Égalité, Fraternité" a été adoptée pendant la Révolution française et reste la devise de la France.',
-            points: 12,
-            difficulty: 'easy'
-          }
-        ]
-      };
-      
-      setQuiz(mockQuiz);
-      setTimeRemaining(mockQuiz.duration * 60); // Convertir en secondes
+      loadQuizData();
     }
   }, [quizId]);
 
+  const loadQuizData = async () => {
+    try {
+      // Load quiz data from API
+      const quizResponse = await fetch(`http://localhost:3001/quizzes/${quizId}`);
+      if (!quizResponse.ok) {
+        throw new Error('Failed to load quiz');
+      }
+      const quizData = await quizResponse.json();
+
+      // Load questions for this quiz
+      const questionsResponse = await fetch(`http://localhost:3001/quizzes/${quizId}/questions`);
+      if (!questionsResponse.ok) {
+        throw new Error('Failed to load questions');
+      }
+      const questionsData = await questionsResponse.json();
+
+      // Transform API data to match our interface
+      const transformedQuiz: QuizData = {
+        id: String(quizData.id),
+        title: quizData.title,
+        description: quizData.description || '',
+        subject: quizData.subject,
+        difficulty: 'medium', // Default difficulty
+        duration: quizData.duration || 30,
+        totalPoints: quizData.total_points || 0,
+        passingScore: quizData.pass_score || 60,
+        attempts: quizData.attempts || 0,
+        instructions: 'Lisez attentivement chaque question. Bonne chance !',
+        allowRetake: quizData.allow_retake || false,
+        isTimeLimited: quizData.is_time_limited || false,
+        showResults: quizData.show_results || false,
+        questions: questionsData.map((q: any, index: number) => ({
+          id: String(q.id),
+          type: q.type === 'single' ? 'multiple_choice' : 
+                q.type === 'multiple' ? 'multiple_choice' : 
+                q.type === 'boolean' ? 'true_false' : 
+                q.type === 'text' ? 'short_answer' : 'multiple_choice',
+          question: q.question,
+          options: q.options || [],
+          correctAnswer: q.correct_answer,
+          explanation: q.explanation || '',
+          points: q.points || 1,
+          difficulty: 'medium' as const,
+          hint: q.explanation || ''
+        }))
+      };
+
+      setQuiz(transformedQuiz);
+      setTimeRemaining(transformedQuiz.duration * 60); // Convert minutes to seconds
+      
+      // Check if student has already attempted this quiz
+      checkQuizAttempts(quizData.id);
+    } catch (error) {
+      console.error('Error loading quiz data:', error);
+      alert('Erreur lors du chargement du quiz. Veuillez réessayer.');
+    }
+  };
+
+  const checkQuizAttempts = async (quizId: number) => {
+    try {
+      // Get current user ID from localStorage
+      const userDetails = localStorage.getItem('userDetails');
+      if (!userDetails) {
+        console.error('User details not found');
+        return;
+      }
+      
+      const user = JSON.parse(userDetails);
+      const studentId = user.id;
+
+      // Check if student has already attempted this quiz
+      const attemptsResponse = await fetch(`http://localhost:3001/quizzes/attempts?quiz_id=${quizId}&student_id=${studentId}`);
+      if (attemptsResponse.ok) {
+        const attempts = await attemptsResponse.json();
+        if (attempts && attempts.length > 0) {
+          setHasAttempted(true);
+          // If show results is enabled, load the results
+          if (quiz?.showResults) {
+            setQuizResults(attempts[0]); // Get the latest attempt
+            setShowResults(true);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking quiz attempts:', error);
+    }
+  };
+
   useEffect(() => {
-    if (isStarted && !isPaused && !isCompleted && timeRemaining > 0) {
+    // Only start timer if quiz is time limited
+    if (quiz && quiz.isTimeLimited && isStarted && !isPaused && !isCompleted && timeRemaining > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
@@ -273,19 +242,115 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         clearInterval(timerRef.current);
       }
     };
-  }, [isStarted, isPaused, isCompleted, timeRemaining]);
+  }, [quiz, isStarted, isPaused, isCompleted, timeRemaining]);
 
   // Auto-sauvegarde
   useEffect(() => {
     if (autoSave && isStarted && Object.keys(answers).length > 0) {
       const saveTimeout = setTimeout(() => {
         console.log('Auto-sauvegarde des réponses...');
-        // Ici on sauvegarderait les réponses
       }, 2000);
 
       return () => clearTimeout(saveTimeout);
     }
   }, [answers, autoSave, isStarted]);
+
+  const renderDetailedResults = () => {
+    if (!quizResults || !quiz) return null;
+
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Résultats détaillés</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white/5 rounded-lg p-4">
+              <div className="text-2xl font-bold text-white mb-1">{quizResults.percentage}%</div>
+              <div className="text-blue-300 text-sm">Score final</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-4">
+              <div className="text-2xl font-bold text-white mb-1">{quizResults.score}/{quizResults.total_points}</div>
+              <div className="text-blue-300 text-sm">Points obtenus</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-4">
+              <div className="text-2xl font-bold text-white mb-1">
+                {quizResults.time_spent ? `${Math.floor(quizResults.time_spent / 60)}:${(quizResults.time_spent % 60).toString().padStart(2, '0')}` : 'N/A'}
+              </div>
+              <div className="text-blue-300 text-sm">Temps utilisé</div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {quiz.questions.map((question, index) => {
+              const userAnswer = quizResults.answers?.[question.id];
+              const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer);
+              
+              return (
+                <div key={question.id} className={`p-4 rounded-lg border-2 ${
+                  isCorrect ? 'border-green-500/50 bg-green-500/10' : 'border-red-500/50 bg-red-500/10'
+                }`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-white">
+                      Question {index + 1}: {question.question}
+                    </h3>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      isCorrect ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    }`}>
+                      {isCorrect ? 'Correct' : 'Incorrect'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-blue-300 font-medium">Votre réponse :</span>
+                      <div className="mt-1 p-2 bg-white/5 rounded border border-white/20">
+                        {userAnswer !== undefined ? (
+                          Array.isArray(userAnswer) ? userAnswer.join(', ') : String(userAnswer)
+                        ) : (
+                          <span className="text-red-400">Aucune réponse</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-green-300 font-medium">Réponse correcte :</span>
+                      <div className="mt-1 p-2 bg-green-500/10 rounded border border-green-500/30">
+                        {Array.isArray(question.correctAnswer) 
+                          ? question.correctAnswer.join(', ') 
+                          : String(question.correctAnswer)}
+                      </div>
+                    </div>
+
+                    {question.explanation && (
+                      <div>
+                        <span className="text-yellow-300 font-medium">Explication :</span>
+                        <div className="mt-1 p-2 bg-yellow-500/10 rounded border border-yellow-500/30 text-yellow-200">
+                          {question.explanation}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-blue-300">
+                      Points : {isCorrect ? question.points : 0}/{question.points}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={onComplete}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retour à la liste des quiz
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (!quiz) {
     return (
@@ -296,6 +361,26 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         </div>
       </div>
     );
+  }
+
+  // If student has already attempted and retakes are not allowed, show results directly
+  if (hasAttempted && !quiz.allowRetake) {
+    if (quiz.showResults && quizResults) {
+      return renderDetailedResults();
+    } else {
+      // If results are not shown, redirect to completion
+      setTimeout(() => {
+        onComplete();
+      }, 100);
+      return (
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-white">Redirection...</p>
+          </div>
+        </div>
+      );
+    }
   }
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -312,7 +397,6 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     setIsStarted(true);
     setShowInstructions(false);
     if (soundEnabled) {
-      // Jouer un son de démarrage
       console.log('Son de démarrage');
     }
   };
@@ -351,7 +435,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     });
   };
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     setIsCompleted(true);
     setIsPaused(false);
     if (timerRef.current) {
@@ -360,22 +444,73 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     
     // Calculer le score
     let score = 0;
+    let totalPoints = 0;
     quiz.questions.forEach(question => {
+      totalPoints += question.points;
       const userAnswer = answers[question.id];
       if (userAnswer !== undefined) {
-        // Logique de correction simplifiée
         if (JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)) {
           score += question.points;
         }
       }
     });
 
-    console.log(`Quiz terminé ! Score: ${score}/${quiz.totalPoints}`);
+    const percentage = Math.round((score / totalPoints) * 100);
+    console.log(`Quiz terminé ! Score: ${score}/${totalPoints} (${percentage}%)`);
     
-    // Rediriger vers les résultats après un délai
-    setTimeout(() => {
-      onComplete();
-    }, 3000);
+    // Submit results to API
+    try {
+      const userDetails = localStorage.getItem('userDetails');
+      if (!userDetails) {
+        throw new Error('User details not found');
+      }
+      
+      const user = JSON.parse(userDetails);
+      const submitData = {
+        quiz_id: parseInt(quiz.id),
+        student_id: user.id,
+        student_name: `${user.firstName} ${user.lastName}`,
+        score: score,
+        total_points: totalPoints,
+        percentage: percentage,
+        time_spent: quiz.isTimeLimited ? (quiz.duration * 60 - timeRemaining) : null,
+        answers: answers
+      };
+
+      const submitResponse = await fetch('http://localhost:3001/quizzes/attempts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (submitResponse.ok) {
+        const result = await submitResponse.json();
+        setQuizResults(result);
+        setHasAttempted(true);
+        
+        // Show results if enabled
+        if (quiz.showResults) {
+          setShowResults(true);
+        } else {
+          // Redirect to completion
+          setTimeout(() => {
+            onComplete();
+          }, 3000);
+        }
+      } else {
+        console.error('Failed to submit quiz results');
+        setTimeout(() => {
+          onComplete();
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error submitting quiz results:', error);
+      setTimeout(() => {
+        onComplete();
+      }, 3000);
+    }
   };
 
   const renderQuestion = () => {
@@ -454,108 +589,6 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
           </div>
         );
 
-      case 'essay':
-        return (
-          <div>
-            <textarea
-              value={userAnswer || ''}
-              onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-              placeholder="Développez votre réponse ici..."
-              className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
-              rows={8}
-            />
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-blue-300">
-                {userAnswer ? `${userAnswer.length} caractères` : '0 caractère'}
-              </span>
-              {currentQuestion.timeLimit && (
-                <span className="text-orange-300">
-                  Temps recommandé : {Math.floor(currentQuestion.timeLimit / 60)} min
-                </span>
-              )}
-            </div>
-          </div>
-        );
-
-      case 'matching':
-        return (
-          <div className="space-y-4">
-            <p className="text-blue-200 text-sm mb-4">
-              Glissez-déposez ou cliquez pour associer les éléments :
-            </p>
-            {currentQuestion.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div className="flex-1 p-3 bg-white/10 rounded-lg border border-white/20">
-                  {option}
-                </div>
-                <ArrowRight className="w-5 h-5 text-blue-300" />
-                <select
-                  value={userAnswer?.[option] || ''}
-                  onChange={(e) => handleAnswer(currentQuestion.id, {
-                    ...userAnswer,
-                    [option]: e.target.value
-                  })}
-                  className="flex-1 p-3 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-                >
-                  <option value="">Choisir...</option>
-                  {Object.values(currentQuestion.correctAnswer as object).map((value: any, idx) => (
-                    <option key={idx} value={value}>{value}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        );
-
-      case 'ordering':
-        const orderedItems = userAnswer || [...(currentQuestion.options || [])];
-        return (
-          <div className="space-y-4">
-            <p className="text-blue-200 text-sm mb-4">
-              Glissez les éléments pour les remettre dans l'ordre :
-            </p>
-            {orderedItems.map((item: string, index: number) => (
-              <div
-                key={index}
-                className="flex items-center space-x-4 p-4 bg-white/10 rounded-xl border border-white/20 cursor-move"
-              >
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">
-                  {index + 1}
-                </div>
-                <span className="flex-1 text-white">{item}</span>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      if (index > 0) {
-                        const newOrder = [...orderedItems];
-                        [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
-                        handleAnswer(currentQuestion.id, newOrder);
-                      }
-                    }}
-                    disabled={index === 0}
-                    className="p-2 rounded-lg bg-white/10 text-blue-300 hover:bg-white/20 disabled:opacity-50"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (index < orderedItems.length - 1) {
-                        const newOrder = [...orderedItems];
-                        [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-                        handleAnswer(currentQuestion.id, newOrder);
-                      }
-                    }}
-                    disabled={index === orderedItems.length - 1}
-                    className="p-2 rounded-lg bg-white/10 text-blue-300 hover:bg-white/20 disabled:opacity-50"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-
       default:
         return <div>Type de question non supporté</div>;
     }
@@ -574,11 +607,15 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             <p className="text-blue-200 text-lg">{quiz.description}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white/5 rounded-xl p-6 text-center">
               <Clock className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-              <div className="text-white text-2xl font-bold">{quiz.duration} min</div>
-              <div className="text-blue-300 text-sm">Durée</div>
+              <div className="text-white text-2xl font-bold">
+                {quiz.isTimeLimited ? `${quiz.duration} min` : 'Illimité'}
+              </div>
+              <div className="text-blue-300 text-sm">
+                {quiz.isTimeLimited ? 'Durée limitée' : 'Pas de limite'}
+              </div>
             </div>
             <div className="bg-white/5 rounded-xl p-6 text-center">
               <Target className="w-8 h-8 text-green-400 mx-auto mb-3" />
@@ -589,6 +626,15 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               <Star className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
               <div className="text-white text-2xl font-bold">{quiz.totalPoints}</div>
               <div className="text-blue-300 text-sm">Points</div>
+            </div>
+            <div className="bg-white/5 rounded-xl p-6 text-center">
+              <RefreshCw className="w-8 h-8 text-purple-400 mx-auto mb-3" />
+              <div className="text-white text-2xl font-bold">
+                {quiz.allowRetake ? 'Oui' : 'Non'}
+              </div>
+              <div className="text-blue-300 text-sm">
+                {quiz.allowRetake ? 'Reprises autorisées' : 'Une seule tentative'}
+              </div>
             </div>
           </div>
 
@@ -601,6 +647,40 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               <p className="text-blue-100">{quiz.instructions}</p>
             </div>
           )}
+
+          {/* Informations sur les paramètres du quiz */}
+          <div className="bg-yellow-500/20 rounded-xl p-6 mb-8">
+            <h3 className="text-white font-bold text-lg mb-3 flex items-center">
+              <Settings className="w-5 h-5 mr-2" />
+              Paramètres du quiz
+            </h3>
+            <div className="space-y-2 text-blue-200">
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-2" />
+                <span>
+                  <strong>Temps :</strong> {quiz.isTimeLimited 
+                    ? `Limité à ${quiz.duration} minutes` 
+                    : 'Aucune limite de temps - vous pouvez prendre votre temps'}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                <span>
+                  <strong>Reprises :</strong> {quiz.allowRetake 
+                    ? 'Autorisées - vous pourrez refaire ce quiz' 
+                    : 'Non autorisées - une seule tentative possible'}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <Eye className="w-4 h-4 mr-2" />
+                <span>
+                  <strong>Résultats :</strong> {quiz.showResults 
+                    ? 'Affichés après completion - vous verrez vos réponses et les bonnes réponses' 
+                    : 'Non affichés - vous ne verrez que votre score final'}
+                </span>
+              </div>
+            </div>
+          </div>
 
           <div className="flex items-center justify-center space-x-4">
             <button
@@ -677,16 +757,30 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
           </div>
 
           <div className="flex items-center justify-center space-x-4">
-            <button
-              onClick={onComplete}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
-            >
-              Voir les résultats détaillés
-            </button>
+            {quiz.showResults ? (
+              <button
+                onClick={() => setShowResults(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
+              >
+                Voir les résultats détaillés
+              </button>
+            ) : (
+              <button
+                onClick={onComplete}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
+              >
+                Retour à la liste des quiz
+              </button>
+            )}
           </div>
         </div>
       </div>
     );
+  }
+
+  // Show detailed results if enabled and quiz is completed
+  if (showResults && quizResults) {
+    return renderDetailedResults();
   }
 
   // Interface principale du quiz
@@ -704,32 +798,26 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Timer */}
-              <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                timeRemaining < 300 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
-              }`}>
-                <Clock className="w-5 h-5" />
-                <span className="font-mono text-lg">{formatTime(timeRemaining)}</span>
-              </div>
+              {/* Timer - Only show if time limited */}
+              {quiz.isTimeLimited && (
+                <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  timeRemaining < 300 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
+                }`}>
+                  <Clock className="w-5 h-5" />
+                  <span className="font-mono text-lg">{formatTime(timeRemaining)}</span>
+                </div>
+              )}
 
-              {/* Contrôles */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setIsPaused(!isPaused)}
-                  className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
-                  title={isPaused ? 'Reprendre' : 'Pause'}
-                >
-                  {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-                </button>
-                
-                <button
-                  onClick={() => setFullscreen(!fullscreen)}
-                  className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
-                  title={fullscreen ? 'Quitter plein écran' : 'Plein écran'}
-                >
-                  {fullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                </button>
-              </div>
+                             {/* Contrôles */}
+               <div className="flex items-center space-x-2">
+                 <button
+                   onClick={() => setFullscreen(!fullscreen)}
+                   className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
+                   title={fullscreen ? 'Quitter plein écran' : 'Plein écran'}
+                 >
+                   {fullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                 </button>
+               </div>
             </div>
           </div>
 
@@ -842,14 +930,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                   <span>Précédent</span>
                 </button>
 
-                <div className="flex items-center space-x-3">
-                  {autoSave && (
-                    <div className="flex items-center space-x-2 text-green-400 text-sm">
-                      <Save className="w-4 h-4" />
-                      <span>Sauvegarde auto</span>
-                    </div>
-                  )}
-                </div>
+                
 
                 {currentQuestionIndex === quiz.questions.length - 1 ? (
                   <button
@@ -920,53 +1001,39 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               </div>
             </div>
 
-            {/* Paramètres */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <h3 className="text-white font-semibold mb-4">Paramètres</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-200 text-sm">Sauvegarde auto</span>
-                  <button
-                    onClick={() => setAutoSave(!autoSave)}
-                    className={`w-10 h-6 rounded-full transition-all ${
-                      autoSave ? 'bg-green-500' : 'bg-white/20'
-                    }`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-all ${
-                      autoSave ? 'translate-x-5' : 'translate-x-1'
-                    }`} />
-                  </button>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-200 text-sm">Progression</span>
-                  <button
-                    onClick={() => setShowProgress(!showProgress)}
-                    className={`w-10 h-6 rounded-full transition-all ${
-                      showProgress ? 'bg-green-500' : 'bg-white/20'
-                    }`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-all ${
-                      showProgress ? 'translate-x-5' : 'translate-x-1'
-                    }`} />
-                  </button>
-                </div>
+                         {/* Paramètres */}
+             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
+               <h3 className="text-white font-semibold mb-4">Paramètres</h3>
+               <div className="space-y-3">
+                 <div className="flex items-center justify-between">
+                   <span className="text-blue-200 text-sm">Progression</span>
+                   <button
+                     onClick={() => setShowProgress(!showProgress)}
+                     className={`w-10 h-6 rounded-full transition-all ${
+                       showProgress ? 'bg-green-500' : 'bg-white/20'
+                     }`}
+                   >
+                     <div className={`w-4 h-4 bg-white rounded-full transition-all ${
+                       showProgress ? 'translate-x-5' : 'translate-x-1'
+                     }`} />
+                   </button>
+                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-200 text-sm">Son</span>
-                  <button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={`p-2 rounded-lg transition-all ${
-                      soundEnabled 
-                        ? 'bg-blue-500/20 text-blue-300' 
-                        : 'bg-white/10 text-white/60'
-                    }`}
-                  >
-                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
+                 <div className="flex items-center justify-between">
+                   <span className="text-blue-200 text-sm">Son</span>
+                   <button
+                     onClick={() => setSoundEnabled(!soundEnabled)}
+                     className={`p-2 rounded-lg transition-all ${
+                       soundEnabled 
+                         ? 'bg-blue-500/20 text-blue-300' 
+                         : 'bg-white/10 text-white/60'
+                     }`}
+                   >
+                     {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                   </button>
+                 </div>
+               </div>
+             </div>
 
             {/* Aide */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
@@ -989,4 +1056,3 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 };
 
 export default QuizTakeTab;
-

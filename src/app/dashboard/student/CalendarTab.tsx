@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getCurrentUserFullName, getSchoolName } from '@/lib/userUtils';
 import {
   Calendar,
   ChevronLeft,
@@ -202,7 +203,7 @@ const CalendarTab: React.FC = () => {
         endDate: '2024-12-23T15:30:00',
         isAllDay: false,
         location: 'Salle 205',
-        teacher: 'M. Dubois',
+        teacher: getCurrentUserFullName(),
         priority: 'medium',
         status: 'scheduled',
         reminders: [{ time: 30, enabled: true }],
@@ -271,8 +272,8 @@ const CalendarTab: React.FC = () => {
         startDate: '2024-12-26T17:00:00',
         endDate: '2024-12-26T18:00:00',
         isAllDay: false,
-        location: 'Collège Jean Moulin',
-        participants: ['M. Dubois (parent)', 'Mme Martin', 'M. Dubois (prof)'],
+        location: getSchoolName(),
+        participants: [`${getCurrentUserFullName()} (parent)`, 'Mme Martin', `${getCurrentUserFullName()} (prof)`],
         priority: 'medium',
         status: 'scheduled',
         reminders: [{ time: 120, enabled: true }],

@@ -131,6 +131,8 @@ export const quizzesAPI = {
 
   getQuiz: (id: number) => apiRequest(`/quizzes/${id}`),
 
+  getQuizWithQuestions: (id: number) => apiRequest(`/quizzes/${id}/with-questions`),
+
   createQuiz: (quizData: any) =>
     apiRequest('/quizzes', {
       method: 'POST',
@@ -154,6 +156,28 @@ export const quizzesAPI = {
     apiRequest('/quizzes/attempts', {
       method: 'POST',
       body: JSON.stringify(attemptData),
+    }),
+
+  // Question management
+  getQuestions: (quizId: number) => apiRequest(`/quizzes/${quizId}/questions`),
+
+  getQuestion: (questionId: number) => apiRequest(`/quizzes/questions/${questionId}`),
+
+  createQuestion: (questionData: any) =>
+    apiRequest('/quizzes/questions', {
+      method: 'POST',
+      body: JSON.stringify(questionData),
+    }),
+
+  updateQuestion: (questionId: number, questionData: any) =>
+    apiRequest(`/quizzes/questions/${questionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(questionData),
+    }),
+
+  deleteQuestion: (questionId: number) =>
+    apiRequest(`/quizzes/questions/${questionId}`, {
+      method: 'DELETE',
     }),
 };
 
@@ -487,6 +511,189 @@ export const messagingAPI = {
 
   // Test
   test: () => apiRequest('/messaging/test'),
+};
+
+// Fonctions pour la gestion des profils
+export const updateUserProfile = async (userId: number, profileData: any) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(profileData)
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la mise à jour du profil');
+    }
+
+    const updatedUser = await response.json();
+    
+    // Mettre à jour les données dans localStorage
+    const currentUserDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+    const updatedUserDetails = { ...currentUserDetails, ...updatedUser };
+    localStorage.setItem('userDetails', JSON.stringify(updatedUserDetails));
+    
+    return updatedUser;
+  } catch (error) {
+    console.error('Erreur API updateUserProfile:', error);
+    throw error;
+  }
+};
+
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('Token d\'authentification manquant');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      if (response.status === 400) {
+        throw new Error(errorData.message || 'Données invalides');
+      } else if (response.status === 401) {
+        throw new Error('Non autorisé');
+      } else if (response.status === 404) {
+        throw new Error('Utilisateur non trouvé');
+      } else {
+        throw new Error('Erreur lors du changement de mot de passe');
+      }
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API changePassword:', error);
+    throw error;
+  }
+};
+
+export const getUserProfile = async (userId: number) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/profile`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération du profil');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API getUserProfile:', error);
+    throw error;
+  }
+};
+
+// Fonction pour récupérer les données complètes d'un étudiant
+export const getStudentProfile = async (studentId: number) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération du profil étudiant');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API getStudentProfile:', error);
+    throw error;
+  }
+};
+
+// Fonction pour mettre à jour le profil d'un étudiant
+export const updateStudentProfile = async (studentId: number, profileData: any) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(profileData)
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la mise à jour du profil étudiant');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API updateStudentProfile:', error);
+    throw error;
+  }
+};
+
+// Fonction pour récupérer les données complètes d'un parent
+export const getParentProfile = async (parentId: number) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/parents/${parentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération du profil parent');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API getParentProfile:', error);
+    throw error;
+  }
+};
+
+// Fonction pour mettre à jour le profil d'un parent
+export const updateParentProfile = async (parentId: number, profileData: any) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/parents/${parentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(profileData)
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la mise à jour du profil parent');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API updateParentProfile:', error);
+    throw error;
+  }
 };
 
 export default {

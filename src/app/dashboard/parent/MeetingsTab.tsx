@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { getChildName, getSchoolName } from '@/lib/userUtils';
 import {
   Users,
   Calendar,
@@ -31,13 +32,13 @@ interface MeetingItem {
 const DEFAULT_MEETINGS: MeetingItem[] = [
   {
     id: 'mtg-1',
-    title: 'Réunion parents-professeurs (Lucas)',
+    title: `Réunion parents-professeurs (${getChildName('child-1')})`,
     date: '2024-12-27',
     startTime: '17:00',
     endTime: '18:00',
-    location: 'Collège Jean Moulin - Salle 205',
+    location: `${getSchoolName()} - Salle 205`,
     participants: [
-      { id: 'parent-1', name: 'Marie Dubois', role: 'parent' },
+      { id: 'parent-1', name: 'Vous', role: 'parent' },
       { id: 'teacher-1', name: 'Mme Martin', role: 'teacher' },
     ],
     status: 'confirmed',
@@ -45,13 +46,13 @@ const DEFAULT_MEETINGS: MeetingItem[] = [
   },
   {
     id: 'mtg-2',
-    title: 'Entretien pédagogique (Emma)',
+    title: `Entretien pédagogique (${getChildName('child-2')})`,
     date: '2025-01-05',
     startTime: '18:30',
     endTime: '19:00',
     location: 'En ligne (lien communiqué par le professeur)',
     participants: [
-      { id: 'parent-1', name: 'Marie Dubois', role: 'parent' },
+      { id: 'parent-1', name: 'Vous', role: 'parent' },
       { id: 'teacher-2', name: 'M. Leroy', role: 'teacher' },
     ],
     status: 'pending'

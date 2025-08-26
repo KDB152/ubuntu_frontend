@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getChildName, getSchoolName } from '@/lib/userUtils';
 import {
   Calendar,
   Clock,
@@ -229,12 +230,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({
       {
         id: 'event-2',
         title: 'Réunion parents-professeurs',
-        description: 'Entretien avec les professeurs de Lucas et Emma pour faire le point sur leur progression',
+        description: `Entretien avec les professeurs de ${getChildName('child-1')} et ${getChildName('child-2')} pour faire le point sur leur progression`,
         type: 'meeting',
         startDate: '2024-12-27',
         startTime: '17:00',
         endTime: '18:00',
-        location: 'Collège Jean Moulin - Salle 205',
+        location: `${getSchoolName()} - Salle 205`,
         teacherId: 'teacher-1',
         teacherName: 'Mme Martin',
         priority: 'urgent',
@@ -245,7 +246,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({
           { time: 60, method: 'notification' }
         ],
         attendees: [
-          { id: 'parent-1', name: 'Marie Dubois', role: 'parent', status: 'accepted' },
+          { id: 'parent-1', name: 'Vous', role: 'parent', status: 'accepted' },
           { id: 'teacher-1', name: 'Mme Martin', role: 'teacher', status: 'accepted' },
           { id: 'teacher-2', name: 'M. Leroy', role: 'teacher', status: 'accepted' }
         ],
@@ -309,7 +310,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({
         startDate: '2025-01-15',
         startTime: '18:00',
         endTime: '19:00',
-        location: 'Collège Jean Moulin - Hall principal',
+        location: `${getSchoolName()} - Hall principal`,
         priority: 'medium',
         status: 'scheduled',
         isRecurring: false,

@@ -127,6 +127,11 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ parent }) => {
       return;
     }
 
+    if (passwordData.current === passwordData.new) {
+      alert('Le nouveau mot de passe doit être différent de l\'actuel');
+      return;
+    }
+
     setPasswordLoading(true);
     try {
       // Debug: Vérifier le token

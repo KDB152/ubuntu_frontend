@@ -421,12 +421,12 @@ export const USER_ROLES = {
 // Données de démonstration
 export const DEMO_STUDENT: Student = {
   id: 'student-1',
-  firstName: 'Lucas',
-  lastName: 'Dubois',
-  avatar: '/avatars/lucas.jpg',
+  firstName: 'Étudiant',
+  lastName: 'Exemple',
+  avatar: '/avatars/student-default.jpg',
   class: '4ème A',
   level: 'Collège',
-  school: 'Collège Jean Moulin',
+  school: 'École',
   teacher: 'Mme Martin',
   stats: {
     averageScore: 87,
@@ -443,8 +443,8 @@ export const DEMO_STUDENT: Student = {
     lastActive: '2024-12-20T16:30:00'
   },
   parents: [
-    { id: 'parent-1', name: 'Marie Dubois' },
-    { id: 'parent-2', name: 'Jean Dubois' }
+    { id: 'parent-1', name: 'Parent 1' },
+    { id: 'parent-2', name: 'Parent 2' }
   ]
 };
 

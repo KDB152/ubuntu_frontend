@@ -35,8 +35,10 @@ import {
   Timer,
   HelpCircle,
   Copy,
-  Share2
+  Share2,
+  List
 } from 'lucide-react';
+import QuestionManagementModal from './QuestionManagementModal';
 
 interface Question {
   id: string;
@@ -95,9 +97,11 @@ const QuizzesManagementTab = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [quizToEdit, setQuizToEdit] = useState<Quiz | null>(null);
   const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null);
   const [quizToViewResults, setQuizToViewResults] = useState<Quiz | null>(null);
+  const [quizToManageQuestions, setQuizToManageQuestions] = useState<Quiz | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [activeTab, setActiveTab] = useState<'quizzes' | 'results'>('quizzes');
@@ -283,10 +287,46 @@ const QuizzesManagementTab = () => {
     showNotification('success', 'Quiz dupliqué avec succès');
   };
 
+  const handleQuestionsUpdated = () => {
+    // Refresh the quizzes list to update total points
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${API_BASE}/quizzes`);
+        const json = await res.json();
+        const mapped: Quiz[] = (json.items || []).map((q: any) => ({
+          id: String(q.id),
+          title: q.title,
+          description: q.description || '',
+          subject: q.subject,
+          level: q.level,
+          duration: q.duration || 0,
+          questions: [],
+          totalPoints: q.total_points || 0,
+          attempts: q.attempts || 0,
+          averageScore: Number(q.average_score || 0),
+          passScore: q.pass_score || 0,
+          status: q.status,
+          createdDate: q.created_at?.slice(0,10) || '',
+          lastModified: q.updated_at?.slice(0,10) || '',
+          tags: q.tags || [],
+          isTimeLimited: !!q.is_time_limited,
+          allowRetake: !!q.allow_retake,
+          showResults: !!q.show_results,
+          randomizeQuestions: !!q.randomize_questions,
+        }));
+        setQuizzes(mapped);
+      } catch (e) {}
+      setIsLoading(false);
+    };
+    load();
+  };
+
   const filteredQuizzes = quizzes.filter(quiz => {
-    const matchesSearch = quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         quiz.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         quiz.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = (quiz.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (quiz.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (quiz.tags || []).some(tag => (tag?.toLowerCase() || '').includes(searchQuery.toLowerCase()));
     const matchesSubject = filterSubject === 'Tous' || quiz.subject === filterSubject;
     const matchesStatus = filterStatus === 'Tous' || quiz.status === filterStatus;
     const matchesLevel = filterLevel === 'Tous' || quiz.level === filterLevel;
@@ -548,35 +588,45 @@ const QuizzesManagementTab = () => {
                 {/* Actions */}
                 <div className="p-4 bg-white/5 border-t border-white/10">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          setQuizToViewResults(quiz);
-                          setShowResultsModal(true);
-                        }}
-                        className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                        title="Voir les résultats"
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => duplicateQuiz(quiz)}
-                        className="p-2 text-green-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                        title="Dupliquer"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setQuizToEdit(quiz);
-                          setShowEditModal(true);
-                        }}
-                        className="p-2 text-yellow-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </div>
+                                      <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setQuizToManageQuestions(quiz);
+                        setShowQuestionModal(true);
+                      }}
+                      className="p-2 text-purple-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                      title="Gérer les questions"
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setQuizToViewResults(quiz);
+                        setShowResultsModal(true);
+                      }}
+                      className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                      title="Voir les résultats"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => duplicateQuiz(quiz)}
+                      className="p-2 text-green-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                      title="Dupliquer"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setQuizToEdit(quiz);
+                        setShowEditModal(true);
+                      }}
+                      className="p-2 text-yellow-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                      title="Modifier"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </div>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => toggleQuizStatus(quiz)}
@@ -766,6 +816,18 @@ const QuizzesManagementTab = () => {
             setShowResultsModal(false);
             setQuizToViewResults(null);
           }}
+        />
+      )}
+
+      {showQuestionModal && quizToManageQuestions && (
+        <QuestionManagementModal
+          quizId={parseInt(quizToManageQuestions.id)}
+          quizTitle={quizToManageQuestions.title}
+          onClose={() => {
+            setShowQuestionModal(false);
+            setQuizToManageQuestions(null);
+          }}
+          onQuestionsUpdated={handleQuestionsUpdated}
         />
       )}
     </div>

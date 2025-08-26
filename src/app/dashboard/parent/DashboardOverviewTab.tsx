@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getChildName, getSchoolName } from '@/lib/userUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -258,7 +259,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'alert-1',
         type: 'success',
         title: 'Excellent résultat !',
-        message: 'Lucas a obtenu 98% au quiz sur la Révolution française',
+        message: `${getChildName('child-1')} a obtenu 98% au quiz sur la Révolution française`,
         childId: 'child-1',
         timestamp: '2024-12-20T16:30:00',
         isRead: false,
@@ -283,7 +284,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'alert-3',
         type: 'info',
         title: 'Nouveau quiz disponible',
-        message: 'Un nouveau quiz sur l\'Empire napoléonien est disponible pour Emma',
+        message: `Un nouveau quiz sur l'Empire napoléonien est disponible pour ${getChildName('child-2')}`,
         childId: 'child-2',
         timestamp: '2024-12-20T10:45:00',
         isRead: true
@@ -292,12 +293,12 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'alert-4',
         type: 'error',
         title: 'Quiz non terminé',
-        message: 'Lucas n\'a pas terminé le quiz sur les climats européens (échéance dans 2 jours)',
+        message: `${getChildName('child-1')} n'a pas terminé le quiz sur les climats européens (échéance dans 2 jours)`,
         childId: 'child-1',
         timestamp: '2024-12-19T18:20:00',
         isRead: false,
         action: {
-          label: 'Rappeler à Lucas',
+          label: `Rappeler à ${getChildName('child-1')}`,
           url: '/messages/send-reminder'
         }
       },
@@ -305,7 +306,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'alert-5',
         type: 'success',
         title: 'Badge obtenu !',
-        message: 'Emma a débloqué le badge "Géographe Expert"',
+        message: `${getChildName('child-2')} a débloqué le badge "Géographe Expert"`,
         childId: 'child-2',
         timestamp: '2024-12-19T15:30:00',
         isRead: true
@@ -327,8 +328,8 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         title: 'Réunion parents-professeurs',
         type: 'meeting',
         date: '2024-12-27T17:00:00',
-        location: 'Collège Jean Moulin - Salle 205',
-        description: 'Entretien avec les professeurs de Lucas et Emma',
+        location: `${getSchoolName()} - Salle 205`,
+        description: `Entretien avec les professeurs de ${getChildName('child-1')} et ${getChildName('child-2')}`,
         priority: 'urgent'
       },
       {

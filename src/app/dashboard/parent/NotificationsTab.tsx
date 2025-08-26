@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { getChildName, getChildFullName } from '@/lib/userUtils';
 import {
   Bell,
   BellRing,
@@ -53,7 +54,7 @@ const DEFAULT_NOTIFICATIONS: Notification[] = [
     id: 'notif-1',
     type: 'alert',
     title: 'Résultat de quiz disponible',
-    message: 'Lucas a terminé le quiz "La Révolution française" avec un score de 92%.',
+            message: `${getChildName('child-1')} a terminé le quiz "La Révolution française" avec un score de 92%.`,
     childId: 'child-1',
     childName: 'Lucas Dubois',
     timestamp: '2024-12-20T16:35:00',

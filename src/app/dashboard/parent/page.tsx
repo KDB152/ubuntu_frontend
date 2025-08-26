@@ -36,6 +36,7 @@ import MeetingsTab from './MeetingsTab';
 import PaymentsTab from './PaymentsTab';
 import NotificationsTab from './NotificationsTab';
 import SettingsTab from './SettingsTab';
+import ParentProfileTab from './ParentProfileTab';
 
 interface Child {
   id: string;
@@ -244,6 +245,12 @@ const ParentDashboard: React.FC = () => {
       icon: Bell,
       component: NotificationsTab,
       badge: parent?.notifications.urgent || 0
+    },
+    {
+      id: 'profile',
+      label: 'Mon Profil',
+      icon: User,
+      component: ParentProfileTab
     },
     {
       id: 'settings',
