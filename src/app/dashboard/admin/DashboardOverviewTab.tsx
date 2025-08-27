@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getGenericUserName } from '@/lib/userUtils';
 import { useRealStats } from '@/hooks/useRealStats';
+import { useRouter } from 'next/navigation';
 import {
   BarChart3,
   Users,
@@ -104,6 +105,7 @@ interface SystemHealth {
 }
 
 const DashboardOverviewTab = () => {
+  const router = useRouter();
   const { stats: realStats } = useRealStats();
   const [stats, setStats] = useState<DashboardStats>({
     users: { total: realStats.totalUsers, active: realStats.totalUsers, new: 0, growth: 0 },
@@ -246,6 +248,23 @@ const DashboardOverviewTab = () => {
 
   const healthStatus = getHealthStatus(systemHealth.status);
   const HealthIcon = healthStatus.icon;
+
+  // Fonctions pour les actions rapides
+  const handleAddUser = () => {
+    router.push('/dashboard/admin?tab=users&action=create');
+  };
+
+  const handleCreateQuiz = () => {
+    router.push('/dashboard/admin?tab=quizzes&action=create');
+  };
+
+  const handleSendMessage = () => {
+    router.push('/dashboard/admin?tab=messages&action=compose');
+  };
+
+  const handleSettings = () => {
+    router.push('/dashboard/admin?tab=settings');
+  };
 
   return (
     <div className="space-y-8">
@@ -396,180 +415,7 @@ const DashboardOverviewTab = () => {
           </div>
         </div>
       </div>
-
-      {/* Graphiques et activité récente */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Graphique d'activité */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <LineChart className="w-5 h-5 text-blue-300 mr-2" />
-              Activité des utilisateurs
-            </h2>
-            <div className="flex items-center space-x-2">
-              <button className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                <BarChart className="w-4 h-4" />
-              </button>
-              <button className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                <PieChart className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
           
-          {/* Simulation d'un graphique */}
-          <div className="h-64 flex items-end justify-between space-x-2">
-            {[65, 78, 82, 75, 88, 92, 85, 79, 86, 91, 88, 94, 89, 83].map((height, index) => (
-              <div
-                key={index}
-                className="bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg flex-1 transition-all hover:from-blue-500 hover:to-blue-300"
-                style={{ height: `${height}%` }}
-                title={`Jour ${index + 1}: ${height}%`}
-              />
-            ))}
-          </div>
-          
-          <div className="flex justify-between text-xs text-blue-300 mt-4">
-            <span>Il y a 14j</span>
-            <span>Il y a 7j</span>
-            <span>Aujourd'hui</span>
-          </div>
-        </div>
-
-        {/* Activité récente */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Clock className="w-5 h-5 text-blue-300 mr-2" />
-              Activité récente
-            </h2>
-            <button className="text-blue-300 hover:text-white text-sm transition-all">
-              Voir tout
-            </button>
-          </div>
-          
-          <div className="space-y-4 max-h-64 overflow-y-auto">
-            {recentActivity.map((activity) => {
-              const ActivityIcon = getActivityIcon(activity.type);
-              const colorClass = getActivityColor(activity.type);
-              
-              return (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClass}`}>
-                    <ActivityIcon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium">{activity.user}</p>
-                    <p className="text-blue-300 text-xs">{activity.description}</p>
-                    <p className="text-blue-400 text-xs">{formatTimestamp(activity.timestamp)}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* État du système */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center">
-            <Server className="w-5 h-5 text-blue-300 mr-2" />
-            État du système
-          </h2>
-          <div className={`flex items-center space-x-2 px-3 py-1 rounded-full ${healthStatus.color}`}>
-            <HealthIcon className="w-4 h-4" />
-            <span className="text-sm font-semibold capitalize">{systemHealth.status}</span>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Temps de fonctionnement */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-300 text-sm">Temps de fonctionnement</span>
-              <Clock className="w-4 h-4 text-blue-300" />
-            </div>
-            <div className="text-2xl font-bold text-white">{systemHealth.uptime}%</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all"
-                style={{ width: `${systemHealth.uptime}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Temps de réponse */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-300 text-sm">Temps de réponse</span>
-              <Zap className="w-4 h-4 text-blue-300" />
-            </div>
-            <div className="text-2xl font-bold text-white">{systemHealth.responseTime}ms</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(100, (500 - systemHealth.responseTime) / 5)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Utilisation mémoire */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-300 text-sm">Mémoire utilisée</span>
-              <Database className="w-4 h-4 text-blue-300" />
-            </div>
-            <div className="text-2xl font-bold text-white">{systemHealth.memoryUsage}%</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${
-                  systemHealth.memoryUsage > 80 ? 'bg-red-500' : 
-                  systemHealth.memoryUsage > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${systemHealth.memoryUsage}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Utilisation disque */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-300 text-sm">Espace disque</span>
-              <Archive className="w-4 h-4 text-blue-300" />
-            </div>
-            <div className="text-2xl font-bold text-white">{systemHealth.diskUsage}%</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${
-                  systemHealth.diskUsage > 80 ? 'bg-red-500' : 
-                  systemHealth.diskUsage > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${systemHealth.diskUsage}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Connexions actives */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-300 text-sm">Connexions actives</span>
-              <Wifi className="w-4 h-4 text-blue-300" />
-            </div>
-            <div className="text-2xl font-bold text-white">{systemHealth.activeConnections}</div>
-            <div className="text-xs text-blue-300 mt-1">utilisateurs connectés</div>
-          </div>
-
-          {/* Sécurité */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-300 text-sm">Sécurité</span>
-              <Shield className="w-4 h-4 text-blue-300" />
-            </div>
-            <div className="text-2xl font-bold text-green-400">Sécurisé</div>
-            <div className="text-xs text-blue-300 mt-1">SSL actif, 2FA activé</div>
-          </div>
-        </div>
-      </div>
 
       {/* Actions rapides */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
@@ -579,7 +425,10 @@ const DashboardOverviewTab = () => {
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left">
+          <button 
+            onClick={handleAddUser}
+            className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
+          >
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-white" />
             </div>
@@ -589,7 +438,10 @@ const DashboardOverviewTab = () => {
             </div>
           </button>
           
-          <button className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left">
+          <button 
+            onClick={handleCreateQuiz}
+            className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
+          >
             <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
               <Plus className="w-5 h-5 text-white" />
             </div>
@@ -599,7 +451,10 @@ const DashboardOverviewTab = () => {
             </div>
           </button>
           
-          <button className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left">
+          <button 
+            onClick={handleSendMessage}
+            className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
+          >
             <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
               <Mail className="w-5 h-5 text-white" />
             </div>
@@ -609,7 +464,10 @@ const DashboardOverviewTab = () => {
             </div>
           </button>
           
-          <button className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left">
+          <button 
+            onClick={handleSettings}
+            className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
+          >
             <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
               <Settings className="w-5 h-5 text-white" />
             </div>

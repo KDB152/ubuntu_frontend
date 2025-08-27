@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Users,
   UserPlus,
@@ -96,6 +97,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
   onDeleteParent,
   onApproveUser,
 }) => {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'students' | 'parents'>('students');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('Tous');
@@ -111,6 +113,14 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
 
   const classes = ['Seconde', 'Première L', 'Première ES', 'Première S', 'Terminale L', 'Terminale ES', 'Terminale S'];
   const levels = ['Seconde', 'Première', 'Terminale'];
+
+  // Gérer les paramètres d'URL pour ouvrir automatiquement le modal de création
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'create') {
+      setShowAddModal(true);
+    }
+  }, [searchParams]);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });

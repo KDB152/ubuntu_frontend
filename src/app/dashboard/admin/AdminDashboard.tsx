@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminDashboard } from '@/hooks/useDashboard';
 import { useRealStats } from '@/hooks/useRealStats';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   BarChart3,
   Users,
@@ -75,6 +76,8 @@ interface AdminUser {
 }
 
 const AdminDashboard = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -200,8 +203,21 @@ const AdminDashboard = () => {
     }
   ];
 
+  // Gérer les paramètres d'URL pour les onglets
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'profile', 'files', 'settings'].includes(tabParam)) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [searchParams]);
+
   const handleTabChange = (tabId: TabType) => {
     setActiveTab(tabId);
+    // Mettre à jour l'URL sans recharger la page
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tabId);
+    router.replace(url.pathname + url.search);
+    
     if (window.innerWidth < 1024) {
       setSidebarCollapsed(true);
     }
