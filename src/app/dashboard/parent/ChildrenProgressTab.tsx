@@ -133,100 +133,80 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
   const [selectedSubject, setSelectedSubject] = useState<'all' | 'history' | 'geography'>('all');
   const [comparisonMode, setComparisonMode] = useState<'individual' | 'comparative'>('individual');
   const [showDetails, setShowDetails] = useState<{ [key: string]: boolean }>({});
+  const [childData, setChildData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Charger les données de l'enfant sélectionné
   useEffect(() => {
-    // Données simulées de progression
-    const mockProgressData: ProgressData[] = [
-      {
-        childId: 'child-1',
-        subject: 'history',
-        period: 'month',
-        scores: [78, 82, 85, 88, 92, 89, 94],
-        dates: ['2024-11-15', '2024-11-22', '2024-11-29', '2024-12-06', '2024-12-13', '2024-12-17', '2024-12-20'],
-        averageScore: 87,
-        improvement: 16,
-        strengths: ['Révolution française', 'Chronologie', 'Personnages historiques'],
-        weaknesses: ['Causes économiques', 'Contexte européen'],
-        recommendations: [
-          'Approfondir les aspects économiques de l\'histoire',
-          'Utiliser plus de cartes historiques',
-          'Faire des liens avec la géographie'
-        ]
-      },
-      {
-        childId: 'child-1',
-        subject: 'geography',
-        period: 'month',
-        scores: [85, 88, 83, 90, 87, 92, 89],
-        dates: ['2024-11-15', '2024-11-22', '2024-11-29', '2024-12-06', '2024-12-13', '2024-12-17', '2024-12-20'],
-        averageScore: 88,
-        improvement: 4,
-        strengths: ['Capitales européennes', 'Reliefs', 'Climats'],
-        weaknesses: ['Économie régionale', 'Démographie'],
-        recommendations: [
-          'Étudier les liens entre géographie et économie',
-          'Approfondir les données démographiques',
-          'Utiliser plus de graphiques et statistiques'
-        ]
-      },
-      {
-        childId: 'child-2',
-        subject: 'history',
-        period: 'month',
-        scores: [92, 95, 98, 94, 96, 99, 97],
-        dates: ['2024-11-15', '2024-11-22', '2024-11-29', '2024-12-06', '2024-12-13', '2024-12-17', '2024-12-20'],
-        averageScore: 96,
-        improvement: 5,
-        strengths: ['Analyse de documents', 'Synthèse', 'Argumentation', 'Chronologie'],
-        weaknesses: ['Cartographie historique'],
-        recommendations: [
-          'Continuer l\'excellent travail',
-          'Développer les compétences cartographiques',
-          'Approfondir l\'histoire européenne'
-        ]
-      },
-      {
-        childId: 'child-2',
-        subject: 'geography',
-        period: 'month',
-        scores: [89, 92, 94, 91, 95, 98, 96],
-        dates: ['2024-11-15', '2024-11-22', '2024-11-29', '2024-12-06', '2024-12-13', '2024-12-17', '2024-12-20'],
-        averageScore: 94,
-        improvement: 7,
-        strengths: ['Analyse spatiale', 'Cartes', 'Phénomènes climatiques', 'Urbanisation'],
-        weaknesses: ['Géologie'],
-        recommendations: [
-          'Excellent niveau général',
-          'Approfondir les aspects géologiques',
-          'Développer l\'analyse critique des données'
-        ]
+    const loadChildData = async () => {
+      if (!selectedChild?.id) {
+        setLoading(false);
+        return;
       }
-    ];
 
-    const mockSubjectProgress: SubjectProgress[] = [
-      {
-        subject: 'Histoire',
-        currentLevel: 12,
-        maxLevel: 20,
-        progress: 60,
-        recentScores: [87, 92, 89, 94, 88],
-        trend: 'up',
-        nextMilestone: 'Maître de la Révolution française'
-      },
-      {
-        subject: 'Géographie',
-        currentLevel: 14,
-        maxLevel: 20,
-        progress: 70,
-        recentScores: [88, 89, 92, 87, 91],
-        trend: 'stable',
-        nextMilestone: 'Expert des climats européens'
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/child/${selectedChild.id}/data`);
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors du chargement des données enfant');
+        }
+        
+        const data = await response.json();
+        setChildData(data);
+        
+        // Transformer les données de progression
+        const transformedProgressData: ProgressData[] = data.progress.map((p: any) => ({
+          childId: data.id,
+          subject: p.subject,
+          period: 'month',
+          scores: data.quizResults
+            .filter((qr: any) => qr.subject === p.subject)
+            .slice(0, 7)
+            .map((qr: any) => qr.percentage),
+          dates: data.quizResults
+            .filter((qr: any) => qr.subject === p.subject)
+            .slice(0, 7)
+            .map((qr: any) => qr.completedAt.split('T')[0]),
+          averageScore: p.progressPercentage,
+          improvement: 0, // À calculer
+          strengths: p.strengths || [],
+          weaknesses: p.weaknesses || [],
+          recommendations: [
+            'Continuer à pratiquer régulièrement',
+            'Revoir les points faibles identifiés',
+            'Participer aux quiz de révision'
+          ]
+        }));
+        
+        setProgressData(transformedProgressData);
+        
+        // Transformer les données de progression par matière
+        const transformedSubjectProgress: SubjectProgress[] = data.progress.map((p: any) => ({
+          subject: p.subject,
+          level: p.level,
+          progressPercentage: p.progressPercentage,
+          quizzesCompleted: data.quizResults.filter((qr: any) => qr.subject === p.subject).length,
+          averageScore: data.quizResults
+            .filter((qr: any) => qr.subject === p.subject)
+            .reduce((sum: number, qr: any) => sum + qr.percentage, 0) / 
+            Math.max(1, data.quizResults.filter((qr: any) => qr.subject === p.subject).length),
+          lastActivity: p.lastUpdated,
+          strengths: p.strengths || [],
+          weaknesses: p.weaknesses || []
+        }));
+        
+        setSubjectProgress(transformedSubjectProgress);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des données enfant:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    setProgressData(mockProgressData);
-    setSubjectProgress(mockSubjectProgress);
-  }, []);
+    loadChildData();
+  }, [selectedChild?.id]);
 
   const getChildProgressData = (childId: string) => {
     return progressData.filter(data => data.childId === childId);
@@ -587,18 +567,36 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-blue-200">Chargement des données de progression...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!childData) {
+    return (
+      <div className="text-center py-12">
+        <TrendingUp className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
+        <h3 className="text-white text-lg font-semibold mb-2">Aucune donnée disponible</h3>
+        <p className="text-blue-200">Sélectionnez un enfant pour voir ses progrès</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* En-tête avec filtres */}
+      {/* En-tête avec informations de l'enfant */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-white text-2xl font-bold mb-2">Suivi des progrès</h1>
+            <h1 className="text-white text-2xl font-bold mb-2">Progrès de {childData.fullName}</h1>
             <p className="text-blue-200">
-              {comparisonMode === 'individual' 
-                ? 'Analyse détaillée par enfant'
-                : 'Comparaison entre les enfants'
-              }
+              Classe: {childData.classLevel} | Niveau: {childData.stats.level} | XP: {childData.stats.totalXP}
             </p>
           </div>
           
@@ -623,100 +621,147 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
               <option value="history">Histoire</option>
               <option value="geography">Géographie</option>
             </select>
-            
-            <div className="flex items-center bg-white/10 rounded-lg p-1">
-              <button
-                onClick={() => setComparisonMode('individual')}
-                className={`px-3 py-2 rounded-md text-sm transition-all ${
-                  comparisonMode === 'individual' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'text-blue-300 hover:text-white'
-                }`}
-              >
-                Individuel
-              </button>
-              <button
-                onClick={() => setComparisonMode('comparative')}
-                className={`px-3 py-2 rounded-md text-sm transition-all ${
-                  comparisonMode === 'comparative' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'text-blue-300 hover:text-white'
-                }`}
-              >
-                Comparatif
-              </button>
-            </div>
+          </div>
+        </div>
+
+        {/* Statistiques globales */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white/5 rounded-lg p-4 text-center">
+            <div className="text-white text-2xl font-bold">{childData.stats.averageScore}%</div>
+            <div className="text-blue-300 text-sm">Score moyen</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-4 text-center">
+            <div className="text-white text-2xl font-bold">{childData.stats.completedQuizzes}</div>
+            <div className="text-blue-300 text-sm">Quiz terminés</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-4 text-center">
+            <div className="text-white text-2xl font-bold">{childData.stats.currentStreak}</div>
+            <div className="text-blue-300 text-sm">Série actuelle</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-4 text-center">
+            <div className="text-white text-2xl font-bold">{childData.stats.badges}</div>
+            <div className="text-blue-300 text-sm">Badges</div>
           </div>
         </div>
       </div>
 
-      {/* Contenu principal */}
-      {comparisonMode === 'individual' ? (
-        <div className="space-y-6">
-          {parent?.children.map(child => renderChildCard(child))}
-        </div>
-      ) : (
-        renderComparativeView()
-      )}
-
-      {/* Niveaux et progression */}
+      {/* Progression par matière */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white text-xl font-bold mb-6">Niveaux et progression</h3>
+        <h3 className="text-white text-xl font-bold mb-6">Progression par matière</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {subjectProgress.map((subject) => {
-            const TrendIcon = getTrendIcon(subject.trend);
-            
-            return (
-              <div key={subject.subject} className="bg-white/5 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    {subject.subject === 'Histoire' ? (
-                      <History className="w-6 h-6 text-amber-400" />
-                    ) : (
-                      <Globe className="w-6 h-6 text-green-400" />
-                    )}
-                    <h4 className="text-white font-semibold">{subject.subject}</h4>
-                  </div>
-                  <TrendIcon className={`w-5 h-5 ${getTrendColor(subject.trend)}`} />
+        <div className="space-y-6">
+          {subjectProgress.map((subject) => (
+            <div key={subject.subject} className="bg-white/5 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  {subject.subject === 'history' ? (
+                    <History className="w-6 h-6 text-amber-400" />
+                  ) : (
+                    <Globe className="w-6 h-6 text-green-400" />
+                  )}
+                  <h4 className="text-white font-semibold capitalize">{subject.subject}</h4>
                 </div>
-                
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-blue-200 text-sm">Niveau {subject.currentLevel}/{subject.maxLevel}</span>
-                    <span className="text-white font-semibold">{subject.progress}%</span>
-                  </div>
-                  <div className="w-full bg-white/20 rounded-full h-3">
-                    <div 
-                      className={`bg-gradient-to-r ${getProgressColor(subject.progress)} h-3 rounded-full transition-all`}
-                      style={{ width: `${subject.progress}%` }}
-                    />
-                  </div>
+                <div className="text-right">
+                  <div className="text-white text-lg font-bold">{Math.round(subject.averageScore)}%</div>
+                  <div className="text-blue-300 text-sm">{subject.quizzesCompleted} quiz</div>
                 </div>
-                
-                <div className="mb-4">
-                  <div className="text-blue-200 text-sm mb-2">Scores récents</div>
-                  <div className="flex items-end space-x-1 h-8">
-                    {subject.recentScores.map((score, index) => (
-                      <div
-                        key={index}
-                        className={`flex-1 bg-gradient-to-t ${getProgressColor(score)} rounded-t opacity-80`}
-                        style={{ height: `${(score / 100) * 100}%` }}
-                        title={`${score}%`}
-                      />
+              </div>
+              
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-blue-200 text-sm">Progression</span>
+                  <span className="text-white font-semibold">{subject.progressPercentage}%</span>
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all"
+                    style={{ width: `${subject.progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Points forts et faibles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="text-green-400 font-medium mb-2 flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Points forts</span>
+                  </h5>
+                  <div className="flex flex-wrap gap-2">
+                    {subject.strengths.map((strength, index) => (
+                      <span key={index} className="bg-green-500/20 text-green-300 text-xs px-2 py-1 rounded">
+                        {strength}
+                      </span>
                     ))}
                   </div>
                 </div>
                 
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="text-blue-200 text-sm mb-1">Prochain objectif</div>
-                  <div className="text-white font-medium">{subject.nextMilestone}</div>
+                <div>
+                  <h5 className="text-orange-400 font-medium mb-2 flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>À améliorer</span>
+                  </h5>
+                  <div className="flex flex-wrap gap-2">
+                    {subject.weaknesses.map((weakness, index) => (
+                      <span key={index} className="bg-orange-500/20 text-orange-300 text-xs px-2 py-1 rounded">
+                        {weakness}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Activité récente */}
+      {childData.quizResults.length > 0 && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+          <h3 className="text-white text-xl font-bold mb-6">Activité récente</h3>
+          
+          <div className="space-y-4">
+            {childData.quizResults.slice(0, 5).map((quiz: any) => (
+              <div key={quiz.id} className="bg-white/5 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-white font-semibold">{quiz.quizTitle}</h4>
+                    <p className="text-blue-300 text-sm capitalize">{quiz.subject}</p>
+                    <p className="text-blue-200 text-xs">
+                      {new Date(quiz.completedAt).toLocaleDateString('fr-FR')} • {quiz.timeSpent} min
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white text-lg font-bold">{quiz.percentage}%</div>
+                    <div className="text-blue-300 text-sm">{quiz.questionsCorrect}/{quiz.questionsTotal}</div>
+                    <div className="text-green-400 text-xs">+{quiz.xpEarned} XP</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Badges et achievements */}
+      {childData.achievements.length > 0 && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+          <h3 className="text-white text-xl font-bold mb-6">Badges et récompenses</h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {childData.achievements.map((achievement: any) => (
+              <div key={achievement.id} className="bg-white/5 rounded-lg p-4 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-white font-semibold text-sm">{achievement.name}</h4>
+                <p className="text-blue-300 text-xs">{achievement.description}</p>
+                <div className="text-green-400 text-xs mt-1">+{achievement.xpReward} XP</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

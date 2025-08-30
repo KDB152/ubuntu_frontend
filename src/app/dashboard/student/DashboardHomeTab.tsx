@@ -88,9 +88,19 @@ interface Announcement {
 
 interface DashboardHomeTabProps {
   onNavigateToQuiz: (quizId: string) => void;
+  onNavigateToQuizzes: () => void;
+  onNavigateToResults: () => void;
+  onNavigateToMessages: () => void;
+  onNavigateToCalendar: () => void;
 }
 
-const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz }) => {
+const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ 
+  onNavigateToQuiz, 
+  onNavigateToQuizzes,
+  onNavigateToResults, 
+  onNavigateToMessages, 
+  onNavigateToCalendar 
+}) => {
   const { stats: realStats } = useRealStats();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState('');
@@ -219,7 +229,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
       description: 'Démarrer un nouveau quiz disponible',
       icon: Play,
       color: 'from-green-500 to-emerald-600',
-      action: () => onNavigateToQuiz('quiz-1'),
+      action: () => onNavigateToQuizzes(),
 
     },
     {
@@ -228,7 +238,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
       description: 'Consulter vos derniers résultats',
       icon: BarChart3,
       color: 'from-blue-500 to-indigo-600',
-      action: () => console.log('Navigate to results')
+      action: () => onNavigateToResults()
     },
     {
       id: 'check-messages',
@@ -236,8 +246,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
       description: 'Lire vos nouveaux messages',
       icon: MessageSquare,
       color: 'from-purple-500 to-violet-600',
-      action: () => console.log('Navigate to messages'),
-
+      action: () => onNavigateToMessages()
     },
     {
       id: 'view-calendar',
@@ -245,7 +254,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
       description: 'Voir votre calendrier',
       icon: Calendar,
       color: 'from-orange-500 to-red-600',
-      action: () => console.log('Navigate to calendar')
+      action: () => onNavigateToCalendar()
     }
   ];
 
@@ -499,14 +508,26 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({ onNavigateToQuiz })
                     <span className="text-blue-300 text-xs">
                       {formatTimeRemaining(task.dueDate)}
                     </span>
-                    <button className="text-blue-400 hover:text-white transition-colors">
+                    <button 
+                      onClick={() => {
+                        if (task.type === 'quiz') {
+                          onNavigateToQuiz('quiz-' + task.id);
+                        } else {
+                          onNavigateToCalendar();
+                        }
+                      }}
+                      className="text-blue-400 hover:text-white transition-colors"
+                    >
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-            <button className="w-full mt-4 text-blue-300 hover:text-white text-sm flex items-center justify-center py-2 border border-white/20 rounded-lg hover:bg-white/5 transition-all">
+            <button 
+              onClick={onNavigateToCalendar}
+              className="w-full mt-4 text-blue-300 hover:text-white text-sm flex items-center justify-center py-2 border border-white/20 rounded-lg hover:bg-white/5 transition-all"
+            >
               <Plus className="w-4 h-4 mr-1" />
               Voir tout le planning
             </button>

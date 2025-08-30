@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   FileText,
   Download,
@@ -13,6 +13,7 @@ import {
   Award,
   MessageSquare,
   RefreshCw,
+  ClipboardList,
 } from 'lucide-react';
 
 interface ChildRef {
@@ -80,6 +81,37 @@ const mockReports: ReportItem[] = [
 const ReportsTab: React.FC<ReportsTabProps> = ({ selectedChild, parent, searchQuery }) => {
   const [typeFilter, setTypeFilter] = useState<'all' | ReportType>('all');
   const [childFilter, setChildFilter] = useState<string>('all');
+  const [childData, setChildData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Charger les données de l'enfant sélectionné
+  useEffect(() => {
+    const loadChildData = async () => {
+      if (!selectedChild?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/child/${selectedChild.id}/data`);
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors du chargement des données enfant');
+        }
+        
+        const data = await response.json();
+        setChildData(data);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des données enfant:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadChildData();
+  }, [selectedChild?.id]);
 
   const filtered = useMemo(() => {
     return mockReports.filter(r => {
@@ -101,13 +133,34 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedChild, parent, searchQu
     alert(`Téléchargement du rapport ${id} en ${fmt.toUpperCase()}`);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-blue-200">Chargement des rapports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!childData) {
+    return (
+      <div className="text-center py-12">
+        <ClipboardList className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
+        <h3 className="text-white text-lg font-semibold mb-2">Aucune donnée disponible</h3>
+        <p className="text-blue-200">Sélectionnez un enfant pour voir ses rapports</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-white text-2xl font-bold">Rapports et synthèses</h1>
-            <p className="text-blue-200">Exportez des rapports détaillés pour suivre les progrès</p>
+            <h1 className="text-white text-2xl font-bold">Rapports et synthèses - {childData.fullName}</h1>
+            <p className="text-blue-200">Classe: {childData.classLevel} | Niveau: {childData.stats.level}</p>
           </div>
           <button className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-all">
             <RefreshCw className="w-5 h-5" />

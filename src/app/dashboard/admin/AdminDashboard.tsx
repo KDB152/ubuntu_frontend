@@ -52,7 +52,8 @@ import {
   ChevronRight,
   ChevronDown,
   Maximize2,
-  Minimize2
+  Minimize2,
+  CreditCard
 } from 'lucide-react';
 
 // Import des composants d'onglets
@@ -60,11 +61,14 @@ import DashboardOverviewTab from './DashboardOverviewTab';
 import UsersManagementTab from './UsersManagementTab';
 import QuizzesManagementTab from './QuizzesManagementTab';
 import MessagesManagementTab from './MessagesManagementTab';
+import RendezVousManagementTab from './RendezVousManagementTab';
+import AttendanceTab from './AttendanceTab';
+import PaymentsManagementTab from './PaymentsManagementTab';
 import AdminProfileTab from './AdminProfileTab';
 import SettingsManagementTab from './SettingsManagementTab';
 import FileManagementTab from './FileManagementTab';
 
-type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'profile' | 'files' | 'settings';
+type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'profile' | 'files' | 'settings';
 
 interface AdminUser {
   id: string;
@@ -182,6 +186,27 @@ const AdminDashboard = () => {
       description: 'Communication avec les utilisateurs'
     },
     {
+      id: 'rendez-vous',
+      label: 'Rendez-vous',
+      icon: Calendar,
+      description: 'Gestion des demandes de rendez-vous',
+      badge: null
+    },
+    {
+      id: 'attendance',
+      label: 'Présence',
+      icon: Users,
+      description: 'Liste de présence des étudiants',
+      badge: null
+    },
+    {
+      id: 'payments',
+      label: 'Paiements',
+      icon: CreditCard,
+      description: 'Gestion des paiements des étudiants',
+      badge: null
+    },
+    {
       id: 'profile',
       label: 'Mon Profil',
       icon: User,
@@ -206,7 +231,7 @@ const AdminDashboard = () => {
   // Gérer les paramètres d'URL pour les onglets
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'profile', 'files', 'settings'].includes(tabParam)) {
+    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'rendez-vous', 'attendance', 'payments', 'profile', 'files', 'settings'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
@@ -271,6 +296,12 @@ const AdminDashboard = () => {
         return <QuizzesManagementTab />;
       case 'messages':
         return <MessagesManagementTab />;
+      case 'rendez-vous':
+        return <RendezVousManagementTab onRefresh={handleRefresh} />;
+      case 'attendance':
+        return <AttendanceTab />;
+      case 'payments':
+        return <PaymentsManagementTab />;
       case 'profile':
         return <AdminProfileTab />;
       case 'files':

@@ -519,7 +519,11 @@ const ParentDashboard: React.FC = () => {
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
-                <button className="p-3 bg-blue-500 hover:bg-blue-600 rounded-xl text-white transition-all">
+                <button 
+                  onClick={() => setActiveTab('messages')}
+                  className="p-3 bg-blue-500 hover:bg-blue-600 rounded-xl text-white transition-all"
+                  title="Nouveau message"
+                >
                   <Plus className="w-5 h-5" />
                 </button>
               </div>
@@ -533,6 +537,11 @@ const ParentDashboard: React.FC = () => {
             selectedChild={selectedChildData}
             parent={parent}
             searchQuery={searchQuery}
+            onNavigateToMessages={() => setActiveTab('messages')}
+            onNavigateToCalendar={() => setActiveTab('calendar')}
+            onNavigateToMeetings={() => setActiveTab('meetings')}
+            onNavigateToReports={() => setActiveTab('reports')}
+            onNavigateToSettings={() => setActiveTab('settings')}
           />
         </div>
       </div>

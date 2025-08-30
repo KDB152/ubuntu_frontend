@@ -319,7 +319,13 @@ const StudentDashboard = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'home':
-        return <DashboardHomeTab onNavigateToQuiz={(quizId) => handleTabChange('quiz-take', quizId)} />;
+        return <DashboardHomeTab 
+          onNavigateToQuiz={(quizId) => handleTabChange('quiz-take', quizId)}
+          onNavigateToQuizzes={() => handleTabChange('quizzes')}
+          onNavigateToResults={() => handleTabChange('results')}
+          onNavigateToMessages={() => handleTabChange('messages')}
+          onNavigateToCalendar={() => handleTabChange('calendar')}
+        />;
       case 'quizzes':
         return <QuizListTab onStartQuiz={(quizId) => handleTabChange('quiz-take', quizId)} />;
       case 'quiz-take':
@@ -339,7 +345,13 @@ const StudentDashboard = () => {
       case 'resources':
         return <ResourcesTab />;
       default:
-        return <DashboardHomeTab onNavigateToQuiz={(quizId) => handleTabChange('quiz-take', quizId)} />;
+        return <DashboardHomeTab 
+          onNavigateToQuiz={(quizId) => handleTabChange('quiz-take', quizId)}
+          onNavigateToQuizzes={() => handleTabChange('quizzes')}
+          onNavigateToResults={() => handleTabChange('results')}
+          onNavigateToMessages={() => handleTabChange('messages')}
+          onNavigateToCalendar={() => handleTabChange('calendar')}
+        />;
     }
   };
 

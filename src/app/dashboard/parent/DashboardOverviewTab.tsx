@@ -239,12 +239,22 @@ interface DashboardOverviewTabProps {
   selectedChild?: Child;
   parent?: Parent;
   searchQuery?: string;
+  onNavigateToMessages?: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToMeetings?: () => void;
+  onNavigateToReports?: () => void;
+  onNavigateToSettings?: () => void;
 }
 
 const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
   selectedChild,
   parent,
-  searchQuery
+  searchQuery,
+  onNavigateToMessages,
+  onNavigateToCalendar,
+  onNavigateToMeetings,
+  onNavigateToReports,
+  onNavigateToSettings
 }) => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
@@ -651,7 +661,16 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
                         )}
                         
                         {alert.action && (
-                          <button className="text-blue-400 hover:text-white text-xs font-semibold transition-all">
+                          <button 
+                            onClick={() => {
+                              if (alert.action?.url.includes('messages')) {
+                                onNavigateToMessages?.();
+                              } else if (alert.action?.url.includes('meetings')) {
+                                onNavigateToCalendar?.();
+                              }
+                            }}
+                            className="text-blue-400 hover:text-white text-xs font-semibold transition-all"
+                          >
                             {alert.action.label} →
                           </button>
                         )}
@@ -738,7 +757,16 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
                           )}
                         </div>
                         
-                        <button className="text-blue-400 hover:text-white text-xs font-semibold transition-all">
+                        <button 
+                          onClick={() => {
+                            if (event.type === 'quiz' || event.type === 'exam') {
+                              onNavigateToReports?.();
+                            } else if (event.type === 'meeting') {
+                              onNavigateToCalendar?.();
+                            }
+                          }}
+                          className="text-blue-400 hover:text-white text-xs font-semibold transition-all"
+                        >
                           Voir détails →
                         </button>
                       </div>
@@ -756,7 +784,10 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-white text-xl font-bold">Résumé par enfant</h2>
-            <button className="text-blue-400 hover:text-white transition-all">
+            <button 
+              onClick={() => onNavigateToReports?.()}
+              className="text-blue-400 hover:text-white transition-all"
+            >
               Voir détails complets →
             </button>
           </div>
@@ -823,22 +854,34 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         <h2 className="text-white text-xl font-bold mb-4">Actions rapides</h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all">
+          <button 
+            onClick={onNavigateToMessages}
+            className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
+          >
             <MessageSquare className="w-8 h-8 text-blue-400" />
             <span className="text-white text-sm font-medium">Envoyer un message</span>
           </button>
           
-          <button className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all">
+          <button 
+            onClick={onNavigateToMeetings}
+            className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
+          >
             <Calendar className="w-8 h-8 text-green-400" />
             <span className="text-white text-sm font-medium">Planifier RDV</span>
           </button>
           
-          <button className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all">
+          <button 
+            onClick={onNavigateToReports}
+            className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
+          >
             <FileText className="w-8 h-8 text-purple-400" />
             <span className="text-white text-sm font-medium">Voir rapports</span>
           </button>
           
-          <button className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all">
+          <button 
+            onClick={onNavigateToSettings}
+            className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
+          >
             <Settings className="w-8 h-8 text-orange-400" />
             <span className="text-white text-sm font-medium">Paramètres</span>
           </button>

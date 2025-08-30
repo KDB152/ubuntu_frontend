@@ -205,162 +205,67 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
   const [selectedChild_, setSelectedChild_] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'score' | 'subject' | 'difficulty'>('recent');
   const [showFilters, setShowFilters] = useState(false);
+  const [childData, setChildData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Charger les données de l'enfant sélectionné
   useEffect(() => {
-    // Données simulées des résultats de quiz
-    const mockResults: QuizResult[] = [
-      {
-        id: 'result-1',
-        childId: 'child-1',
-        quizTitle: 'La Révolution française',
-        subject: 'history',
-        score: 92,
-        maxScore: 100,
-        percentage: 92,
-        completedAt: '2024-12-20T16:30:00',
-        timeSpent: 25,
-        difficulty: 'medium',
-        questionsTotal: 20,
-        questionsCorrect: 18,
-        questionsIncorrect: 2,
-        rank: 3,
-        classAverage: 78,
-        teacherComment: 'Excellent travail ! Lucas maîtrise bien les événements de la Révolution. À continuer !',
-        strengths: ['Chronologie', 'Personnages historiques', 'Causes politiques'],
-        weaknesses: ['Contexte économique', 'Conséquences européennes'],
-        badges: ['Révolutionnaire', 'Historien en herbe'],
-        xpEarned: 150,
-        attempts: 1,
-        isImprovement: true,
-        previousScore: 85
-      },
-      {
-        id: 'result-2',
-        childId: 'child-1',
-        quizTitle: 'Les climats européens',
-        subject: 'geography',
-        score: 89,
-        maxScore: 100,
-        percentage: 89,
-        completedAt: '2024-12-18T14:15:00',
-        timeSpent: 18,
-        difficulty: 'easy',
-        questionsTotal: 15,
-        questionsCorrect: 13,
-        questionsIncorrect: 2,
-        rank: 5,
-        classAverage: 82,
-        teacherComment: 'Bonne compréhension des climats. Peut approfondir les liens avec la végétation.',
-        strengths: ['Classification climatique', 'Localisation', 'Températures'],
-        weaknesses: ['Précipitations', 'Végétation associée'],
-        badges: ['Météorologue'],
-        xpEarned: 120,
-        attempts: 1,
-        isImprovement: false
-      },
-      {
-        id: 'result-3',
-        childId: 'child-2',
-        quizTitle: 'L\'Empire napoléonien',
-        subject: 'history',
-        score: 98,
-        maxScore: 100,
-        percentage: 98,
-        completedAt: '2024-12-19T10:45:00',
-        timeSpent: 22,
-        difficulty: 'hard',
-        questionsTotal: 25,
-        questionsCorrect: 24,
-        questionsIncorrect: 1,
-        rank: 1,
-        classAverage: 74,
-        teacherComment: 'Performance exceptionnelle ! Emma démontre une excellente maîtrise du sujet.',
-        strengths: ['Analyse de documents', 'Synthèse', 'Argumentation', 'Chronologie détaillée'],
-        weaknesses: ['Cartographie des campagnes'],
-        badges: ['Empereur', 'Stratège', 'Analyste expert'],
-        xpEarned: 200,
-        attempts: 1,
-        isImprovement: true,
-        previousScore: 94
-      },
-      {
-        id: 'result-4',
-        childId: 'child-2',
-        quizTitle: 'Les capitales européennes',
-        subject: 'geography',
-        score: 96,
-        maxScore: 100,
-        percentage: 96,
-        completedAt: '2024-12-17T15:20:00',
-        timeSpent: 12,
-        difficulty: 'medium',
-        questionsTotal: 30,
-        questionsCorrect: 29,
-        questionsIncorrect: 1,
-        rank: 1,
-        classAverage: 71,
-        teacherComment: 'Excellente mémorisation ! Emma connaît parfaitement la géographie européenne.',
-        strengths: ['Mémorisation', 'Localisation précise', 'Pays et capitales', 'Culture générale'],
-        weaknesses: ['Données démographiques'],
-        badges: ['Explorateur urbain', 'Géographe expert'],
-        xpEarned: 180,
-        attempts: 1,
-        isImprovement: false
-      },
-      {
-        id: 'result-5',
-        childId: 'child-1',
-        quizTitle: 'Les reliefs européens',
-        subject: 'geography',
-        score: 76,
-        maxScore: 100,
-        percentage: 76,
-        completedAt: '2024-12-15T11:30:00',
-        timeSpent: 28,
-        difficulty: 'hard',
-        questionsTotal: 18,
-        questionsCorrect: 14,
-        questionsIncorrect: 4,
-        rank: 8,
-        classAverage: 69,
-        teacherComment: 'Résultat correct mais peut mieux faire. Revoir les formations géologiques.',
-        strengths: ['Montagnes principales', 'Localisation générale'],
-        weaknesses: ['Formation géologique', 'Altitudes précises', 'Érosion'],
-        badges: [],
-        xpEarned: 80,
-        attempts: 2,
-        isImprovement: false,
-        previousScore: 82
-      },
-      {
-        id: 'result-6',
-        childId: 'child-2',
-        quizTitle: 'La société sous l\'Ancien Régime',
-        subject: 'history',
-        score: 94,
-        maxScore: 100,
-        percentage: 94,
-        completedAt: '2024-12-14T09:15:00',
-        timeSpent: 20,
-        difficulty: 'medium',
-        questionsTotal: 22,
-        questionsCorrect: 21,
-        questionsIncorrect: 1,
-        rank: 2,
-        classAverage: 76,
-        teacherComment: 'Très bonne analyse de la société d\'Ancien Régime. Continue ainsi !',
-        strengths: ['Ordres sociaux', 'Privilèges', 'Économie rurale', 'Vie quotidienne'],
-        weaknesses: ['Commerce international'],
-        badges: ['Sociologue', 'Analyste social'],
-        xpEarned: 160,
-        attempts: 1,
-        isImprovement: true,
-        previousScore: 88
+    const loadChildData = async () => {
+      if (!selectedChild?.id) {
+        setLoading(false);
+        return;
       }
-    ];
 
-    setResults(mockResults);
-  }, []);
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/child/${selectedChild.id}/data`);
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors du chargement des données enfant');
+        }
+        
+        const data = await response.json();
+        setChildData(data);
+        
+        // Transformer les résultats de quiz
+        const transformedResults: QuizResult[] = data.quizResults.map((qr: any) => ({
+          id: qr.id,
+          childId: data.id,
+          quizTitle: qr.quizTitle,
+          subject: qr.subject,
+          score: qr.score,
+          maxScore: qr.maxScore,
+          percentage: qr.percentage,
+          completedAt: qr.completedAt,
+          timeSpent: qr.timeSpent,
+          difficulty: qr.difficulty,
+          questionsTotal: qr.questionsTotal,
+          questionsCorrect: qr.questionsCorrect,
+          questionsIncorrect: qr.questionsTotal - qr.questionsCorrect,
+          rank: 1, // À calculer
+          classAverage: 75, // À récupérer depuis la base
+          teacherComment: 'Bon travail ! Continuez ainsi.',
+          strengths: ['Compréhension', 'Mémorisation'],
+          weaknesses: ['Analyse critique'],
+          badges: ['Quiz Master'],
+          xpEarned: qr.xpEarned,
+          attempts: qr.attempts,
+          isImprovement: true,
+          previousScore: qr.percentage - 5
+        }));
+        
+        setResults(transformedResults);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement des données enfant:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadChildData();
+  }, [selectedChild?.id]);
+
 
   const getSubjectIcon = (subject: string) => {
     switch (subject) {
@@ -600,14 +505,35 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-blue-200">Chargement des résultats de quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!childData) {
+    return (
+      <div className="text-center py-12">
+        <FileText className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
+        <h3 className="text-white text-lg font-semibold mb-2">Aucune donnée disponible</h3>
+        <p className="text-blue-200">Sélectionnez un enfant pour voir ses résultats de quiz</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* En-tête avec statistiques */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-white text-2xl font-bold mb-2">Résultats des quiz</h1>
-            <p className="text-blue-200">Suivi détaillé des performances de vos enfants</p>
+            <h1 className="text-white text-2xl font-bold mb-2">Résultats des quiz - {childData.fullName}</h1>
+            <p className="text-blue-200">Classe: {childData.classLevel} | Total: {results.length} quiz</p>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -628,25 +554,25 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         {/* Statistiques globales */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className={`text-2xl font-bold ${getScoreColor(stats.averageScore)}`}>
-              {stats.averageScore}%
+            <div className={`text-2xl font-bold ${getScoreColor(childData.stats.averageScore)}`}>
+              {childData.stats.averageScore}%
             </div>
             <div className="text-blue-300 text-sm">Score moyen</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">{stats.totalQuizzes}</div>
+            <div className="text-white text-2xl font-bold">{childData.stats.completedQuizzes}</div>
             <div className="text-blue-300 text-sm">Quiz terminés</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">#{stats.bestRank}</div>
+            <div className="text-white text-2xl font-bold">#{childData.stats.rank}</div>
             <div className="text-blue-300 text-sm">Meilleur rang</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">{stats.improvements}</div>
-            <div className="text-blue-300 text-sm">Améliorations</div>
+            <div className="text-white text-2xl font-bold">{childData.stats.currentStreak}</div>
+            <div className="text-blue-300 text-sm">Série actuelle</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">{stats.totalXP}</div>
+            <div className="text-white text-2xl font-bold">{childData.stats.totalXP}</div>
             <div className="text-blue-300 text-sm">XP total</div>
           </div>
         </div>

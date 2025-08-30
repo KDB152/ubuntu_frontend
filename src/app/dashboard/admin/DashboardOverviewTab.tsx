@@ -266,6 +266,10 @@ const DashboardOverviewTab = () => {
     router.push('/dashboard/admin?tab=settings');
   };
 
+  const handleMeetings = () => {
+    router.push('/dashboard/admin?tab=rendez-vous');
+  };
+
   return (
     <div className="space-y-8">
       {/* En-tête avec actions */}
@@ -424,7 +428,7 @@ const DashboardOverviewTab = () => {
           Actions rapides
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <button 
             onClick={handleAddUser}
             className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
@@ -465,6 +469,19 @@ const DashboardOverviewTab = () => {
           </button>
           
           <button 
+            onClick={handleMeetings}
+            className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
+          >
+            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="text-white font-semibold">Gérer les rendez-vous</div>
+              <div className="text-blue-300 text-sm">{3} demandes en attente</div>
+            </div>
+          </button>
+          
+          <button 
             onClick={handleSettings}
             className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-left cursor-pointer"
           >
@@ -476,6 +493,118 @@ const DashboardOverviewTab = () => {
               <div className="text-blue-300 text-sm">Configuration système</div>
             </div>
           </button>
+        </div>
+      </div>
+
+      {/* Demandes de rendez-vous en attente */}
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center">
+            <Calendar className="w-5 h-5 text-blue-300 mr-2" />
+            Demandes de rendez-vous
+          </h2>
+          <button 
+            onClick={handleMeetings}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all"
+          >
+            <span>Voir tout</span>
+            <ArrowUp className="w-4 h-4 rotate-45" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Demande urgente */}
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-red-400" />
+                  <span className="text-red-400 text-sm font-semibold">URGENT</span>
+                  <span className="text-blue-300 text-xs">Il y a 2h</span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Sophie Bernard - Thomas Bernard (5ème C)</h3>
+                <p className="text-blue-200 text-sm mb-2">Situation urgente - Harcèlement</p>
+                <div className="flex items-center space-x-4 text-xs text-blue-300">
+                  <span>21/12/2024 à 09:00</span>
+                  <span>•</span>
+                  <span>60 min</span>
+                  <span>•</span>
+                  <span>En personne</span>
+                </div>
+              </div>
+              <button 
+                onClick={handleMeetings}
+                className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all text-sm"
+              >
+                Traiter
+              </button>
+            </div>
+          </div>
+
+          {/* Demande normale */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Clock className="w-4 h-4 text-yellow-400" />
+                  <span className="text-yellow-400 text-sm font-semibold">EN ATTENTE</span>
+                  <span className="text-blue-300 text-xs">Il y a 5h</span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Marie Dupont - Lucas Dupont (4ème A)</h3>
+                <p className="text-blue-200 text-sm mb-2">Problèmes de comportement</p>
+                <div className="flex items-center space-x-4 text-xs text-blue-300">
+                  <span>25/12/2024 à 14:00</span>
+                  <span>•</span>
+                  <span>30 min</span>
+                  <span>•</span>
+                  <span>En personne</span>
+                </div>
+              </div>
+              <button 
+                onClick={handleMeetings}
+                className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-all text-sm"
+              >
+                Traiter
+              </button>
+            </div>
+          </div>
+
+          {/* Demande normale */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Clock className="w-4 h-4 text-yellow-400" />
+                  <span className="text-yellow-400 text-sm font-semibold">EN ATTENTE</span>
+                  <span className="text-blue-300 text-xs">Il y a 1j</span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Jean Martin - Emma Martin (6ème B)</h3>
+                <p className="text-blue-200 text-sm mb-2">Suivi scolaire</p>
+                <div className="flex items-center space-x-4 text-xs text-blue-300">
+                  <span>26/12/2024 à 16:00</span>
+                  <span>•</span>
+                  <span>45 min</span>
+                  <span>•</span>
+                  <span>Visioconférence</span>
+                </div>
+              </div>
+              <button 
+                onClick={handleMeetings}
+                className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-all text-sm"
+              >
+                Traiter
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center py-4">
+            <button 
+              onClick={handleMeetings}
+              className="text-blue-300 hover:text-white transition-colors text-sm"
+            >
+              Voir toutes les demandes ({3} en attente)
+            </button>
+          </div>
         </div>
       </div>
     </div>
