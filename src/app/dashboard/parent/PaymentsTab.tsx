@@ -12,6 +12,11 @@ import {
   Calendar,
   Receipt,
   Wallet,
+  User,
+  Clock,
+  Info,
+  Euro,
+  BookOpen
 } from 'lucide-react';
 
 interface PaymentsTabProps {
@@ -20,159 +25,189 @@ interface PaymentsTabProps {
   searchQuery: string;
 }
 
-interface PaymentInfo {
-  studentId: number;
-  parentId: number;
-  fullName: string;
-  email: string;
-  classLevel: string;
-  seancesTotal: number;
-  seancesPayees: number;
-  seancesNonPayees: number;
-  montantTotal: number;
-  montantPaye: number;
-  montantRestant: number;
-  prixSeance: number;
+interface Payment {
+  id: number;
+  student_id: number;
+  parent_id: number | null;
+  seances_total: number;
+  seances_non_payees: number;
+  seances_payees: number;
+  montant_total: number; // Maintenant toujours un nombre après transformation
+  montant_paye: number;  // Maintenant toujours un nombre après transformation
+  montant_restant: number; // Maintenant toujours un nombre après transformation
+  prix_seance: number;   // Maintenant toujours un nombre après transformation
   statut: string;
-  dateDernierePresence?: string;
-  dateDernierPaiement?: string;
+  date_derniere_presence: string | null;
+  date_dernier_paiement: string | null;
+  student_first_name: string;
+  student_last_name: string;
+  class_level: string;
+  parent_first_name: string | null;
+  parent_last_name: string | null;
+  date_creation: string;
+  date_modification: string;
 }
 
-const PaymentsTab: React.FC<PaymentsTabProps> = ({ selectedChild, parent, searchQuery }) => {
-  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
+interface PaymentStats {
+  totalPayments: number;
+  totalAmount: number;
+  totalPaid: number;
+  totalRemaining: number;
+  totalSessions: number;
+  totalUnpaidSessions: number;
+  totalPaidSessions: number;
+}
+
+const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, searchQuery }) => {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [stats, setStats] = useState<PaymentStats | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [paidSessions, setPaidSessions] = useState(1);
 
-  const loadPaymentInfo = async () => {
-    console.log('🔍 PaymentsTab - loadPaymentInfo appelé');
-    console.log('   selectedChild:', selectedChild);
-
-    if (!selectedChild?.id) {
-      console.log('   ❌ Aucun enfant sélectionné');
-      setLoading(false);
-      return;
-    }
-
+  const loadPayments = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Récupérer l'ID utilisateur depuis localStorage
+      let userId = null;
       
-      const response = await fetch(`/api/payments?studentId=${selectedChild.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des informations de paiement');
+      // Essayer d'abord avec l'objet parent (si il contient user_id)
+      if (parent?.user_id) {
+        userId = parent.user_id;
+      } else {
+        // Sinon, récupérer depuis localStorage
+        const userData = localStorage.getItem('userDetails');
+        if (userData) {
+          const user = JSON.parse(userData);
+          userId = user.id;
+        }
       }
       
-      const data = await response.json();
-      console.log('   ✅ Données de paiement récupérées:', data);
+      if (!userId) {
+        throw new Error('Utilisateur non identifié - Veuillez vous reconnecter');
+      }
+
+      console.log('🔍 Chargement des paiements pour userId:', userId);
+
+      const response = await fetch(`/api/payments?userId=${userId}`);
       
-      setPaymentInfo(data);
-    } catch (error) {
-      console.error('   ❌ Erreur lors du chargement:', error);
-      setError('Erreur lors du chargement des informations de paiement');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!selectedChild?.id || !paymentInfo) return;
-
-    try {
-      setUpdating(true);
-      setError(null);
-      setSuccess(null);
-      
-      const response = await fetch('/api/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentId: selectedChild.id,
-          paidSessions: paidSessions
-        }),
-      });
-
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors du paiement');
+        throw new Error(errorData.error || 'Erreur lors du chargement des paiements');
       }
 
-      const result = await response.json();
-      setSuccess(result.message);
+      const data = await response.json();
       
-      // Recharger les informations de paiement
-      await loadPaymentInfo();
+      console.log('📊 Données paiements reçues:', data);
       
-      // Réinitialiser le nombre de séances
-      setPaidSessions(1);
+      // Convertir les montants en nombres pour éviter les erreurs toFixed
+      const paymentsWithNumbers = (data.payments || []).map((payment: any) => ({
+        ...payment,
+        montant_total: parseFloat(payment.montant_total) || 0,
+        montant_paye: parseFloat(payment.montant_paye) || 0,
+        montant_restant: parseFloat(payment.montant_restant) || 0,
+        prix_seance: parseFloat(payment.prix_seance) || 0,
+        seances_total: parseInt(payment.seances_total) || 0,
+        seances_non_payees: parseInt(payment.seances_non_payees) || 0,
+        seances_payees: parseInt(payment.seances_payees) || 0
+      }));
       
-    } catch (error) {
-      console.error('Erreur lors du paiement:', error);
-      setError(error instanceof Error ? error.message : 'Erreur lors du paiement');
+      setPayments(paymentsWithNumbers);
+      setStats(data.stats || null);
+
+    } catch (err) {
+      console.error('❌ Erreur lors du chargement des paiements:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
-      setUpdating(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('🔍 PaymentsTab - useEffect déclenché');
-    console.log('   selectedChild?.id:', selectedChild?.id);
-    loadPaymentInfo();
-  }, [selectedChild?.id]);
+    // Charger les paiements dès que le composant est monté
+    loadPayments();
+  }, []); // Pas de dépendance sur parent car on utilise localStorage
 
-  // Obtenir la couleur du statut
+  // Fonction pour obtenir la couleur du statut
   const getStatusColor = (statut: string) => {
     switch (statut) {
-      case 'paye': return 'text-green-500';
-      case 'partiel': return 'text-yellow-500';
-      case 'en_retard': return 'text-red-500';
-      default: return 'text-gray-500';
+      case 'paye': return 'text-green-400';
+      case 'partiel': return 'text-yellow-400';
+      case 'en_retard': return 'text-red-400';
+      case 'en_attente': return 'text-blue-400';
+      default: return 'text-gray-400';
     }
   };
 
-  // Obtenir l'icône du statut
+  // Fonction pour obtenir l'icône du statut
   const getStatusIcon = (statut: string) => {
     switch (statut) {
       case 'paye': return <CheckCircle className="w-5 h-5" />;
       case 'partiel': return <AlertTriangle className="w-5 h-5" />;
       case 'en_retard': return <XCircle className="w-5 h-5" />;
+      case 'en_attente': return <Clock className="w-5 h-5" />;
       default: return <DollarSign className="w-5 h-5" />;
     }
   };
 
-  // Obtenir la couleur de fond du statut
+  // Fonction pour obtenir la couleur de fond du statut
   const getStatusBgColor = (statut: string) => {
     switch (statut) {
       case 'paye': return 'bg-green-500/20 border-green-500/30';
       case 'partiel': return 'bg-yellow-500/20 border-yellow-500/30';
       case 'en_retard': return 'bg-red-500/20 border-red-500/30';
+      case 'en_attente': return 'bg-blue-500/20 border-blue-500/30';
       default: return 'bg-gray-500/20 border-gray-500/30';
     }
   };
 
+  // Formater les dates
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  // Filtrer les paiements selon la recherche et l'enfant sélectionné
+  const filteredPayments = payments.filter(payment => {
+    const matchesSearch = searchQuery === '' || 
+      payment.student_first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.student_last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.class_level.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesChild = !selectedChild || 
+      selectedChild.id === 'all' || 
+      payment.student_id.toString() === selectedChild.id.toString();
+
+    return matchesSearch && matchesChild;
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center space-x-2">
+          <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+          <span className="text-lg text-white">Chargement des paiements...</span>
+        </div>
       </div>
     );
   }
 
-  if (!paymentInfo) {
+  if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-blue-200">Aucune information de paiement disponible</p>
-        <p className="text-blue-300 text-sm mt-2">
-          Enfant sélectionné: {selectedChild?.fullName || selectedChild?.firstName || 'Aucun'}
-        </p>
-        <p className="text-blue-300 text-sm">
-          ID: {selectedChild?.id || 'Aucun'}
-        </p>
+      <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <XCircle className="w-6 h-6 text-red-400" />
+          <h3 className="text-lg font-semibold text-red-400">Erreur</h3>
+        </div>
+        <p className="text-red-200 mb-4">{error}</p>
+        <button
+          onClick={loadPayments}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Réessayer</span>
+        </button>
       </div>
     );
   }
@@ -180,220 +215,190 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ selectedChild, parent, search
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-gray-800 rounded-lg p-6">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <DollarSign className="w-6 h-6" />
-              Paiements - {paymentInfo.fullName}
-            </h2>
+            <h1 className="text-2xl font-bold text-white flex items-center">
+              <CreditCard className="w-6 h-6 text-blue-300 mr-3" />
+              Paiements et Séances
+            </h1>
             <p className="text-blue-200 mt-1">
-              Gérez les paiements de votre enfant
+              Suivez les séances et paiements de vos enfants
             </p>
           </div>
-          
           <button
-            onClick={loadPaymentInfo}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+            onClick={loadPayments}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
           >
             <RefreshCw className="w-4 h-4" />
-            Actualiser
+            <span>Actualiser</span>
           </button>
         </div>
       </div>
 
-      {/* Messages d'erreur et de succès */}
-      {error && (
-        <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded-lg">
-          {success}
-        </div>
-      )}
-
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-200 text-sm">Total Séances</p>
-              <p className="text-white text-2xl font-bold">{paymentInfo.seancesTotal}</p>
+      {/* Statistiques globales */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-200 text-sm">Séances Totales</p>
+                <p className="text-2xl font-bold text-white">{stats.totalSessions}</p>
+              </div>
+              <BookOpen className="w-8 h-8 text-blue-300" />
             </div>
-            <Calendar className="w-8 h-8 text-blue-400" />
           </div>
-        </div>
-        
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-200 text-sm">Séances Payées</p>
-              <p className="text-white text-2xl font-bold">{paymentInfo.seancesPayees}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-        
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-200 text-sm">Séances Non Payées</p>
-              <p className="text-white text-2xl font-bold">{paymentInfo.seancesNonPayees}</p>
-            </div>
-            <AlertTriangle className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
-        
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-yellow-200 text-sm">Montant Restant</p>
-              <p className="text-white text-2xl font-bold">{paymentInfo.montantRestant.toFixed(2)} €</p>
-            </div>
-            <Wallet className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Informations détaillées */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Détails des paiements */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Receipt className="w-5 h-5" />
-            Détails des Paiements
-          </h3>
           
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-blue-200">Prix par séance:</span>
-              <span className="text-white font-medium">{paymentInfo.prixSeance.toFixed(2)} €</span>
+          <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-200 text-sm">Séances Non Payées</p>
+                <p className="text-2xl font-bold text-red-400">{stats.totalUnpaidSessions}</p>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-red-400" />
             </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-blue-200">Montant total:</span>
-              <span className="text-white font-medium">{paymentInfo.montantTotal.toFixed(2)} €</span>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-200 text-sm">Montant Total</p>
+                <p className="text-2xl font-bold text-white">{stats.totalAmount.toFixed(2)}€</p>
+              </div>
+              <Euro className="w-8 h-8 text-blue-300" />
             </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-blue-200">Montant payé:</span>
-              <span className="text-green-400 font-medium">{paymentInfo.montantPaye.toFixed(2)} €</span>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-200 text-sm">Montant Restant</p>
+                <p className="text-2xl font-bold text-orange-400">{stats.totalRemaining.toFixed(2)}€</p>
+              </div>
+              <Wallet className="w-8 h-8 text-orange-400" />
             </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-blue-200">Montant restant:</span>
-              <span className="text-red-400 font-medium">{paymentInfo.montantRestant.toFixed(2)} €</span>
-            </div>
-            
-            <div className="pt-4 border-t border-gray-700">
-              <div className={`flex items-center justify-between p-3 rounded-lg border ${getStatusBgColor(paymentInfo.statut)}`}>
-                <span className="text-white font-medium">Statut:</span>
-                <div className={`flex items-center gap-2 ${getStatusColor(paymentInfo.statut)}`}>
-                  {getStatusIcon(paymentInfo.statut)}
-                  <span className="font-medium capitalize">{paymentInfo.statut}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Liste des paiements */}
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+        <div className="p-6 border-b border-white/20">
+          <h2 className="text-xl font-bold text-white flex items-center">
+            <Receipt className="w-5 h-5 text-blue-300 mr-2" />
+            Détails des Paiements ({filteredPayments.length})
+          </h2>
+        </div>
+
+        {filteredPayments.length === 0 ? (
+          <div className="text-center py-12">
+            <Receipt className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
+            <h3 className="text-xl font-semibold text-white mb-2">Aucun paiement trouvé</h3>
+            <p className="text-blue-200">
+              {payments.length === 0 
+                ? "Aucune séance enregistrée pour le moment."
+                : "Aucun paiement ne correspond à votre recherche."}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {filteredPayments.map((payment) => (
+              <div key={payment.id} className="p-6 hover:bg-white/5 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <User className="w-5 h-5 text-blue-300" />
+                      <h3 className="text-lg font-semibold text-white">
+                        {payment.student_first_name} {payment.student_last_name}
+                      </h3>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {payment.class_level}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-200 text-sm">Séances Total</span>
+                          <span className="text-white font-semibold">{payment.seances_total}</span>
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-200 text-sm">Non Payées</span>
+                          <span className="text-red-400 font-semibold">{payment.seances_non_payees}</span>
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-200 text-sm">Payées</span>
+                          <span className="text-green-400 font-semibold">{payment.seances_payees}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-200 text-sm">Montant Total</span>
+                          <span className="text-white font-semibold">{payment.montant_total.toFixed(2)}€</span>
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-200 text-sm">Payé</span>
+                          <span className="text-green-400 font-semibold">{payment.montant_paye.toFixed(2)}€</span>
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-blue-200 text-sm">Restant</span>
+                          <span className="text-orange-400 font-semibold">{payment.montant_restant.toFixed(2)}€</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-blue-200">
+                      <div className="flex items-center space-x-4">
+                        <span>Prix/séance: {payment.prix_seance.toFixed(2)}€</span>
+                        {payment.date_derniere_presence && (
+                          <span>Dernière présence: {formatDate(payment.date_derniere_presence)}</span>
+                        )}
+                      </div>
+                      <span>Modifié: {formatDate(payment.date_modification)}</span>
+                    </div>
+                  </div>
+
+                  <div className="ml-6">
+                    <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${getStatusBgColor(payment.statut)}`}>
+                      <span className={getStatusColor(payment.statut)}>
+                        {getStatusIcon(payment.statut)}
+                      </span>
+                      <span className={`font-medium capitalize ${getStatusColor(payment.statut)}`}>
+                        {payment.statut.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        </div>
-
-        {/* Actions de paiement */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Effectuer un Paiement
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-blue-200 text-sm font-medium mb-2">
-                Nombre de séances à payer
-              </label>
-              <input
-                type="number"
-                min="1"
-                max={paymentInfo.seancesNonPayees}
-                value={paidSessions}
-                onChange={(e) => setPaidSessions(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              />
-              <p className="text-gray-400 text-sm mt-1">
-                Maximum: {paymentInfo.seancesNonPayees} séances disponibles
-              </p>
-            </div>
-            
-            <div className="bg-gray-700 p-3 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-blue-200">Montant à payer:</span>
-                <span className="text-white font-bold text-lg">
-                  {(paidSessions * paymentInfo.prixSeance).toFixed(2)} €
-                </span>
-              </div>
-            </div>
-            
-            <button
-              onClick={handlePayment}
-              disabled={updating || paymentInfo.seancesNonPayees === 0 || paidSessions > paymentInfo.seancesNonPayees}
-              className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {updating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Traitement...
-                </>
-              ) : (
-                <>
-                  <DollarSign className="w-4 h-4" />
-                  Payer {paidSessions} séance(s)
-                </>
-              )}
-            </button>
-            
-            {paymentInfo.seancesNonPayees === 0 && (
-              <div className="text-center py-3 bg-green-500/20 border border-green-500/30 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
-                <p className="text-green-200 text-sm">Toutes les séances sont payées !</p>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Historique des paiements */}
-      <div className="bg-gray-800 rounded-lg p-6">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Historique des Paiements
-        </h3>
-        
-        <div className="space-y-3">
-          {paymentInfo.dateDernierePresence && (
-            <div className="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
-              <span className="text-blue-200">Dernière présence:</span>
-              <span className="text-white">
-                {new Date(paymentInfo.dateDernierePresence).toLocaleDateString('fr-FR')}
-              </span>
+      {/* Informations sur les paiements */}
+      <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-6">
+        <div className="flex items-start space-x-3">
+          <Info className="w-6 h-6 text-blue-400 mt-0.5" />
+          <div>
+            <h3 className="text-lg font-semibold text-blue-200 mb-2">Information sur les paiements</h3>
+            <div className="text-blue-200 text-sm space-y-1">
+              <p>• Les séances sont automatiquement ajoutées lors de la présence de votre enfant</p>
+              <p>• Le prix par défaut est de 50€ par séance</p>
+              <p>• Contactez l'administration pour effectuer un paiement ou modifier les informations</p>
+              <p>• Les statistiques sont mises à jour en temps réel</p>
             </div>
-          )}
-          
-          {paymentInfo.dateDernierPaiement && (
-            <div className="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
-              <span className="text-blue-200">Dernier paiement:</span>
-              <span className="text-white">
-                {new Date(paymentInfo.dateDernierPaiement).toLocaleDateString('fr-FR')}
-              </span>
-            </div>
-          )}
-          
-          {!paymentInfo.dateDernierePresence && !paymentInfo.dateDernierPaiement && (
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-400">Aucun historique disponible</p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

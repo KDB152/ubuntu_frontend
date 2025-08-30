@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getGenericUserName } from '@/lib/userUtils';
 import { useRealStats } from '@/hooks/useRealStats';
+import { useRendezVous } from '@/hooks/useRendezVous';
 import { useRouter } from 'next/navigation';
 import {
   BarChart3,
@@ -107,6 +108,7 @@ interface SystemHealth {
 const DashboardOverviewTab = () => {
   const router = useRouter();
   const { stats: realStats } = useRealStats();
+  const { rendezVous, stats: rendezVousStats, loading: rendezVousLoading, getPendingRendezVous, isUrgent } = useRendezVous();
   const [stats, setStats] = useState<DashboardStats>({
     users: { total: realStats.totalUsers, active: realStats.totalUsers, new: 0, growth: 0 },
     quizzes: { total: realStats.totalQuizzes, completed: realStats.completedQuizzes, averageScore: realStats.averageScore, growth: 0 },
@@ -211,20 +213,6 @@ const DashboardOverviewTab = () => {
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60);
-
-    if (diffInMinutes < 60) {
-      return `Il y a ${Math.floor(diffInMinutes)} min`;
-    } else if (diffInMinutes < 1440) {
-      return `Il y a ${Math.floor(diffInMinutes / 60)} h`;
-    } else {
-      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-    }
-  };
-
   const getGrowthIcon = (growth: number) => {
     if (growth > 0) return ArrowUp;
     if (growth < 0) return ArrowDown;
@@ -244,6 +232,33 @@ const DashboardOverviewTab = () => {
       case 'critical': return { color: 'text-red-400 bg-red-500/20', icon: XCircle };
       default: return { color: 'text-gray-400 bg-gray-500/20', icon: AlertCircle };
     }
+  };
+
+  // Fonction pour formater le timestamp relatif
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60);
+
+    if (diffInMinutes < 60) {
+      return `Il y a ${Math.floor(diffInMinutes)} min`;
+    } else if (diffInMinutes < 1440) {
+      return `Il y a ${Math.floor(diffInMinutes / 60)} h`;
+    } else {
+      return `Il y a ${Math.floor(diffInMinutes / 1440)} j`;
+    }
+  };
+
+  // Fonction pour formater la date et l'heure
+  const formatDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const healthStatus = getHealthStatus(systemHealth.status);
@@ -477,7 +492,9 @@ const DashboardOverviewTab = () => {
             </div>
             <div>
               <div className="text-white font-semibold">Gérer les rendez-vous</div>
-              <div className="text-blue-300 text-sm">{3} demandes en attente</div>
+              <div className="text-blue-300 text-sm">
+                {rendezVousLoading ? 'Chargement...' : `${rendezVousStats.pending} demandes en attente`}
+              </div>
             </div>
           </button>
           
@@ -512,100 +529,92 @@ const DashboardOverviewTab = () => {
           </button>
         </div>
         
-        <div className="space-y-4">
-          {/* Demande urgente */}
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-red-400" />
-                  <span className="text-red-400 text-sm font-semibold">URGENT</span>
-                  <span className="text-blue-300 text-xs">Il y a 2h</span>
-                </div>
-                <h3 className="text-white font-semibold mb-1">Sophie Bernard - Thomas Bernard (5ème C)</h3>
-                <p className="text-blue-200 text-sm mb-2">Situation urgente - Harcèlement</p>
-                <div className="flex items-center space-x-4 text-xs text-blue-300">
-                  <span>21/12/2024 à 09:00</span>
-                  <span>•</span>
-                  <span>60 min</span>
-                  <span>•</span>
-                  <span>En personne</span>
-                </div>
-              </div>
-              <button 
-                onClick={handleMeetings}
-                className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all text-sm"
-              >
-                Traiter
-              </button>
+        {rendezVousLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-blue-200 text-sm">Chargement des rendez-vous...</p>
             </div>
           </div>
-
-          {/* Demande normale */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Clock className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-400 text-sm font-semibold">EN ATTENTE</span>
-                  <span className="text-blue-300 text-xs">Il y a 5h</span>
-                </div>
-                <h3 className="text-white font-semibold mb-1">Marie Dupont - Lucas Dupont (4ème A)</h3>
-                <p className="text-blue-200 text-sm mb-2">Problèmes de comportement</p>
-                <div className="flex items-center space-x-4 text-xs text-blue-300">
-                  <span>25/12/2024 à 14:00</span>
-                  <span>•</span>
-                  <span>30 min</span>
-                  <span>•</span>
-                  <span>En personne</span>
-                </div>
+        ) : (
+          <div className="space-y-4">
+            {getPendingRendezVous(3).length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 text-blue-300 mx-auto mb-3 opacity-50" />
+                <h3 className="text-white text-lg font-semibold mb-2">Aucune demande en attente</h3>
+                <p className="text-blue-200">Toutes les demandes ont été traitées.</p>
               </div>
-              <button 
-                onClick={handleMeetings}
-                className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-all text-sm"
-              >
-                Traiter
-              </button>
-            </div>
-          </div>
+            ) : (
+              getPendingRendezVous(3).map((rdv) => {
+                const urgent = isUrgent(rdv);
+                const timeAgo = formatTimestamp(rdv.createdAt);
+                const shortReason = rdv.parentReason.length > 50 
+                  ? rdv.parentReason.substring(0, 50) + '...' 
+                  : rdv.parentReason;
 
-          {/* Demande normale */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Clock className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-400 text-sm font-semibold">EN ATTENTE</span>
-                  <span className="text-blue-300 text-xs">Il y a 1j</span>
-                </div>
-                <h3 className="text-white font-semibold mb-1">Jean Martin - Emma Martin (6ème B)</h3>
-                <p className="text-blue-200 text-sm mb-2">Suivi scolaire</p>
-                <div className="flex items-center space-x-4 text-xs text-blue-300">
-                  <span>26/12/2024 à 16:00</span>
-                  <span>•</span>
-                  <span>45 min</span>
-                  <span>•</span>
-                  <span>Visioconférence</span>
-                </div>
+                return (
+                  <div
+                    key={rdv.id}
+                    className={`border rounded-xl p-4 ${
+                      urgent 
+                        ? 'bg-red-500/10 border-red-500/20' 
+                        : 'bg-white/5 border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {urgent ? (
+                            <>
+                              <AlertCircle className="w-4 h-4 text-red-400" />
+                              <span className="text-red-400 text-sm font-semibold">URGENT</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-4 h-4 text-yellow-400" />
+                              <span className="text-yellow-400 text-sm font-semibold">EN ATTENTE</span>
+                            </>
+                          )}
+                          <span className="text-blue-300 text-xs">{timeAgo}</span>
+                        </div>
+                        <h3 className="text-white font-semibold mb-1">
+                          {rdv.parentName} - {rdv.childName} ({rdv.childClass})
+                        </h3>
+                        <p className="text-blue-200 text-sm mb-2">{shortReason}</p>
+                        <div className="flex items-center space-x-4 text-xs text-blue-300">
+                          <span>{formatDateTime(rdv.timing)}</span>
+                          <span>•</span>
+                          <span>Rendez-vous demandé</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleMeetings}
+                        className={`px-3 py-1 rounded-lg transition-all text-sm ${
+                          urgent
+                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                            : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                        }`}
+                      >
+                        Traiter
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {rendezVousStats.pending > 0 && (
+              <div className="text-center py-4">
+                <button 
+                  onClick={handleMeetings}
+                  className="text-blue-300 hover:text-white transition-colors text-sm"
+                >
+                  Voir toutes les demandes ({rendezVousStats.pending} en attente)
+                </button>
               </div>
-              <button 
-                onClick={handleMeetings}
-                className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-all text-sm"
-              >
-                Traiter
-              </button>
-            </div>
+            )}
           </div>
-
-          <div className="text-center py-4">
-            <button 
-              onClick={handleMeetings}
-              className="text-blue-300 hover:text-white transition-colors text-sm"
-            >
-              Voir toutes les demandes ({3} en attente)
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

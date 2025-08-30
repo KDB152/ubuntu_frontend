@@ -24,6 +24,96 @@ async function getConnection() {
   }
 }
 
+// Fonction pour synchroniser la table paiement avec les données de students
+async function syncPaymentTable(connection: any, studentId: number) {
+  try {
+    // Récupérer les données actuelles de l'étudiant
+    const [studentData] = await connection.execute(`
+      SELECT paid_sessions, unpaid_sessions
+      FROM students
+      WHERE id = ?
+    `, [studentId]);
+
+    if (studentData.length === 0) {
+      console.log(`⚠️ Étudiant ${studentId} non trouvé`);
+      return;
+    }
+
+    const student = studentData[0];
+    const totalSessions = (student.paid_sessions || 0) + (student.unpaid_sessions || 0);
+
+    // Récupérer l'ID du parent associé (peut être NULL)
+    const [parentRelation] = await connection.execute(`
+      SELECT ps.parent_id
+      FROM parent_student ps
+      WHERE ps.student_id = ?
+      LIMIT 1
+    `, [studentId]);
+
+    const parentId = parentRelation.length > 0 ? parentRelation[0].parent_id : null;
+
+    // Vérifier si un enregistrement de paiement existe
+    const [existingPayment] = await connection.execute(`
+      SELECT id, prix_seance, montant_paye
+      FROM paiement
+      WHERE student_id = ? AND (parent_id = ? OR (parent_id IS NULL AND ? IS NULL))
+    `, [studentId, parentId, parentId]);
+
+    if (existingPayment.length > 0) {
+      // Mettre à jour l'enregistrement existant avec la logique correcte
+      const payment = existingPayment[0];
+      const unpaidSessions = student.unpaid_sessions || 0;
+      const paidSessions = student.paid_sessions || 0;
+      const newMontantTotal = totalSessions * payment.prix_seance;
+      const newMontantPaye = paidSessions * payment.prix_seance;  // Séances payées × prix
+      const newMontantRestant = unpaidSessions * payment.prix_seance;  // Séances non payées × prix
+
+      await connection.execute(`
+        UPDATE paiement 
+        SET 
+          seances_total = ?,
+          seances_non_payees = ?,
+          seances_payees = ?,
+          montant_total = ?,
+          montant_paye = ?,
+          montant_restant = ?,
+          date_modification = CURRENT_TIMESTAMP
+        WHERE student_id = ? AND (parent_id = ? OR (parent_id IS NULL AND ? IS NULL))
+      `, [totalSessions, unpaidSessions, paidSessions, newMontantTotal, newMontantPaye, newMontantRestant, studentId, parentId, parentId]);
+
+      console.log(`✅ Paiement synchronisé pour étudiant ${studentId}`);
+    } else {
+      // Créer un nouvel enregistrement avec la logique correcte
+      const unpaidSessions = student.unpaid_sessions || 0;
+      const paidSessions = student.paid_sessions || 0;
+      const prixSeance = 50.00; // Prix par défaut
+      const montantTotal = totalSessions * prixSeance;
+      const montantPaye = paidSessions * prixSeance;  // Séances payées × prix
+      const montantRestant = unpaidSessions * prixSeance;  // Séances non payées × prix
+
+      await connection.execute(`
+        INSERT INTO paiement (
+          student_id, 
+          parent_id, 
+          seances_total, 
+          seances_non_payees, 
+          seances_payees,
+          montant_total,
+          montant_paye,
+          montant_restant,
+          prix_seance,
+          statut,
+          date_derniere_presence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'en_attente', CURDATE())
+      `, [studentId, parentId, totalSessions, unpaidSessions, paidSessions, montantTotal, montantPaye, montantRestant, prixSeance]);
+
+      console.log(`✅ Nouveau paiement créé pour étudiant ${studentId}`);
+    }
+  } catch (error) {
+    console.error(`❌ Erreur lors de la synchronisation du paiement pour l'étudiant ${studentId}:`, error);
+  }
+}
+
 // GET - Récupérer la liste des étudiants pour la présence
 export async function GET(request: NextRequest) {
   try {
@@ -112,13 +202,82 @@ export async function POST(request: NextRequest) {
         updated_at = CURRENT_TIMESTAMP
     `, [studentId, date, isPresent]);
     
-    // Si l'étudiant est marqué présent, incrémenter les séances non payées
+    // Si l'étudiant est marqué présent, incrémenter les séances non payées et gérer la table paiement
     if (isPresent) {
       await connection.execute(`
         UPDATE students 
         SET unpaid_sessions = COALESCE(unpaid_sessions, 0) + 1
         WHERE id = ?
       `, [studentId]);
+
+      // Récupérer l'ID du parent associé à cet étudiant (peut être NULL)
+      console.log(`🔍 Recherche du parent pour l'étudiant ${studentId}...`);
+      const [parentRelation] = await connection.execute(`
+        SELECT ps.parent_id
+        FROM parent_student ps
+        WHERE ps.student_id = ?
+        LIMIT 1
+      `, [studentId]);
+
+      console.log(`📋 Relations trouvées:`, parentRelation);
+
+      // Déterminer l'ID du parent (NULL si aucun parent trouvé)
+      const parentId = parentRelation.length > 0 ? parentRelation[0].parent_id : null;
+      
+      if (parentId) {
+        console.log(`✅ Parent trouvé: ID ${parentId}`);
+      } else {
+        console.log(`⚠️ Aucun parent trouvé pour l'étudiant ${studentId} - Création avec parent_id NULL`);
+      }
+
+      // Vérifier si un enregistrement de paiement existe déjà
+      const [existingPayment] = await connection.execute(`
+        SELECT id, seances_total, seances_non_payees, prix_seance, montant_paye
+        FROM paiement
+        WHERE student_id = ? AND (parent_id = ? OR (parent_id IS NULL AND ? IS NULL))
+      `, [studentId, parentId, parentId]);
+
+      if (existingPayment.length > 0) {
+        // Mettre à jour l'enregistrement existant
+        const payment = existingPayment[0];
+        const newSeancesTotal = payment.seances_total + 1;
+        const newSeancesNonPayees = payment.seances_non_payees + 1;
+        const newMontantTotal = newSeancesTotal * payment.prix_seance;
+        const newMontantRestant = newMontantTotal - payment.montant_paye;
+
+        await connection.execute(`
+          UPDATE paiement 
+          SET 
+            seances_total = ?,
+            seances_non_payees = ?,
+            montant_total = ?,
+            montant_restant = ?,
+            date_derniere_presence = ?,
+            date_modification = CURRENT_TIMESTAMP
+          WHERE student_id = ? AND (parent_id = ? OR (parent_id IS NULL AND ? IS NULL))
+        `, [newSeancesTotal, newSeancesNonPayees, newMontantTotal, newMontantRestant, date, studentId, parentId, parentId]);
+
+        console.log(`✅ Paiement mis à jour pour étudiant ${studentId} ${parentId ? `et parent ${parentId}` : '(sans parent)'}`);
+      } else {
+        // Créer un nouvel enregistrement
+        await connection.execute(`
+          INSERT INTO paiement (
+            student_id, 
+            parent_id, 
+            seances_total, 
+            seances_non_payees, 
+            seances_payees,
+            montant_total,
+            montant_paye,
+            montant_restant,
+            prix_seance,
+            statut,
+            date_derniere_presence
+          ) VALUES (?, ?, 1, 1, 0, 50.00, 0.00, 50.00, 50.00, 'en_attente', ?)
+        `, [studentId, parentId, date]);
+
+        console.log(`✅ Nouveau paiement créé pour étudiant ${studentId} ${parentId ? `et parent ${parentId}` : '(sans parent)'}`);
+      }
     }
     
     await connection.end();
@@ -159,6 +318,9 @@ export async function PUT(request: NextRequest) {
           SET unpaid_sessions = COALESCE(unpaid_sessions, 0) + ?
           WHERE id = ?
         `, [sessions, studentId]);
+        
+        // Synchroniser avec la table paiement
+        await syncPaymentTable(connection, studentId);
         message = `${sessions} séance(s) non payée(s) ajoutée(s)`;
         break;
         
@@ -175,6 +337,9 @@ export async function PUT(request: NextRequest) {
           SET unpaid_sessions = GREATEST(0, COALESCE(unpaid_sessions, 0) - ?)
           WHERE id = ?
         `, [sessions, studentId]);
+        
+        // Synchroniser avec la table paiement
+        await syncPaymentTable(connection, studentId);
         message = `${sessions} séance(s) non payée(s) retirée(s)`;
         break;
         
@@ -191,6 +356,9 @@ export async function PUT(request: NextRequest) {
           SET paid_sessions = COALESCE(paid_sessions, 0) + ?
           WHERE id = ?
         `, [sessions, studentId]);
+        
+        // Synchroniser avec la table paiement
+        await syncPaymentTable(connection, studentId);
         message = `${sessions} séance(s) payée(s) ajoutée(s)`;
         break;
         
@@ -207,6 +375,9 @@ export async function PUT(request: NextRequest) {
           SET paid_sessions = GREATEST(0, COALESCE(paid_sessions, 0) - ?)
           WHERE id = ?
         `, [sessions, studentId]);
+        
+        // Synchroniser avec la table paiement
+        await syncPaymentTable(connection, studentId);
         message = `${sessions} séance(s) payée(s) retirée(s)`;
         break;
         
@@ -255,6 +426,9 @@ export async function PUT(request: NextRequest) {
           SET paid_sessions = ?, unpaid_sessions = ?
           WHERE id = ?
         `, [paidSessions, unpaidSessions, studentId]);
+        
+        // Synchroniser avec la table paiement
+        await syncPaymentTable(connection, studentId);
         message = `Séances payées: ${paidSessions}, Séances non payées: ${unpaidSessions}`;
         break;
         

@@ -64,11 +64,10 @@ import MessagesManagementTab from './MessagesManagementTab';
 import RendezVousManagementTab from './RendezVousManagementTab';
 import AttendanceTab from './AttendanceTab';
 import PaymentsManagementTab from './PaymentsManagementTab';
-import AdminProfileTab from './AdminProfileTab';
 import SettingsManagementTab from './SettingsManagementTab';
 import FileManagementTab from './FileManagementTab';
 
-type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'profile' | 'files' | 'settings';
+type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'files' | 'settings';
 
 interface AdminUser {
   id: string;
@@ -207,13 +206,6 @@ const AdminDashboard = () => {
       badge: null
     },
     {
-      id: 'profile',
-      label: 'Mon Profil',
-      icon: User,
-      description: 'Gérer mes informations personnelles',
-      badge: null
-    },
-    {
       id: 'files',
       label: 'Fichiers',
       icon: FileText,
@@ -231,7 +223,7 @@ const AdminDashboard = () => {
   // Gérer les paramètres d'URL pour les onglets
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'rendez-vous', 'attendance', 'payments', 'profile', 'files', 'settings'].includes(tabParam)) {
+    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'rendez-vous', 'attendance', 'payments', 'files', 'settings'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
@@ -302,8 +294,6 @@ const AdminDashboard = () => {
         return <AttendanceTab />;
       case 'payments':
         return <PaymentsManagementTab />;
-      case 'profile':
-        return <AdminProfileTab />;
       case 'files':
         return <FileManagementTab />;
       case 'settings':

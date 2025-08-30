@@ -24,309 +24,85 @@ async function getConnection() {
   }
 }
 
-// GET - Récupérer les informations de paiement d'un étudiant
+// GET - Récupérer les paiements pour un parent spécifique
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const studentId = searchParams.get('studentId');
-    
-    if (!studentId) {
+    const parentId = searchParams.get('parentId');
+    const userId = searchParams.get('userId'); // ID du user parent pour les cas où parentId n'est pas fourni
+
+    const connection = await getConnection();
+
+    let finalParentId = parentId;
+
+    // Si parentId n'est pas fourni mais userId l'est, trouver le parentId
+    if (!parentId && userId) {
+      const [parentData] = await connection.execute(`
+        SELECT id FROM parents WHERE user_id = ?
+      `, [userId]);
+
+      if (parentData.length > 0) {
+        finalParentId = parentData[0].id;
+      } else {
+        await connection.end();
+        return NextResponse.json(
+          { error: 'Parent non trouvé' },
+          { status: 404 }
+        );
+      }
+    }
+
+    if (!finalParentId) {
+      await connection.end();
       return NextResponse.json(
-        { error: 'ID de l\'étudiant requis' },
+        { error: 'ID parent requis' },
         { status: 400 }
       );
     }
-    
-    const connection = await getConnection();
-    
-    // Récupérer les informations de paiement depuis la table paiement
-    const [rows] = await connection.execute(`
-      SELECT 
-        p.student_id,
-        p.parent_id,
-        CONCAT(u.first_name, ' ', u.last_name) as fullName,
-        u.email,
-        s.class_level,
-        COALESCE(p.seances_total, 0) as seances_total,
-        COALESCE(p.seances_payees, 0) as seances_payees,
-        COALESCE(p.seances_non_payees, 0) as seances_non_payees,
-        COALESCE(p.montant_total, 0.00) as montant_total,
-        COALESCE(p.montant_paye, 0.00) as montant_paye,
-        COALESCE(p.montant_restant, 0.00) as montant_restant,
-        COALESCE(p.prix_seance, 50.00) as prix_seance,
-        p.statut,
-        p.date_derniere_presence,
-        p.date_dernier_paiement
+
+    // Récupérer tous les paiements pour ce parent
+    const [payments] = await connection.execute(`
+      SELECT p.*, 
+             s_user.first_name as student_first_name,
+             s_user.last_name as student_last_name,
+             s.class_level,
+             p_user.first_name as parent_first_name,
+             p_user.last_name as parent_last_name
       FROM paiement p
       JOIN students s ON p.student_id = s.id
-      JOIN users u ON s.user_id = u.id
-      WHERE p.student_id = ?
-    `, [studentId]);
-    
+      JOIN users s_user ON s.user_id = s_user.id
+      LEFT JOIN parents parent ON p.parent_id = parent.id
+      LEFT JOIN users p_user ON parent.user_id = p_user.id
+      WHERE p.parent_id = ? OR (p.parent_id IS NULL AND EXISTS (
+        SELECT 1 FROM parent_student ps 
+        WHERE ps.parent_id = ? AND ps.student_id = p.student_id
+      ))
+      ORDER BY p.date_modification DESC, p.student_id
+    `, [finalParentId, finalParentId]);
+
+    // Calculer les statistiques
+    const stats = {
+      totalPayments: payments.length,
+      totalAmount: payments.reduce((sum: number, p: any) => sum + parseFloat(p.montant_total || 0), 0),
+      totalPaid: payments.reduce((sum: number, p: any) => sum + parseFloat(p.montant_paye || 0), 0),
+      totalRemaining: payments.reduce((sum: number, p: any) => sum + parseFloat(p.montant_restant || 0), 0),
+      totalSessions: payments.reduce((sum: number, p: any) => sum + (p.seances_total || 0), 0),
+      totalUnpaidSessions: payments.reduce((sum: number, p: any) => sum + (p.seances_non_payees || 0), 0),
+      totalPaidSessions: payments.reduce((sum: number, p: any) => sum + (p.seances_payees || 0), 0)
+    };
+
     await connection.end();
-    
-    if ((rows as any[]).length === 0) {
-      // Si aucun enregistrement dans la table paiement, retourner des valeurs par défaut
-      const [studentRows] = await connection.execute(`
-        SELECT 
-          s.id as student_id,
-          CONCAT(u.first_name, ' ', u.last_name) as fullName,
-          u.email,
-          s.class_level,
-          COALESCE(s.paid_sessions, 0) as paid_sessions,
-          COALESCE(s.unpaid_sessions, 0) as unpaid_sessions
-        FROM students s
-        JOIN users u ON s.user_id = u.id
-        WHERE s.id = ?
-      `, [studentId]);
-      
-      if ((studentRows as any[]).length > 0) {
-        const student = (studentRows as any[])[0];
-        return NextResponse.json({
-          studentId: student.student_id,
-          fullName: student.fullName,
-          email: student.email,
-          classLevel: student.class_level,
-          seancesTotal: student.paid_sessions + student.unpaid_sessions,
-          seancesPayees: student.paid_sessions,
-          seancesNonPayees: student.unpaid_sessions,
-          montantTotal: (student.paid_sessions + student.unpaid_sessions) * 50.00,
-          montantPaye: student.paid_sessions * 50.00,
-          montantRestant: student.unpaid_sessions * 50.00,
-          prixSeance: 50.00,
-          statut: student.unpaid_sessions === 0 ? 'paye' : 
-                  student.unpaid_sessions <= 2 ? 'partiel' : 
-                  student.unpaid_sessions > 5 ? 'en_retard' : 'en_attente'
-        });
-      }
-      
-      return NextResponse.json(
-        { error: 'Étudiant non trouvé' },
-        { status: 404 }
-      );
-    }
-    
-    const paiement = (rows as any[])[0];
-    
+
     return NextResponse.json({
-      studentId: paiement.student_id,
-      parentId: paiement.parent_id,
-      fullName: paiement.fullName,
-      email: paiement.email,
-      classLevel: paiement.class_level,
-      seancesTotal: paiement.seances_total,
-      seancesPayees: paiement.seances_payees,
-      seancesNonPayees: paiement.seances_non_payees,
-      montantTotal: paiement.montant_total,
-      montantPaye: paiement.montant_paye,
-      montantRestant: paiement.montant_restant,
-      prixSeance: paiement.prix_seance,
-      statut: paiement.statut,
-      dateDernierePresence: paiement.date_derniere_presence,
-      dateDernierPaiement: paiement.date_dernier_paiement
+      payments,
+      stats,
+      parentId: finalParentId
     });
-    
+
   } catch (error) {
     console.error('Erreur lors de la récupération des paiements:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des paiements' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST - Marquer des séances comme payées
-export async function POST(request: NextRequest) {
-  try {
-    const { studentId, paidSessions } = await request.json();
-    
-    if (!studentId || !paidSessions || paidSessions <= 0) {
-      return NextResponse.json(
-        { error: 'ID de l\'étudiant et nombre de séances payées requis' },
-        { status: 400 }
-      );
-    }
-    
-    const connection = await getConnection();
-    
-    // Vérifier le nombre de séances non payées actuelles
-    const [currentRows] = await connection.execute(`
-      SELECT seances_non_payees, montant_restant, prix_seance
-      FROM paiement 
-      WHERE student_id = ?
-    `, [studentId]);
-    
-    if ((currentRows as any[]).length === 0) {
-      await connection.end();
-      return NextResponse.json(
-        { error: 'Aucun enregistrement de paiement trouvé pour cet étudiant' },
-        { status: 404 }
-      );
-    }
-    
-    const current = (currentRows as any[])[0];
-    const currentUnpaidSessions = current.seances_non_payees || 0;
-    
-    if (paidSessions > currentUnpaidSessions) {
-      await connection.end();
-      return NextResponse.json(
-        { error: `Nombre de séances payées (${paidSessions}) supérieur aux séances non payées disponibles (${currentUnpaidSessions})` },
-        { status: 400 }
-      );
-    }
-    
-    // Mettre à jour les paiements
-    await connection.execute(`
-      UPDATE paiement
-      SET 
-        seances_payees = seances_payees + ?,
-        seances_non_payees = GREATEST(0, seances_non_payees - ?),
-        montant_paye = montant_paye + (? * prix_seance),
-        montant_restant = GREATEST(0, montant_restant - (? * prix_seance)),
-        date_dernier_paiement = CURRENT_DATE,
-        date_modification = CURRENT_TIMESTAMP,
-        statut = CASE 
-          WHEN (seances_non_payees - ?) = 0 THEN 'paye'
-          WHEN (seances_non_payees - ?) <= 2 THEN 'partiel'
-          ELSE 'en_attente'
-        END
-      WHERE student_id = ?
-    `, [paidSessions, paidSessions, paidSessions, paidSessions, paidSessions, paidSessions, studentId]);
-    
-    // Mettre à jour la table students pour compatibilité
-    await connection.execute(`
-      UPDATE students
-      SET 
-        paid_sessions = paid_sessions + ?,
-        unpaid_sessions = GREATEST(0, unpaid_sessions - ?)
-      WHERE id = ?
-    `, [paidSessions, paidSessions, studentId]);
-    
-    await connection.end();
-    
-    const remainingUnpaid = currentUnpaidSessions - paidSessions;
-    
-    return NextResponse.json({
-      message: `${paidSessions} séance(s) marquée(s) comme payée(s)`,
-      success: true,
-      remainingUnpaid,
-      montantPaye: paidSessions * (current.prix_seance || 50.00)
-    });
-    
-  } catch (error) {
-    console.error('Erreur lors du paiement:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors du paiement' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT - Actions administratives sur les paiements
-export async function PUT(request: NextRequest) {
-  try {
-    const { studentId, action, sessions } = await request.json();
-    
-    if (!studentId || !action) {
-      return NextResponse.json(
-        { error: 'ID de l\'étudiant et action requis' },
-        { status: 400 }
-      );
-    }
-    
-    const connection = await getConnection();
-    let message = '';
-    
-    switch (action) {
-      case 'reset_paid':
-        await connection.execute(`
-          UPDATE paiement
-          SET seances_payees = 0, montant_paye = 0, date_modification = CURRENT_TIMESTAMP
-          WHERE student_id = ?
-        `, [studentId]);
-        message = 'Séances payées réinitialisées';
-        break;
-        
-      case 'reset_unpaid':
-        await connection.execute(`
-          UPDATE paiement
-          SET seances_non_payees = 0, montant_restant = 0, date_modification = CURRENT_TIMESTAMP
-          WHERE student_id = ?
-        `, [studentId]);
-        message = 'Séances non payées réinitialisées';
-        break;
-        
-      case 'add_unpaid':
-        if (!sessions || sessions <= 0) {
-          await connection.end();
-          return NextResponse.json(
-            { error: 'Nombre de séances invalide' },
-            { status: 400 }
-          );
-        }
-        await connection.execute(`
-          UPDATE paiement
-          SET 
-            seances_total = seances_total + ?,
-            seances_non_payees = seances_non_payees + ?,
-            montant_total = montant_total + (? * prix_seance),
-            montant_restant = montant_restant + (? * prix_seance),
-            date_modification = CURRENT_TIMESTAMP
-          WHERE student_id = ?
-        `, [sessions, sessions, sessions, sessions, studentId]);
-        message = `${sessions} séance(s) non payée(s) ajoutée(s)`;
-        break;
-        
-      case 'remove_unpaid':
-        if (!sessions || sessions <= 0) {
-          await connection.end();
-          return NextResponse.json(
-            { error: 'Nombre de séances invalide' },
-            { status: 400 }
-          );
-        }
-        await connection.execute(`
-          UPDATE paiement
-          SET 
-            seances_non_payees = GREATEST(0, seances_non_payees - ?),
-            montant_restant = GREATEST(0, montant_restant - (? * prix_seance)),
-            date_modification = CURRENT_TIMESTAMP
-          WHERE student_id = ?
-        `, [sessions, sessions, studentId]);
-        message = `${sessions} séance(s) non payée(s) retirée(s)`;
-        break;
-        
-      default:
-        await connection.end();
-        return NextResponse.json(
-          { error: 'Action non reconnue' },
-          { status: 400 }
-        );
-    }
-    
-    // Mettre à jour le statut
-    await connection.execute(`
-      UPDATE paiement 
-      SET statut = CASE 
-        WHEN seances_non_payees = 0 THEN 'paye'
-        WHEN seances_non_payees <= 2 THEN 'partiel'
-        WHEN seances_non_payees > 5 THEN 'en_retard'
-        ELSE 'en_attente'
-      END
-      WHERE student_id = ?
-    `, [studentId]);
-    
-    await connection.end();
-    
-    return NextResponse.json({
-      message,
-      success: true
-    });
-    
-  } catch (error) {
-    console.error('Erreur lors de l\'action administrative:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors de l\'action administrative' },
       { status: 500 }
     );
   }
