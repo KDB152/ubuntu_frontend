@@ -1,165 +1,286 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { CreditCard, DollarSign, Plus, Minus, RefreshCw, Users, CheckCircle, AlertCircle, Edit, Save, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  CreditCard,
+  Search,
+  Filter,
+  RefreshCw,
+  Calendar,
+  User,
+  BookOpen,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Euro,
+  Download,
+  Eye,
+  Loader2,
+  Edit
+} from 'lucide-react';
 
-interface StudentPayment {
+// Liste des classes disponibles (même que dans l'enregistrement)
+const AVAILABLE_CLASSES = [
+  'Terminale groupe 1',
+  'Terminale groupe 2',
+  'Terminale groupe 3',
+  'Terminale groupe 4',
+  '1ère groupe 1',
+  '1ère groupe 2',
+  '1ère groupe 3'
+];
+
+interface Payment {
+  id: number;
   student_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
+  parent_id: number | null;
+  seances_total: number;
+  seances_non_payees: number;
+  seances_payees: number;
+  montant_total: number;
+  montant_paye: number;
+  montant_restant: number;
+  prix_seance: number;
+  statut: string;
+  date_derniere_presence: string | null;
+  date_dernier_paiement: string | null;
+  student_first_name: string;
+  student_last_name: string;
   class_level: string;
-  paid_sessions: number;
-  unpaid_sessions: number;
-  is_active: boolean;
+  parent_first_name: string | null;
+  parent_last_name: string | null;
+  date_creation: string;
+}
+
+interface PaymentStats {
+  totalPayments: number;
+  totalAmount: number;
+  paidAmount: number;
+  unpaidAmount: number;
+  overdueAmount: number;
 }
 
 const PaymentsManagementTab: React.FC = () => {
-  const [students, setStudents] = useState<StudentPayment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [message, setMessage] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<StudentPayment | null>(null);
-  const [sessionsToModify, setSessionsToModify] = useState(1);
-  const [selectedAction, setSelectedAction] = useState('add_unpaid');
-  
-  // Nouvelles variables pour la modification directe
-  const [editingStudent, setEditingStudent] = useState<number | null>(null);
-  const [editPaidSessions, setEditPaidSessions] = useState(0);
-  const [editUnpaidSessions, setEditUnpaidSessions] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClass, setSelectedClass] = useState<string>('Total');
+  const [selectedStatus, setSelectedStatus] = useState<string>('Tous');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Charger la liste des étudiants avec leurs informations de paiement
-  const loadStudentsPayments = async () => {
+  // Charger la liste des paiements
+  const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/attendance');
-      if (!response.ok) {
-        throw new Error('Erreur lors du chargement des étudiants');
-      }
-      const data = await response.json();
+      setError(null);
       
-      // Les données sont déjà dans le bon format
-      setStudents(data);
-      setMessage('');
-    } catch (error) {
-      console.error('Erreur:', error);
-      setMessage('Erreur lors du chargement des étudiants');
+             const params = new URLSearchParams();
+       // Ajouter la classe sélectionnée seulement si ce n'est pas "Total"
+       if (selectedClass !== 'Total') {
+         params.append('class', selectedClass);
+       }
+      if (selectedStatus !== 'Tous') {
+        params.append('status', selectedStatus);
+      }
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      
+      const response = await fetch(`/api/admin/payments?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des paiements');
+      }
+      
+                     const data = await response.json();
+        console.log('Données reçues de l\'API:', data);
+        
+        // Log détaillé pour déboguer
+        if (data.length > 0) {
+          console.log('🔍 Premier paiement détaillé:', {
+            id: data[0].id,
+            student: `${data[0].student_first_name} ${data[0].student_last_name}`,
+            montant_total: data[0].montant_total,
+            montant_paye: data[0].montant_paye,
+            montant_restant: data[0].montant_restant,
+            seances_total: data[0].seances_total,
+            seances_payees: data[0].seances_payees,
+            seances_non_payees: data[0].seances_non_payees
+          });
+        }
+        
+        setPayments(data);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      console.error('Erreur lors du chargement des paiements:', err);
     } finally {
       setLoading(false);
     }
+  }, [selectedClass, selectedStatus, searchQuery]);
+
+  // Filtrer les paiements - Les statistiques se basent sur ce tableau filtré
+  const filteredPayments = payments.filter(payment => {
+    const matchesSearch = searchQuery === '' || 
+      payment.student_first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.student_last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.class_level.toLowerCase().includes(searchQuery.toLowerCase());
+    
+         const matchesClass = selectedClass === 'Total' || payment.class_level === selectedClass;
+    const matchesStatus = selectedStatus === 'Tous' || payment.statut === selectedStatus;
+    
+    return matchesSearch && matchesClass && matchesStatus;
+  });
+
+  // Fonction pour calculer un total de manière sécurisée
+  const calculateTotal = (payments: Payment[], field: keyof Payment): number => {
+    return payments.reduce((sum, p) => {
+      const value = p[field];
+      if (typeof value === 'number' && !isNaN(value)) {
+        return sum + value;
+      }
+      return sum;
+    }, 0);
   };
 
-  // Effectuer une action sur les paiements
-  const performPaymentAction = async () => {
-    if (!selectedStudent || sessionsToModify <= 0) {
-      setMessage('Veuillez sélectionner un étudiant et un nombre valide de séances');
-      return;
-    }
+  // Statistiques - Calculer les totaux à partir du tableau filtré affiché
+  const stats: PaymentStats = {
+    totalPayments: filteredPayments.length, // Nombre de paiements filtrés
+    totalAmount: calculateTotal(filteredPayments, 'montant_total'), // Total du tableau affiché
+    paidAmount: calculateTotal(filteredPayments, 'montant_paye'), // Total payé du tableau affiché
+    unpaidAmount: calculateTotal(filteredPayments, 'montant_restant'), // Total non payé du tableau affiché
+    overdueAmount: 0 // Supprimé
+  };
 
+  // Log des statistiques calculées
+  console.log('📊 Statistiques calculées:', {
+    totalPayments: stats.totalPayments,
+    totalAmount: stats.totalAmount,
+    paidAmount: stats.paidAmount,
+    unpaidAmount: stats.unpaidAmount,
+    filteredPaymentsLength: filteredPayments.length,
+    paymentsLength: payments.length
+  });
+
+  // Obtenir la couleur de fond selon le statut
+  const getStatusBgColor = (statut: string) => {
+    switch (statut) {
+      case 'paye': return 'bg-green-500/20 border-green-500/30';
+      case 'partiel': return 'bg-yellow-500/20 border-yellow-500/30';
+      case 'en_attente': return 'bg-blue-500/20 border-blue-500/30';
+      default: return 'bg-gray-500/20 border-gray-500/30';
+    }
+  };
+
+  // Formater les dates
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  // Formater les montants
+  const formatAmount = (amount: number) => {
+    // Vérifier que le montant est un nombre valide
+    if (isNaN(amount) || amount === null || amount === undefined) {
+      return '0,00 €';
+    }
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount);
+  };
+
+  // Fonction pour voir les détails d'un paiement
+  const handleViewDetails = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowDetailsModal(true);
+  };
+
+  // Fonction pour éditer un paiement
+  const handleEdit = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowEditModal(true);
+  };
+
+  // Fonction pour marquer comme payé
+  const handleMarkAsPaid = async (payment: Payment) => {
     try {
-      setUpdating(true);
-      const response = await fetch('/api/attendance', {
+      const response = await fetch(`/api/admin/payments/${payment.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          studentId: selectedStudent.student_id,
-          action: selectedAction,
-          sessions: sessionsToModify
-        }),
+          statut: 'paye',
+          montant_paye: payment.montant_total,
+          montant_restant: 0
+        })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de l\'action');
+        throw new Error('Erreur lors de la mise à jour du statut');
       }
 
-      // Recharger la liste
-      await loadStudentsPayments();
-      setMessage('Action effectuée avec succès');
-      setTimeout(() => setMessage(''), 3000);
-      setSessionsToModify(1);
-      setSelectedStudent(null);
-    } catch (error) {
-      console.error('Erreur:', error);
-      setMessage(`Erreur: ${(error as Error).message}`);
-    } finally {
-      setUpdating(false);
+      // Recharger les paiements pour mettre à jour l'affichage
+      await loadPayments();
+      
+      // Afficher un message de succès
+      alert('Paiement marqué comme payé avec succès !');
+      
+    } catch (err) {
+      console.error('Erreur lors du marquage comme payé:', err);
+      alert('Erreur lors du marquage comme payé');
     }
   };
 
-  // Commencer l'édition d'un étudiant
-  const startEditing = (student: StudentPayment) => {
-    setEditingStudent(student.student_id);
-    setEditPaidSessions(student.paid_sessions || 0);
-    setEditUnpaidSessions(student.unpaid_sessions || 0);
+  // Fermer les modales
+  const closeModals = () => {
+    setShowEditModal(false);
+    setShowDetailsModal(false);
+    setSelectedPayment(null);
   };
 
-  // Annuler l'édition
-  const cancelEditing = () => {
-    setEditingStudent(null);
-    setEditPaidSessions(0);
-    setEditUnpaidSessions(0);
-  };
 
-  // Sauvegarder les modifications
-  const saveEditing = async () => {
-    if (editingStudent === null) return;
-
-    try {
-      setUpdating(true);
-      const response = await fetch('/api/attendance', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentId: editingStudent,
-          action: 'set_both_sessions',
-          paidSessions: editPaidSessions,
-          unpaidSessions: editUnpaidSessions
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de la modification');
-      }
-
-      // Recharger la liste
-      await loadStudentsPayments();
-      setMessage('Modifications sauvegardées avec succès');
-      setTimeout(() => setMessage(''), 3000);
-      cancelEditing();
-    } catch (error) {
-      console.error('Erreur:', error);
-      setMessage(`Erreur: ${(error as Error).message}`);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  // Calculer les statistiques globales
-  const stats = {
-    totalStudents: students.length,
-    totalPaidSessions: students.reduce((sum, s) => sum + (s.paid_sessions || 0), 0),
-    totalUnpaidSessions: students.reduce((sum, s) => sum + (s.unpaid_sessions || 0), 0),
-    totalSessions: students.reduce((sum, s) => sum + (s.paid_sessions || 0) + (s.unpaid_sessions || 0), 0),
-    activeStudents: students.filter(s => s.is_active).length
-  };
 
   useEffect(() => {
-    loadStudentsPayments();
-  }, []);
+    // Charger les paiements si une classe est sélectionnée ou si "Total" est choisi
+    if (selectedClass) {
+      loadPayments();
+    }
+  }, [loadPayments, selectedClass]);
+
+
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex items-center space-x-2">
-          <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
-          <span className="text-lg">Chargement des paiements...</span>
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <span className="text-lg text-white">Chargement des paiements...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+                 <div className="text-center">
+           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+           <h3 className="text-lg font-semibold text-red-600 mb-2">Erreur de chargement</h3>
+           <p className="text-gray-600 mb-4">{error}</p>
+           <button
+             onClick={loadPayments}
+             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+           >
+             Réessayer
+           </button>
+         </div>
       </div>
     );
   }
@@ -175,36 +296,48 @@ const PaymentsManagementTab: React.FC = () => {
               Gestion des Paiements
             </h1>
             <p className="text-blue-200 mt-1">
-              Gérez les paiements et les séances des étudiants
+              Gérez les paiements des étudiants et suivez leur statut financier
             </p>
           </div>
-          <button
-            onClick={loadStudentsPayments}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Actualiser</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <Calendar className="w-5 h-5 text-blue-300" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-2 border border-white/20 rounded-lg bg-white/10 text-white"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Statistiques globales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-200 text-sm">Total Étudiants</p>
-              <p className="text-2xl font-bold text-white">{stats.totalStudents}</p>
+              <p className="text-blue-200 text-sm">Total Paiements</p>
+              <p className="text-2xl font-bold text-white">{stats.totalPayments}</p>
             </div>
-            <Users className="w-8 h-8 text-blue-300" />
+            <CreditCard className="w-8 h-8 text-blue-300" />
           </div>
         </div>
         
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-200 text-sm">Étudiants Actifs</p>
-              <p className="text-2xl font-bold text-green-400">{stats.activeStudents}</p>
+              <p className="text-blue-200 text-sm">Montant Total</p>
+              <p className="text-2xl font-bold text-white">{formatAmount(stats.totalAmount)}</p>
+            </div>
+            <Euro className="w-8 h-8 text-blue-300" />
+          </div>
+        </div>
+        
+        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-200 text-sm">Payé</p>
+              <p className="text-2xl font-bold text-green-400">{formatAmount(stats.paidAmount)}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-400" />
           </div>
@@ -213,136 +346,65 @@ const PaymentsManagementTab: React.FC = () => {
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-200 text-sm">Séances Payées</p>
-              <p className="text-2xl font-bold text-green-400">{stats.totalPaidSessions}</p>
+              <p className="text-blue-200 text-sm">Non Payé</p>
+              <p className="text-2xl font-bold text-orange-400">{formatAmount(stats.unpaidAmount)}</p>
             </div>
-            <DollarSign className="w-8 h-8 text-green-400" />
+            <Clock className="w-8 h-8 text-orange-400" />
           </div>
         </div>
         
-        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-200 text-sm">Séances Non Payées</p>
-              <p className="text-2xl font-bold text-red-400">{stats.totalUnpaidSessions}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
+
       </div>
 
-      {/* Message */}
-      {message && (
-        <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
-          <p className="text-blue-200">{message}</p>
-        </div>
-      )}
-
-      {/* Actions de paiement */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h2 className="text-white text-xl font-bold mb-6">Actions de Paiement</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Sélection de l'étudiant */}
-          <div className="space-y-4">
-            <label className="text-blue-200 font-medium">Sélectionner un étudiant:</label>
-            <select
-              value={selectedStudent?.student_id || ''}
-              onChange={(e) => {
-                const student = students.find(s => s.student_id === parseInt(e.target.value));
-                setSelectedStudent(student || null);
-              }}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white w-full"
-            >
-              <option value="">Choisir un étudiant...</option>
-              {students.map((student) => (
-                <option key={student.student_id} value={student.student_id}>
-                  {student.first_name} {student.last_name} - {student.class_level}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Configuration de l'action */}
-          <div className="space-y-4">
-            <label className="text-blue-200 font-medium">Action:</label>
-            <select
-              value={selectedAction}
-              onChange={(e) => setSelectedAction(e.target.value)}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white w-full"
-            >
-              <option value="add_unpaid">Ajouter des séances non payées</option>
-              <option value="remove_unpaid">Retirer des séances non payées</option>
-              <option value="add_paid">Ajouter des séances payées</option>
-              <option value="remove_paid">Retirer des séances payées</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Nombre de séances */}
-        <div className="mt-4 space-y-4">
-          <label className="text-blue-200 font-medium">Nombre de séances:</label>
-          <div className="flex items-center space-x-4">
+      {/* Filtres et recherche */}
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+        <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
             <input
-              type="number"
-              min="1"
-              value={sessionsToModify}
-              onChange={(e) => setSessionsToModify(Math.max(1, parseInt(e.target.value) || 1))}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white w-32"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher par nom, email ou classe..."
+              className="pl-10 pr-4 py-3 w-full border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
             />
-            <button
-              onClick={performPaymentAction}
-              disabled={updating || !selectedStudent}
-              className={`flex items-center space-x-2 px-6 py-2 rounded-lg transition-colors ${
-                !selectedStudent
-                  ? 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
-                  : selectedAction.includes('unpaid')
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-green-500 hover:bg-green-600 text-white'
-              }`}
-            >
-              {selectedAction.includes('add') ? <Plus size={16} /> : <Minus size={16} />}
-              <span>
-                {selectedAction.includes('add') ? 'Ajouter' : 'Retirer'} Séances
-              </span>
-            </button>
+          </div>
+          <div className="flex items-center space-x-3">
+                                      {/* Filtre par classe */}
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+              >
+                <option value="Total">Total (Toutes les classes)</option>
+                {AVAILABLE_CLASSES.map(cls => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+            
+            {/* Filtre par statut */}
+                         <select
+               value={selectedStatus}
+               onChange={(e) => setSelectedStatus(e.target.value)}
+               className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+             >
+               <option value="Tous">Tous les statuts</option>
+               <option value="paye">Payé</option>
+               <option value="partiel">Partiel</option>
+               <option value="en_attente">En attente</option>
+             </select>
+            
+            
           </div>
         </div>
-
-        {/* Informations de l'étudiant sélectionné */}
-        {selectedStudent && (
-          <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-            <h3 className="text-blue-200 font-semibold mb-3">Informations de {selectedStudent.first_name} {selectedStudent.last_name}</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-blue-200">Séances payées:</span>
-                <span className="text-green-400 ml-2 font-medium">{selectedStudent.paid_sessions || 0}</span>
-              </div>
-              <div>
-                <span className="text-blue-200">Séances non payées:</span>
-                <span className="text-red-400 ml-2 font-medium">{selectedStudent.unpaid_sessions || 0}</span>
-              </div>
-              <div>
-                <span className="text-blue-200">Total séances:</span>
-                <span className="text-white ml-2 font-medium">{(selectedStudent.paid_sessions || 0) + (selectedStudent.unpaid_sessions || 0)}</span>
-              </div>
-              <div>
-                <span className="text-blue-200">Statut:</span>
-                <span className={`ml-2 font-medium ${selectedStudent.is_active ? 'text-green-400' : 'text-red-400'}`}>
-                  {selectedStudent.is_active ? 'Actif' : 'Inactif'}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Liste des étudiants */}
+      {/* Liste des paiements */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
         <div className="p-6 border-b border-white/20">
           <h2 className="text-xl font-bold text-white flex items-center">
-            <Users className="w-5 h-5 text-blue-300 mr-2" />
-            Étudiants ({students.length})
+            <User className="w-5 h-5 text-blue-300 mr-2" />
+            Paiements ({filteredPayments.length})
           </h2>
         </div>
 
@@ -357,13 +419,10 @@ const PaymentsManagementTab: React.FC = () => {
                   Classe
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                  Séances Payées
+                  Séances
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                  Séances Non Payées
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                  Total
+                  Montants
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Statut
@@ -374,97 +433,81 @@ const PaymentsManagementTab: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {students.map((student) => (
-                <tr key={student.student_id} className="hover:bg-white/5 transition-colors">
+              {filteredPayments.map((payment) => (
+                <tr key={payment.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4">
                     <div>
                       <div className="text-sm font-medium text-white">
-                        {student.first_name} {student.last_name}
+                        {payment.student_first_name} {payment.student_last_name}
                       </div>
-                      <div className="text-sm text-blue-200">{student.email}</div>
+                      <div className="text-sm text-blue-200">
+                        {payment.parent_first_name && payment.parent_last_name 
+                          ? `Parent: ${payment.parent_first_name} ${payment.parent_last_name}`
+                          : 'Aucun parent'
+                        }
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {student.class_level}
+                      <BookOpen className="w-3 h-3 mr-1" />
+                      {payment.class_level}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    {editingStudent === student.student_id ? (
-                      <input
-                        type="number"
-                        min="0"
-                        value={editPaidSessions}
-                        onChange={(e) => setEditPaidSessions(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-sm"
-                      />
-                    ) : (
-                      <span className="text-green-400 font-medium">{student.paid_sessions || 0}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {editingStudent === student.student_id ? (
-                      <input
-                        type="number"
-                        min="0"
-                        value={editUnpaidSessions}
-                        onChange={(e) => setEditUnpaidSessions(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-sm"
-                      />
-                    ) : (
-                      <span className="text-red-400 font-medium">{student.unpaid_sessions || 0}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-white font-medium">
-                      {editingStudent === student.student_id 
-                        ? editPaidSessions + editUnpaidSessions
-                        : (student.paid_sessions || 0) + (student.unpaid_sessions || 0)
-                      }
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {student.is_active ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Actif
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Inactif
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {editingStudent === student.student_id ? (
+                    <div className="text-sm text-white">
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={saveEditing}
-                          disabled={updating}
-                          className="p-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                          title="Sauvegarder"
-                        >
-                          <Save className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          disabled={updating}
-                          className="p-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                          title="Annuler"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <span className="text-green-400">Payées: {payment.seances_payees}</span>
+                        <span className="text-orange-400">Non payées: {payment.seances_non_payees}</span>
                       </div>
-                    ) : (
+                      <div className="text-xs text-blue-200">
+                        Total: {payment.seances_total}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-white">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-400">Payé: {formatAmount(payment.montant_paye)}</span>
+                        <span className="text-orange-400">Restant: {formatAmount(payment.montant_restant)}</span>
+                      </div>
+                      <div className="text-xs text-blue-200">
+                        Total: {formatAmount(payment.montant_total)}
+                      </div>
+                    </div>
+                  </td>
+                                     <td className="px-6 py-4">
+                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBgColor(payment.statut)}`}>
+                       {payment.statut === 'paye' && <CheckCircle className="w-3 h-3 mr-1" />}
+                       {payment.statut === 'partiel' && <Clock className="w-3 h-3 mr-1" />}
+                       {payment.statut === 'en_attente' && <Clock className="w-3 h-3 mr-1" />}
+                       {payment.statut}
+                     </span>
+                   </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => startEditing(student)}
-                        className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        title="Modifier les séances"
+                        onClick={() => handleViewDetails(payment)}
+                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                        title="Voir les détails"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Eye className="w-3 h-3" />
                       </button>
-                    )}
+                      <button
+                        onClick={() => handleMarkAsPaid(payment)}
+                        className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
+                        title="Marquer comme payé"
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(payment)}
+                        className="px-3 py-1 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
+                        title="Éditer"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -472,10 +515,10 @@ const PaymentsManagementTab: React.FC = () => {
           </table>
         </div>
 
-        {students.length === 0 && (
+        {filteredPayments.length === 0 && (
           <div className="text-center py-8">
-            <Users className="w-12 h-12 text-blue-300 mx-auto mb-4" />
-            <p className="text-blue-200">Aucun étudiant trouvé</p>
+            <CreditCard className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+            <p className="text-blue-200">Aucun paiement trouvé</p>
           </div>
         )}
       </div>

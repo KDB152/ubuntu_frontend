@@ -271,14 +271,6 @@ const LoginPage = () => {
               {/* Options */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center group cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="rememberMe"
-                    checked={formData.rememberMe}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-amber-400 focus:ring-amber-300 border-white/30 rounded bg-white/10 group-hover:bg-white/20 transition-colors"
-                  />
-                  <span className="ml-2 text-sm text-white/80 group-hover:text-white transition-colors">Se souvenir de moi</span>
                 </label>
                 <a href="/forgot-password" className="text-sm text-amber-300 hover:text-amber-200 font-medium transition-colors hover:underline">
                   Mot de passe oublié ?

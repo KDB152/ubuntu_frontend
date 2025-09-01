@@ -6,8 +6,7 @@ import { Mail, Lock, LogIn, Globe, MapPin, Clock, BookOpen, Eye, EyeOff } from '
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    rememberMe: false
+    password: ''
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -36,10 +35,10 @@ const LoginPage = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
@@ -193,18 +192,8 @@ const LoginPage = () => {
                   </div>
                 </div>
 
-                {/* Options */}
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="rememberMe"
-                      checked={formData.rememberMe}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-amber-400 focus:ring-amber-300 border-white/30 rounded bg-white/10"
-                    />
-                    <span className="ml-2 text-sm text-white/80">Se souvenir de moi</span>
-                  </label>
+                {/* Lien mot de passe oublié */}
+                <div className="text-right">
                   <a href="/forgot-password" className="text-sm text-amber-300 hover:text-amber-200 font-medium transition-colors">
                     Mot de passe oublié ?
                   </a>

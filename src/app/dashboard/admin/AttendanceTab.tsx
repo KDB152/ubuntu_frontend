@@ -34,8 +34,18 @@ const AttendanceTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterClass, setFilterClass] = useState('Tous');
-  const [classes, setClasses] = useState<string[]>([]);
+  // Liste des classes disponibles (même que dans l'enregistrement)
+  const AVAILABLE_CLASSES = [
+    'Terminale groupe 1',
+    'Terminale groupe 2',
+    'Terminale groupe 3',
+    'Terminale groupe 4',
+    '1ère groupe 1',
+    '1ère groupe 2',
+    '1ère groupe 3'
+  ];
+  
+  const [filterClass, setFilterClass] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Charger la liste des étudiants
@@ -45,9 +55,8 @@ const AttendanceTab: React.FC = () => {
       setError(null);
       
       const params = new URLSearchParams();
-      if (filterClass !== 'Tous') {
-        params.append('class', filterClass);
-      }
+      // Toujours ajouter la classe sélectionnée
+      params.append('class', filterClass);
       if (searchQuery) {
         params.append('name', searchQuery);
       }
@@ -60,10 +69,6 @@ const AttendanceTab: React.FC = () => {
       
       const data = await response.json();
       setStudents(data);
-      
-      // Extraire les classes uniques
-      const uniqueClasses = [...new Set(data.map((student: Student) => student.class_level))];
-      setClasses(uniqueClasses);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
@@ -108,7 +113,7 @@ const AttendanceTab: React.FC = () => {
       student.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.email?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesClass = filterClass === 'Tous' || student.class_level === filterClass;
+    const matchesClass = student.class_level === filterClass;
     
     return matchesSearch && matchesClass;
   });
@@ -123,15 +128,65 @@ const AttendanceTab: React.FC = () => {
   };
 
   useEffect(() => {
-    loadStudents();
-  }, [loadStudents]);
+    // Ne charger les étudiants que si une classe est sélectionnée
+    if (filterClass) {
+      loadStudents();
+    }
+  }, [loadStudents, filterClass]);
+
+  // Si aucune classe n'est sélectionnée, afficher un message
+  if (!filterClass) {
+    return (
+      <div className="space-y-6">
+        {/* En-tête */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white flex items-center">
+                <Users className="w-6 h-6 text-blue-300 mr-3" />
+                Gestion de la Présence
+              </h1>
+              <p className="text-blue-200 mt-1">
+                Gérez la présence des étudiants et suivez leurs sessions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Message de sélection de classe */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+          <div className="text-center py-12">
+            <BookOpen className="w-16 h-16 text-blue-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Sélectionnez une classe</h3>
+            <p className="text-blue-200 mb-6">
+              Veuillez sélectionner une classe pour afficher la liste des étudiants
+            </p>
+            
+            {/* Sélecteur de classe */}
+            <div className="max-w-md mx-auto">
+              <select
+                value={filterClass}
+                onChange={(e) => setFilterClass(e.target.value)}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+              >
+                <option value="">Choisir une classe...</option>
+                {AVAILABLE_CLASSES.map(cls => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-          <span className="text-lg">Chargement des étudiants...</span>
+          <span className="text-lg text-white">Chargement des étudiants...</span>
         </div>
       </div>
     );
@@ -243,8 +298,8 @@ const AttendanceTab: React.FC = () => {
               onChange={(e) => setFilterClass(e.target.value)}
               className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
             >
-              <option value="Tous">Toutes les classes</option>
-              {classes.map(cls => (
+
+              {AVAILABLE_CLASSES.map(cls => (
                 <option key={cls} value={cls}>{cls}</option>
               ))}
             </select>

@@ -10,6 +10,17 @@ export const viewport = {
   viewport: 'width=device-width, initial-scale=1',
 };
 
+// Liste des classes disponibles
+const AVAILABLE_CLASSES = [
+  'Terminale groupe 1',
+  'Terminale groupe 2',
+  'Terminale groupe 3',
+  'Terminale groupe 4',
+  '1ère groupe 1',
+  '1ère groupe 2',
+  '1ère groupe 3'
+];
+
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -120,6 +131,8 @@ const RegisterPage: React.FC = () => {
       }
       if (!formData.studentClass) {
         newErrors.studentClass = 'La classe est requise';
+      } else if (!AVAILABLE_CLASSES.includes(formData.studentClass)) {
+        newErrors.studentClass = 'Veuillez sélectionner une classe valide';
       }
       if (!formData.parentFirstName) {
         newErrors.parentFirstName = 'Le prénom du parent est requis';
@@ -150,6 +163,8 @@ const RegisterPage: React.FC = () => {
       }
       if (!formData.childClass) {
         newErrors.childClass = 'La classe de l\'enfant est requise';
+      } else if (!AVAILABLE_CLASSES.includes(formData.childClass)) {
+        newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
       }
     }
 
@@ -236,8 +251,9 @@ const RegisterPage: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -566,20 +582,34 @@ const RegisterPage: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-white/90 mb-3">Classe</label>
                         <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                             <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
                           </div>
-                          <input
-                            type="text"
+                          <select
                             name="studentClass"
                             value={formData.studentClass}
                             onChange={handleInputChange}
-                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
                               errors.studentClass ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Ex: 6ème A, 3ème B..."
                             required
-                          />
+                          >
+                            <option value="" className="bg-slate-800 text-white">Sélectionnez votre classe</option>
+                            {AVAILABLE_CLASSES.map((classe) => (
+                              <option 
+                                key={classe} 
+                                value={classe} 
+                                className="bg-slate-800 text-white"
+                              >
+                                {classe}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
                         </div>
                         {errors.studentClass && (
                           <p className="mt-2 text-sm text-red-400">{errors.studentClass}</p>
@@ -662,20 +692,34 @@ const RegisterPage: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
                         <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                             <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
                           </div>
-                          <input
-                            type="text"
+                          <select
                             name="childClass"
                             value={formData.childClass}
                             onChange={handleInputChange}
-                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
                               errors.childClass ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Ex: 6ème A, 3ème B..."
                             required
-                          />
+                          >
+                            <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant</option>
+                            {AVAILABLE_CLASSES.map((classe) => (
+                              <option 
+                                key={classe} 
+                                value={classe} 
+                                className="bg-slate-800 text-white"
+                              >
+                                {classe}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
                         </div>
                         {errors.childClass && (
                           <p className="mt-2 text-sm text-red-400">{errors.childClass}</p>
