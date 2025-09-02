@@ -66,6 +66,7 @@ import AttendanceTab from './AttendanceTab';
 import PaymentsManagementTab from './PaymentsManagementTab';
 import SettingsManagementTab from './SettingsManagementTab';
 import FileManagementTab from './FileManagementTab';
+import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedList, AnimatedListItem } from '../../../components/ui/animations';
 
 type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'files' | 'settings';
 
@@ -310,7 +311,7 @@ const AdminDashboard = () => {
   const currentTabInfo = getCurrentTabInfo();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+    <AnimatedPage className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
         sidebarCollapsed ? 'w-20' : 'w-80'
@@ -325,46 +326,46 @@ const AdminDashboard = () => {
                   <p className="text-blue-200 text-sm">Administration</p>
                 </div>
               )}
-              <button
+              <AnimatedButton
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                 className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
               >
                 {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-              </button>
+              </AnimatedButton>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="p-4 space-y-2">
-            {menuItems.map((item) => {
+          <AnimatedList className="p-4 space-y-2">
+            {menuItems.map((item, index) => {
               const IconComponent = item.icon;
               const isActive = activeTab === item.id;
               
               return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabChange(item.id as TabType)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-blue-200 hover:bg-white/10 hover:text-white'
-                  }`}
-                  title={sidebarCollapsed ? item.label : ''}
-                >
-                  <IconComponent className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300'}`} />
-                  {!sidebarCollapsed && (
-                    <>
-                      <div className="flex-1 text-left">
-                        <div className="font-semibold">{item.label}</div>
-                        <div className="text-xs opacity-75">{item.description}</div>
-                      </div>
-
-                    </>
-                  )}
-                </button>
+                <AnimatedListItem key={item.id}>
+                  <AnimatedButton
+                    onClick={() => handleTabChange(item.id as TabType)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                    }`}
+                    title={sidebarCollapsed ? item.label : ''}
+                  >
+                    <IconComponent className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300'}`} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold">{item.label}</div>
+                          <div className="text-xs opacity-75">{item.description}</div>
+                        </div>
+                      </>
+                    )}
+                  </AnimatedButton>
+                </AnimatedListItem>
               );
             })}
-          </nav>
+          </AnimatedList>
 
           {/* Profil utilisateur */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/20">
@@ -384,29 +385,29 @@ const AdminDashboard = () => {
                 )}
               </button>
 
-              {/* Menu utilisateur */}
-              {showUserMenu && !sidebarCollapsed && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 shadow-xl">
-                  <div className="p-2">
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-all text-left">
-                      <User className="w-4 h-4" />
-                      <span className="text-sm">Mon profil</span>
-                    </button>
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-all text-left">
-                      <Settings className="w-4 h-4" />
-                      <span className="text-sm">Préférences</span>
-                    </button>
-                    <hr className="my-2 border-white/20" />
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center space-x-3 px-3 py-2 text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded-lg transition-all text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span className="text-sm">Déconnexion</span>
-                    </button>
+                              {/* Menu utilisateur */}
+                {showUserMenu && !sidebarCollapsed && (
+                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 backdrop-blur-xl rounded-xl border border-slate-600 shadow-xl">
+                    <div className="p-2">
+                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-200 hover:text-white hover:bg-slate-700 rounded-lg transition-all text-left">
+                        <User className="w-4 h-4" />
+                        <span className="text-sm">Mon profil</span>
+                      </button>
+                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-200 hover:text-white hover:bg-slate-700 rounded-lg transition-all text-left">
+                        <Settings className="w-4 h-4" />
+                        <span className="text-sm">Préférences</span>
+                      </button>
+                      <hr className="my-2 border-slate-600" />
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 border border-red-500/40 rounded-lg transition-all text-left font-medium"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Se déconnecter</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         </div>
@@ -421,7 +422,6 @@ const AdminDashboard = () => {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                
                 <div>
                   <div className="flex items-center space-x-2">
                     <currentTabInfo.icon className="w-6 h-6 text-blue-300" />
@@ -527,6 +527,16 @@ const AdminDashboard = () => {
                   >
                     <RefreshCw className="w-5 h-5" />
                   </button>
+                  
+                  {/* Bouton de déconnexion dans le header */}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-lg transition-all"
+                    title="Se déconnecter"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="text-sm font-medium">Déconnexion</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -558,7 +568,7 @@ const AdminDashboard = () => {
           </div>
         </footer>
       </div>
-    </div>
+    </AnimatedPage>
   );
 };
 

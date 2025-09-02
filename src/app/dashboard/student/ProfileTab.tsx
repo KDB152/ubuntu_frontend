@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { updateStudentProfile, changePassword } from '@/lib/api';
+import { updateStudentProfile } from '@/lib/api';
 import { settingsAPI, studentsAPI, authAPI } from '../../../lib/api';
+import SecuritySettings from '@/components/SecuritySettings';
 import {
   User,
   Mail,
@@ -15,76 +16,7 @@ import {
   Camera,
   Shield,
   Bell,
-  Palette,
-  Globe,
-  Lock,
-  Eye,
-  EyeOff,
-  Settings,
-  Award,
-  Star,
-  Trophy,
-  Target,
-  Clock,
-  BookOpen,
-  Users,
-  Heart,
-  Zap,
-  Brain,
-  Lightbulb,
-  Flag,
-  Crown,
-  Medal,
-  Flame,
-  Sparkles,
-  CheckCircle,
-  AlertCircle,
-  Info,
-  HelpCircle,
-  Download,
-  Upload,
-  RefreshCw,
-  Trash2,
-  Copy,
-  Share2,
-  ExternalLink,
-  Github,
-  Twitter,
-  Instagram,
-  Facebook,
-  Linkedin,
-  Youtube,
-  Music,
-  Image,
-  Video,
-  File,
-  Folder,
-  Archive,
-  Tag,
-  Bookmark,
-  Link,
-  Hash,
-  AtSign,
-  MessageSquare,
-  Send,
-  Plus,
-  Minus,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  ArrowLeft,
-  Home,
-  School,
-  GraduationCap,
-  Book,
-  Pencil,
-  Calculator,
-  Ruler,
-  Compass,
-  Map,
-  History,
-  Globe as GlobeIcon
+  Plus
 } from 'lucide-react';
 
 interface StudentProfile {
@@ -244,12 +176,6 @@ const ProfileTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'preferences' | 'security' | 'stats'>('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(profile);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    current: '',
-    new: '',
-    confirm: ''
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
 
@@ -409,57 +335,11 @@ const ProfileTab: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handlePasswordChange = async () => {
-    // Validation des champs
-    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
-      alert('Veuillez remplir tous les champs');
-      return;
-    }
 
-    if (passwordData.new !== passwordData.confirm) {
-      alert('Les nouveaux mots de passe ne correspondent pas');
-      return;
-    }
-
-    if (passwordData.new.length < 8) {
-      alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
-      return;
-    }
-
-    if (passwordData.current === passwordData.new) {
-      alert('Le nouveau mot de passe doit être différent de l\'actuel');
-      return;
-    }
-
-    try {
-      // Appel à l'API de changement de mot de passe
-      await changePassword(passwordData.current, passwordData.new);
-      
-      // Succès
-      alert('Mot de passe modifié avec succès !');
-      setShowPasswordModal(false);
-      setPasswordData({ current: '', new: '', confirm: '' });
-    } catch (error) {
-      // Gestion des erreurs
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      if (errorMessage.includes('Mot de passe actuel incorrect')) {
-        alert('Mot de passe actuel incorrect');
-      } else if (errorMessage.includes('différent de l\'actuel')) {
-        alert('Le nouveau mot de passe doit être différent de l\'actuel');
-      } else if (errorMessage.includes('Token d\'authentification manquant')) {
-        alert('Session expirée, veuillez vous reconnecter');
-      } else {
-        alert('Erreur lors du changement de mot de passe: ' + errorMessage);
-      }
-    }
-  };
 
   const tabs = [
     { id: 'personal', label: 'Informations personnelles', icon: User },
-    { id: 'academic', label: 'Parcours académique', icon: GraduationCap },
-    { id: 'preferences', label: 'Préférences', icon: Settings },
-    { id: 'security', label: 'Sécurité', icon: Shield },
-    { id: 'stats', label: 'Statistiques', icon: Trophy }
+    { id: 'security', label: 'Sécurité', icon: Shield }
   ];
 
   const renderPersonalTab = () => (
@@ -668,269 +548,17 @@ const ProfileTab: React.FC = () => {
     </div>
   );
 
-  const renderAcademicTab = () => (
-    <div className="space-y-6">
-      {/* Informations scolaires */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Informations scolaires</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Numéro étudiant</label>
-            <p className="text-white font-mono">{profile.academic.studentId}</p>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Classe</label>
-            <p className="text-white">{profile.academic.class}</p>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Niveau</label>
-            <p className="text-white">{profile.academic.level}</p>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">École</label>
-            <p className="text-white">{profile.academic.school}</p>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Date d'inscription</label>
-            <p className="text-white">
-              {new Date(profile.academic.startDate).toLocaleDateString('fr-FR')}
-            </p>
-          </div>
-        </div>
-      </div>
 
-      {/* Matières */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Matières étudiées</h3>
-        <div className="flex flex-wrap gap-2">
-          {profile.academic.subjects.map((subject, index) => (
-            <span
-              key={index}
-              className={`px-3 py-1 rounded-full text-sm ${
-                profile.academic.favoriteSubjects.includes(subject)
-                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                  : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-              }`}
-            >
-              {subject}
-              {profile.academic.favoriteSubjects.includes(subject) && (
-                <Star className="w-3 h-3 ml-1 inline fill-current" />
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
 
-      {/* Objectifs académiques */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Objectifs académiques</h3>
-        <div className="space-y-3">
-          {profile.academic.academicGoals.map((goal, index) => (
-            <div key={index} className="flex items-start space-x-3">
-              <Target className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-              <p className="text-blue-100">{goal}</p>
-            </div>
-          ))}
-        </div>
-        {isEditing && (
-          <button className="mt-4 flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors">
-            <Plus className="w-4 h-4" />
-            <span>Ajouter un objectif</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
 
-  const renderPreferencesTab = () => (
-    <div className="space-y-6">
-      {/* Préférences générales */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Préférences générales</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Langue</label>
-            <select
-              value={editedProfile.preferences.language}
-              onChange={(e) => setEditedProfile(prev => ({
-                ...prev,
-                preferences: { ...prev.preferences, language: e.target.value }
-              }))}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-            >
-              <option value="fr">Français</option>
-              <option value="en">English</option>
-              <option value="es">Español</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Fuseau horaire</label>
-            <select
-              value={editedProfile.preferences.timezone}
-              onChange={(e) => setEditedProfile(prev => ({
-                ...prev,
-                preferences: { ...prev.preferences, timezone: e.target.value }
-              }))}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-            >
-              <option value="Europe/Paris">Europe/Paris</option>
-              <option value="Europe/London">Europe/London</option>
-              <option value="America/New_York">America/New_York</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Notifications</h3>
-        <div className="space-y-4">
-          {Object.entries(profile.preferences.notifications).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="text-blue-200">
-                {key === 'email' ? 'Email' :
-                 key === 'push' ? 'Notifications push' :
-                 key === 'sms' ? 'SMS' :
-                 key === 'quizReminders' ? 'Rappels de quiz' :
-                 key === 'resultsNotifications' ? 'Notifications de résultats' :
-                 key === 'messageNotifications' ? 'Notifications de messages' : key}
-              </span>
-              <button
-                onClick={() => {
-                  if (isEditing) {
-                    setEditedProfile(prev => ({
-                      ...prev,
-                      preferences: {
-                        ...prev.preferences,
-                        notifications: {
-                          ...prev.preferences.notifications,
-                          [key]: !prev.preferences.notifications[key as keyof typeof prev.preferences.notifications]
-                        }
-                      }
-                    }));
-                  }
-                }}
-                disabled={!isEditing}
-                className={`w-12 h-6 rounded-full transition-all ${
-                  (isEditing ? editedProfile : profile).preferences.notifications[key as keyof typeof profile.preferences.notifications]
-                    ? 'bg-blue-500' 
-                    : 'bg-white/20'
-                } ${!isEditing ? 'opacity-50' : ''}`}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full transition-all ${
-                  (isEditing ? editedProfile : profile).preferences.notifications[key as keyof typeof profile.preferences.notifications]
-                    ? 'translate-x-7' 
-                    : 'translate-x-1'
-                }`} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Préférences d'apprentissage */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Préférences d'apprentissage</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Difficulté préférée</label>
-            <select
-              value={editedProfile.preferences.learning.difficultyPreference}
-              onChange={(e) => setEditedProfile(prev => ({
-                ...prev,
-                preferences: {
-                  ...prev.preferences,
-                  learning: {
-                    ...prev.preferences.learning,
-                    difficultyPreference: e.target.value as any
-                  }
-                }
-              }))}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-            >
-              <option value="adaptive">Adaptative</option>
-              <option value="easy">Facile</option>
-              <option value="medium">Moyen</option>
-              <option value="hard">Difficile</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Moment préféré</label>
-            <select
-              value={editedProfile.preferences.learning.timePreference}
-              onChange={(e) => setEditedProfile(prev => ({
-                ...prev,
-                preferences: {
-                  ...prev.preferences,
-                  learning: {
-                    ...prev.preferences.learning,
-                    timePreference: e.target.value as any
-                  }
-                }
-              }))}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-            >
-              <option value="morning">Matin</option>
-              <option value="afternoon">Après-midi</option>
-              <option value="evening">Soir</option>
-              <option value="flexible">Flexible</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm mb-2">Durée de session (minutes)</label>
-            <input
-              type="number"
-              min="10"
-              max="120"
-              value={editedProfile.preferences.learning.sessionDuration}
-              onChange={(e) => setEditedProfile(prev => ({
-                ...prev,
-                preferences: {
-                  ...prev.preferences,
-                  learning: {
-                    ...prev.preferences.learning,
-                    sessionDuration: parseInt(e.target.value)
-                  }
-                }
-              }))}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderSecurityTab = () => (
     <div className="space-y-6">
-      {/* Mot de passe */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Mot de passe</h3>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-200">Dernière modification : il y a 2 mois</p>
-            <p className="text-blue-300 text-sm">Utilisez un mot de passe fort pour protéger votre compte</p>
-          </div>
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-all"
-          >
-            Changer
-          </button>
-        </div>
-      </div>
+      {/* Paramètres de sécurité */}
+      <SecuritySettings 
+        userId={userId || 0}
+        currentEmail={profile.personal.email}
+      />
 
       {/* Authentification à deux facteurs */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
@@ -979,56 +607,7 @@ const ProfileTab: React.FC = () => {
     </div>
   );
 
-  const renderStatsTab = () => (
-    <div className="space-y-6">
-      {/* Statistiques générales */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center">
-          <div className="text-white text-2xl font-bold">{profile.stats.level}</div>
-          <div className="text-blue-300 text-sm">Niveau</div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center">
-          <div className="text-white text-2xl font-bold">{profile.stats.xp}</div>
-          <div className="text-blue-300 text-sm">XP Total</div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center">
-          <div className="text-white text-2xl font-bold">{profile.stats.totalQuizzes}</div>
-          <div className="text-blue-300 text-sm">Quiz terminés</div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center">
-          <div className="text-white text-2xl font-bold">{profile.stats.averageScore}%</div>
-          <div className="text-blue-300 text-sm">Score moyen</div>
-        </div>
-      </div>
 
-      {/* Badges */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Badges obtenus</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {profile.stats.badges.map((badge, index) => (
-            <div key={index} className="bg-white/5 rounded-lg p-4 text-center">
-              <Award className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-              <p className="text-white text-sm font-semibold">{badge}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Classement */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Classement</h3>
-        <div className="flex items-center justify-center space-x-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mb-2">
-              <Trophy className="w-8 h-8 text-white" />
-            </div>
-            <div className="text-white text-xl font-bold">#{profile.stats.rank}</div>
-            <div className="text-blue-300 text-sm">sur {profile.stats.totalStudents}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -1096,76 +675,10 @@ const ProfileTab: React.FC = () => {
       {/* Contenu des onglets */}
       <div>
         {activeTab === 'personal' && renderPersonalTab()}
-        {activeTab === 'academic' && renderAcademicTab()}
-        {activeTab === 'preferences' && renderPreferencesTab()}
         {activeTab === 'security' && renderSecurityTab()}
-        {activeTab === 'stats' && renderStatsTab()}
       </div>
 
-      {/* Modal de changement de mot de passe */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl p-6 max-w-md w-full">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-white text-xl font-bold">Changer le mot de passe</h2>
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-blue-200 text-sm mb-2">Mot de passe actuel</label>
-                <input
-                  type="password"
-                  value={passwordData.current}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, current: e.target.value }))}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-blue-200 text-sm mb-2">Nouveau mot de passe</label>
-                <input
-                  type="password"
-                  value={passwordData.new}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, new: e.target.value }))}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-blue-200 text-sm mb-2">Confirmer le nouveau mot de passe</label>
-                <input
-                  type="password"
-                  value={passwordData.confirm}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirm: e.target.value }))}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              
-              <div className="flex items-center justify-end space-x-3 pt-4">
-                <button
-                  onClick={() => setShowPasswordModal(false)}
-                  className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handlePasswordChange}
-                  disabled={!passwordData.current || !passwordData.new || passwordData.new !== passwordData.confirm}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Changer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

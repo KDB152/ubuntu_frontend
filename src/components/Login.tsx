@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, Globe, MapPin, Clock, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Mail, Lock, LogIn, Globe, MapPin, Clock, BookOpen, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const LoginPage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -12,6 +14,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(0);
+  const [loginError, setLoginError] = useState('');
 
   // Citations éducatives qui changent
   const quotes = [
@@ -27,11 +30,67 @@ const LoginPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulation d'une requête
-    setTimeout(() => setIsLoading(false), 2000);
+    setLoginError('');
+    
+    try {
+      console.log('🔍 Debug - Tentative de connexion avec:', formData.email);
+      
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      console.log('🔍 Debug - Réponse de l\'API:', result);
+
+      if (response.ok) {
+        if (result.requiresVerification) {
+          console.log('⚠️ Debug - Email non vérifié, redirection vers:', result.redirectUrl);
+          // Rediriger vers la page de vérification d'email
+          router.push(result.redirectUrl);
+        } else if (result.success) {
+          console.log('✅ Debug - Connexion réussie, redirection vers dashboard spécifique');
+          // Connexion réussie, rediriger vers le dashboard spécifique selon le rôle
+          localStorage.setItem('userDetails', JSON.stringify(result.user));
+          
+          // Redirection basée sur le rôle de l'utilisateur
+          const userRole = result.user.role;
+          let dashboardUrl = '/dashboard';
+          
+          switch (userRole) {
+            case 'admin':
+              dashboardUrl = '/dashboard/admin';
+              break;
+            case 'student':
+              dashboardUrl = '/dashboard/student';
+              break;
+            case 'parent':
+              dashboardUrl = '/dashboard/parent';
+              break;
+            default:
+              console.warn('⚠️ Debug - Rôle inconnu:', userRole, 'redirection vers dashboard par défaut');
+              dashboardUrl = '/dashboard';
+          }
+          
+          console.log('🔀 Debug - Redirection vers:', dashboardUrl, 'pour le rôle:', userRole);
+          router.push(dashboardUrl);
+        }
+      } else {
+        console.log('❌ Debug - Erreur de connexion:', result.error);
+        setLoginError(result.error || 'Erreur de connexion');
+      }
+    } catch (error) {
+      console.error('💥 Debug - Erreur lors de la connexion:', error);
+      setLoginError('Erreur de connexion au serveur');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -199,9 +258,17 @@ const LoginPage = () => {
                   </a>
                 </div>
 
+                {/* Message d'erreur */}
+                {loginError && (
+                  <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400 text-sm">{loginError}</span>
+                  </div>
+                )}
+
                 {/* Bouton de connexion */}
                 <button
-                  type="button"
+                  type="submit"
                   onClick={handleSubmit}
                   disabled={isLoading}
                   className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"

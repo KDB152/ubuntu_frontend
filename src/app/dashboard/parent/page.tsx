@@ -527,6 +527,15 @@ const ParentDashboard: React.FC = () => {
                   <Plus className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* Bouton de déconnexion */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 bg-transparent border border-white/30 rounded-xl text-red-400 hover:bg-red-500/20 hover:border-red-400/50 transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="font-medium">Déconnexion</span>
+              </button>
             </div>
           </div>
         </div>
@@ -535,7 +544,7 @@ const ParentDashboard: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6">
           <CurrentComponent 
             selectedChild={selectedChildData}
-            parent={parent}
+            parent={parent || undefined}
             searchQuery={searchQuery}
             onNavigateToMessages={() => setActiveTab('messages')}
             onNavigateToCalendar={() => setActiveTab('calendar')}

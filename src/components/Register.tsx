@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ToastProvider } from '@/components/ui/toast';
 import { Mail, Lock, User, Eye, EyeOff, UserPlus, Globe, MapPin, BookOpen, CheckCircle, AlertCircle, GraduationCap, Phone } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -13,7 +15,9 @@ const RegisterPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     userType: 'student',
-    acceptTerms: false
+    acceptTerms: false,
+    childEmail: '', // Ajouté pour les parents
+    childPhone: '' // Ajouté pour les parents
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +90,21 @@ const RegisterPage: React.FC = () => {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     }
 
+    // Validation spécifique pour les parents
+    if (formData.userType === 'parent') {
+      if (!formData.childEmail) {
+        newErrors.childEmail = 'L\'email de votre enfant est requis';
+      } else if (!validateEmail(formData.childEmail)) {
+        newErrors.childEmail = 'Veuillez entrer une adresse email valide pour votre enfant';
+      }
+
+      if (!formData.childPhone) {
+        newErrors.childPhone = 'Le numéro de téléphone de votre enfant est requis';
+      } else if (formData.childPhone.length < 8) {
+        newErrors.childPhone = 'Le numéro de téléphone de votre enfant doit contenir au moins 8 chiffres';
+      }
+    }
+
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = 'Vous devez accepter les conditions d\'utilisation';
     }
@@ -119,20 +138,27 @@ const handleSubmit = async (e) => {
       throw new Error(data.message || 'Erreur lors de l\'inscription');
     }
 
-    setSuccessMessage(data.message || 'Inscription réussie !');  // Affiche message du backend ou par défaut
-    setFormData({  // Vide les champs
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      userType: 'student',
-      acceptTerms: false
-    });
-
-    // Optionnel : Redirigez vers login après 2s (si vous utilisez Next.js, importez useRouter)
-    // setTimeout(() => { router.push('/login'); }, 2000);
+    // Inscription réussie - Rediriger vers la page de vérification d'email
+    setSuccessMessage('Inscription réussie ! Redirection vers la vérification d\'email...');
+    
+    // Attendre 2 secondes pour afficher le message, puis rediriger
+    setTimeout(() => {
+      // Rediriger vers la page de vérification d'email avec les informations nécessaires
+      const params = new URLSearchParams({
+        email: formData.email,
+        newUser: 'true',
+        firstName: formData.firstName,
+        lastName: formData.lastName
+      });
+      
+      // Ajouter les informations de l'enfant si c'est un parent
+      if (formData.userType === 'parent') {
+        params.append('childEmail', formData.childEmail);
+        params.append('childPhone', formData.childPhone);
+      }
+      
+      router.push(`/email-verification-required?${params.toString()}`);
+    }, 2000);
 
   } catch (error) {
     setErrors({ ...errors, global: error.message });  // Erreur globale
@@ -442,6 +468,75 @@ const handleSubmit = async (e) => {
                       <p className="mt-2 text-sm text-red-400">{errors.phone}</p>
                     )}
                   </div>
+
+                  {/* Champs pour l'enfant (visible seulement pour les parents) */}
+                  {formData.userType === 'parent' && (
+                    <>
+                      {/* Séparateur visuel */}
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-white/20"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-4 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white/70 font-medium">
+                            📚 Informations de votre enfant
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Email de l'enfant */}
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">
+                          Email de votre enfant
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="email"
+                            name="childEmail"
+                            value={formData.childEmail}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childEmail ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="email.enfant@example.com"
+                            required
+                          />
+                        </div>
+                        {errors.childEmail && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childEmail}</p>
+                        )}
+                      </div>
+
+                      {/* Téléphone de l'enfant */}
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">
+                          Téléphone de votre enfant
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="tel"
+                            name="childPhone"
+                            value={formData.childPhone}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childPhone ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Numéro de téléphone de votre enfant"
+                            required
+                          />
+                        </div>
+                        {errors.childPhone && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childPhone}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   {/* Mot de passe */}
                   <div>

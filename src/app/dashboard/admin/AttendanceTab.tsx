@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
+import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedTable, AnimatedTableRow, AnimatedStats } from '../../../components/ui/animations';
 
 interface Student {
   student_id: number;
@@ -34,6 +35,7 @@ const AttendanceTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
   // Liste des classes disponibles (même que dans l'enregistrement)
   const AVAILABLE_CLASSES = [
     'Terminale groupe 1',
@@ -99,62 +101,43 @@ const AttendanceTab: React.FC = () => {
 
       // Recharger la liste pour mettre à jour les séances
       await loadStudents();
-      
     } catch (err) {
-      console.error('Erreur lors du marquage de présence:', err);
-      alert('Erreur lors du marquage de présence');
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      console.error('Erreur lors de la mise à jour de la présence:', err);
     }
   };
 
   // Filtrer les étudiants
   const filteredStudents = students.filter(student => {
-    const matchesSearch = 
-      student.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    
     const matchesClass = student.class_level === filterClass;
+    const matchesSearch = !searchQuery || 
+      student.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesSearch && matchesClass;
+    return matchesClass && matchesSearch;
   });
 
-  // Statistiques
+  // Calculer les statistiques
   const stats = {
-    total: students.length,
-    active: students.filter(s => s.is_active).length,
-    inactive: students.filter(s => !s.is_active).length,
-    totalUnpaid: students.reduce((sum, s) => sum + (s.unpaid_sessions || 0), 0),
-    totalPaid: students.reduce((sum, s) => sum + (s.paid_sessions || 0), 0)
+    total: filteredStudents.length,
+    active: filteredStudents.filter(s => s.is_active).length,
+    totalPaid: filteredStudents.reduce((sum, s) => sum + (s.paid_sessions || 0), 0),
+    totalUnpaid: filteredStudents.reduce((sum, s) => sum + (s.unpaid_sessions || 0), 0)
   };
 
+  // Charger les étudiants quand la classe change
   useEffect(() => {
-    // Ne charger les étudiants que si une classe est sélectionnée
     if (filterClass) {
       loadStudents();
     }
-  }, [loadStudents, filterClass]);
+  }, [filterClass, loadStudents]);
 
-  // Si aucune classe n'est sélectionnée, afficher un message
+  // Si aucune classe n'est sélectionnée, afficher le message de sélection
   if (!filterClass) {
     return (
-      <div className="space-y-6">
-        {/* En-tête */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white flex items-center">
-                <Users className="w-6 h-6 text-blue-300 mr-3" />
-                Gestion de la Présence
-              </h1>
-              <p className="text-blue-200 mt-1">
-                Gérez la présence des étudiants et suivez leurs sessions
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Message de sélection de classe */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+      <AnimatedPage className="space-y-6">
+        <AnimatedCard className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
           <div className="text-center py-12">
             <BookOpen className="w-16 h-16 text-blue-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">Sélectionnez une classe</h3>
@@ -176,8 +159,8 @@ const AttendanceTab: React.FC = () => {
               </select>
             </div>
           </div>
-        </div>
-      </div>
+        </AnimatedCard>
+      </AnimatedPage>
     );
   }
 
@@ -199,21 +182,21 @@ const AttendanceTab: React.FC = () => {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-600 mb-2">Erreur de chargement</h3>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
+          <AnimatedButton
             onClick={loadStudents}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             Réessayer
-          </button>
+          </AnimatedButton>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <AnimatedPage className="space-y-6">
       {/* En-tête */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+      <AnimatedCard className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center">
@@ -234,11 +217,11 @@ const AttendanceTab: React.FC = () => {
             />
           </div>
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+        <AnimatedStats delay={0} className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Total Étudiants</p>
@@ -246,9 +229,9 @@ const AttendanceTab: React.FC = () => {
             </div>
             <Users className="w-8 h-8 text-blue-300" />
           </div>
-        </div>
+        </AnimatedStats>
         
-        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+        <AnimatedStats delay={1} className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Actifs</p>
@@ -256,9 +239,9 @@ const AttendanceTab: React.FC = () => {
             </div>
             <CheckCircle className="w-8 h-8 text-green-400" />
           </div>
-        </div>
+        </AnimatedStats>
         
-        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+        <AnimatedStats delay={2} className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Séances Payées</p>
@@ -266,9 +249,9 @@ const AttendanceTab: React.FC = () => {
             </div>
             <TrendingUp className="w-8 h-8 text-green-400" />
           </div>
-        </div>
+        </AnimatedStats>
         
-        <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+        <AnimatedStats delay={3} className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Séances Non Payées</p>
@@ -276,11 +259,11 @@ const AttendanceTab: React.FC = () => {
             </div>
             <Clock className="w-8 h-8 text-orange-400" />
           </div>
-        </div>
+        </AnimatedStats>
       </div>
 
       {/* Filtres et recherche */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
+      <AnimatedCard className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
@@ -298,24 +281,23 @@ const AttendanceTab: React.FC = () => {
               onChange={(e) => setFilterClass(e.target.value)}
               className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
             >
-
               {AVAILABLE_CLASSES.map(cls => (
                 <option key={cls} value={cls}>{cls}</option>
               ))}
             </select>
-            <button
+            <AnimatedButton
               onClick={loadStudents}
               className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center space-x-2"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Actualiser</span>
-            </button>
+            </AnimatedButton>
           </div>
         </div>
-      </div>
+      </AnimatedCard>
 
       {/* Liste des étudiants */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+      <AnimatedCard className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
         <div className="p-6 border-b border-white/20">
           <h2 className="text-xl font-bold text-white flex items-center">
             <User className="w-5 h-5 text-blue-300 mr-2" />
@@ -324,7 +306,7 @@ const AttendanceTab: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <AnimatedTable className="w-full">
             <thead className="bg-white/5">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
@@ -345,8 +327,11 @@ const AttendanceTab: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {filteredStudents.map((student) => (
-                <tr key={student.student_id} className="hover:bg-white/5 transition-colors">
+              {filteredStudents.map((student, index) => (
+                <AnimatedTableRow 
+                  key={student.student_id} 
+                  className="hover:bg-white/5 transition-colors"
+                >
                   <td className="px-6 py-4">
                     <div>
                       <div className="text-sm font-medium text-white">
@@ -384,26 +369,26 @@ const AttendanceTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
-                      <button
+                      <AnimatedButton
                         onClick={() => toggleAttendance(student.student_id, true)}
                         className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
                         title="Marquer présent"
                       >
                         Présent
-                      </button>
-                      <button
+                      </AnimatedButton>
+                      <AnimatedButton
                         onClick={() => toggleAttendance(student.student_id, false)}
                         className="px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
                         title="Marquer absent"
                       >
                         Absent
-                      </button>
+                      </AnimatedButton>
                     </div>
                   </td>
-                </tr>
+                </AnimatedTableRow>
               ))}
             </tbody>
-          </table>
+          </AnimatedTable>
         </div>
 
         {filteredStudents.length === 0 && (
@@ -412,8 +397,8 @@ const AttendanceTab: React.FC = () => {
             <p className="text-blue-200">Aucun étudiant trouvé</p>
           </div>
         )}
-      </div>
-    </div>
+      </AnimatedCard>
+    </AnimatedPage>
   );
 };
 

@@ -94,6 +94,15 @@ async function synchronizePaymentRecord(connection: mysql.Connection, studentId:
       ]);
     }
     
+    // Maintenant, synchroniser la table students avec les données de paiement
+    await connection.execute(`
+      UPDATE students 
+      SET unpaid_sessions = (
+        SELECT seances_non_payees FROM paiement WHERE student_id = ?
+      )
+      WHERE id = ?
+    `, [studentId, studentId]);
+    
     console.log(`✅ Enregistrement de paiement synchronisé pour l'étudiant ${studentId}`);
     
   } catch (error) {
@@ -117,7 +126,7 @@ async function synchronizePaidSessions(connection: mysql.Connection, studentId: 
       const prixSeance = 50; // Prix par défaut
       const newTotalAmount = (newPaidSessions + (existing.seances_non_payees || 0)) * prixSeance;
       const newPaidAmount = newPaidSessions * prixSeance;
-      
+
       await connection.execute(`
         UPDATE paiement 
         SET 
@@ -147,17 +156,17 @@ async function synchronizePaidSessions(connection: mysql.Connection, studentId: 
       // Créer un nouvel enregistrement de paiement
       const prixSeance = 50; // Prix par défaut
       const totalAmount = newPaidSessions * prixSeance;
-      
+
       await connection.execute(`
         INSERT INTO paiement (
           student_id, 
           seances_total, 
           seances_non_payees, 
           seances_payees,
-          montant_total, 
-          montant_paye, 
-          montant_restant, 
-          prix_seance, 
+          montant_total,
+          montant_paye,
+          montant_restant,
+          prix_seance,
           statut,
           date_creation
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -268,7 +277,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const classFilter = searchParams.get('class');
     const nameFilter = searchParams.get('name');
-
+    
     const connection = await getConnection();
     
     // Requête de base pour récupérer les étudiants avec leurs vraies sessions depuis la table paiement
@@ -381,17 +390,18 @@ export async function POST(request: NextRequest) {
     // Si l'étudiant est marqué présent, incrémenter les séances non payées
     if (isPresent) {
       try {
-        await connection.execute(`
-          UPDATE students 
-          SET unpaid_sessions = COALESCE(unpaid_sessions, 0) + 1
-          WHERE id = ?
-        `, [studentId]);
+        // NE PAS incrémenter ici - la synchronisation s'en chargera
+        // await connection.execute(`
+        //   UPDATE students 
+        //   SET unpaid_sessions = COALESCE(unpaid_sessions, 0) + 1
+        //   WHERE id = ?
+        // `, [studentId]);
         
-        // Synchroniser avec la table paiement
+        // Synchroniser avec la table paiement (cela mettra à jour students.unpaid_sessions)
         await synchronizePaymentRecord(connection, studentId);
         
       } catch (error) {
-        console.log('Impossible de mettre à jour unpaid_sessions, colonne peut-être manquante:', error instanceof Error ? error.message : 'Erreur inconnue');
+        console.log('Impossible de synchroniser les paiements:', error instanceof Error ? error.message : 'Erreur inconnue');
       }
     }
     
@@ -434,8 +444,8 @@ export async function PUT(request: NextRequest) {
             SET unpaid_sessions = COALESCE(unpaid_sessions, 0) + ?
             WHERE id = ?
           `, [sessions, studentId]);
-          
-          // Synchroniser avec la table paiement
+        
+        // Synchroniser avec la table paiement
           await synchronizePaymentRecord(connection, studentId);
           
         } catch (error) {
@@ -489,8 +499,8 @@ export async function PUT(request: NextRequest) {
             [studentId]
           );
           const newPaidSessions = (result as any[])[0]?.paid_sessions || 0;
-          
-          // Synchroniser avec la table paiement
+        
+        // Synchroniser avec la table paiement
           await synchronizePaidSessions(connection, studentId, newPaidSessions);
           
         } catch (error) {
@@ -520,8 +530,8 @@ export async function PUT(request: NextRequest) {
             [studentId]
           );
           const newPaidSessions = (result as any[])[0]?.paid_sessions || 0;
-          
-          // Synchroniser avec la table paiement
+        
+        // Synchroniser avec la table paiement
           await synchronizePaidSessions(connection, studentId, newPaidSessions);
           
         } catch (error) {

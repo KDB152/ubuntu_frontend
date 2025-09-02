@@ -19,6 +19,7 @@ import {
   Loader2,
   Edit
 } from 'lucide-react';
+import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedTable, AnimatedTableRow, AnimatedStats } from '../../../components/ui/animations';
 
 // Liste des classes disponibles (même que dans l'enregistrement)
 const AVAILABLE_CLASSES = [
@@ -97,7 +98,7 @@ const PaymentsManagementTab: React.FC = () => {
         throw new Error('Erreur lors du chargement des paiements');
       }
       
-                     const data = await response.json();
+      const data = await response.json();
         console.log('Données reçues de l\'API:', data);
         
         // Log détaillé pour déboguer
@@ -280,7 +281,7 @@ const PaymentsManagementTab: React.FC = () => {
            >
              Réessayer
            </button>
-         </div>
+        </div>
       </div>
     );
   }
@@ -350,11 +351,11 @@ const PaymentsManagementTab: React.FC = () => {
               <p className="text-2xl font-bold text-orange-400">{formatAmount(stats.unpaidAmount)}</p>
             </div>
             <Clock className="w-8 h-8 text-orange-400" />
-          </div>
         </div>
-        
-
       </div>
+
+
+        </div>
 
       {/* Filtres et recherche */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
@@ -371,7 +372,7 @@ const PaymentsManagementTab: React.FC = () => {
           </div>
           <div className="flex items-center space-x-3">
                                       {/* Filtre par classe */}
-              <select
+            <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
@@ -379,11 +380,11 @@ const PaymentsManagementTab: React.FC = () => {
                 <option value="Total">Total (Toutes les classes)</option>
                 {AVAILABLE_CLASSES.map(cls => (
                   <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-            
+              ))}
+            </select>
+
             {/* Filtre par statut */}
-                         <select
+            <select
                value={selectedStatus}
                onChange={(e) => setSelectedStatus(e.target.value)}
                className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
@@ -392,11 +393,11 @@ const PaymentsManagementTab: React.FC = () => {
                <option value="paye">Payé</option>
                <option value="partiel">Partiel</option>
                <option value="en_attente">En attente</option>
-             </select>
+            </select>
             
             
-          </div>
-        </div>
+              </div>
+            </div>
       </div>
 
       {/* Liste des paiements */}
@@ -476,30 +477,30 @@ const PaymentsManagementTab: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                                     <td className="px-6 py-4">
+                  <td className="px-6 py-4">
                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBgColor(payment.statut)}`}>
                        {payment.statut === 'paye' && <CheckCircle className="w-3 h-3 mr-1" />}
                        {payment.statut === 'partiel' && <Clock className="w-3 h-3 mr-1" />}
                        {payment.statut === 'en_attente' && <Clock className="w-3 h-3 mr-1" />}
                        {payment.statut}
-                     </span>
-                   </td>
+                    </span>
+                  </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
-                      <button
+                      <div className="flex items-center space-x-2">
+                        <button
                         onClick={() => handleViewDetails(payment)}
                         className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
                         title="Voir les détails"
                       >
                         <Eye className="w-3 h-3" />
-                      </button>
-                      <button
+                        </button>
+                        <button
                         onClick={() => handleMarkAsPaid(payment)}
                         className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
                         title="Marquer comme payé"
                       >
                         <CheckCircle className="w-3 h-3" />
-                      </button>
+                        </button>
                       <button
                         onClick={() => handleEdit(payment)}
                         className="px-3 py-1 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"

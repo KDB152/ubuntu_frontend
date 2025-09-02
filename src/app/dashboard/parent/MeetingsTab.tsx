@@ -115,7 +115,14 @@ const MeetingsTab: React.FC = () => {
   const loadRendezVous = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/rendez-vous');
+      
+      // Vérifier que le profil parent est chargé
+      if (!parentProfile) {
+        console.log('Profil parent non encore chargé, attente...');
+        return;
+      }
+      
+      const response = await fetch(`/api/rendez-vous?parentId=${parentProfile.id}`);
       
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des rendez-vous');
@@ -123,30 +130,14 @@ const MeetingsTab: React.FC = () => {
       
       const data = await response.json();
       
-      // Transformer les données de la base pour correspondre à l'interface
-      const transformedRendezVous: RendezVous[] = data.map((rdv: any) => ({
-        id: rdv.id.toString(),
-        parentId: rdv.parent_id,
-        parentName: rdv.parent_name,
-        parentEmail: rdv.parent_email,
-        parentPhone: rdv.parent_phone,
-        childName: rdv.child_name,
-        childClass: rdv.child_class,
-        timing: rdv.timing,
-        parentReason: rdv.parent_reason,
-        adminReason: rdv.admin_reason,
-        status: rdv.status,
-        createdAt: rdv.created_at,
-        updatedAt: rdv.updated_at
-      }));
-      
-      setRendezVous(transformedRendezVous);
+      // Les données sont déjà transformées par l'API
+      setRendezVous(data);
     } catch (error) {
       console.error('Erreur lors du chargement des rendez-vous:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [parentProfile]);
 
   // Fonction pour rafraîchir les données
   const refreshData = useCallback(async () => {

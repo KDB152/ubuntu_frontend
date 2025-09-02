@@ -419,55 +419,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Témoignages Section améliorée */}
-      <section id="testimonials" className="py-20 relative z-10 bg-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Ce que disent nos <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">élèves</span>
-            </h2>
-            <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Découvrez les témoignages d'élèves qui ont transformé leur apprentissage avec Chrono-Carto
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-              <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
-                  {testimonials[currentTestimonial].avatar}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">{testimonials[currentTestimonial].name}</h3>
-                  <p className="text-white/60">{testimonials[currentTestimonial].grade}</p>
-                  <div className="flex items-center mt-1">
-                    {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-amber-400 fill-current" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <p className="text-white/90 text-lg italic leading-relaxed">
-                "{testimonials[currentTestimonial].text}"
-              </p>
-            </div>
-            
-            {/* Indicateurs de navigation */}
-            <div className="flex justify-center mt-8 space-x-2">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    currentTestimonial === index ? 'bg-amber-400' : 'bg-white/30'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section améliorée */}
       <section className="py-20 relative z-10">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
