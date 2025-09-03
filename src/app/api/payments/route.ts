@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
         SELECT id FROM parents WHERE user_id = ?
       `, [userId]);
 
-      if ((parentData as any).length > 0) {
-        finalParentId = (parentData as any)[0].id;
+      if (parentData.length > 0) {
+        finalParentId = parentData[0].id;
       } else {
         await connection.end();
         return NextResponse.json(
@@ -82,13 +82,13 @@ export async function GET(request: NextRequest) {
 
     // Calculer les statistiques
     const stats = {
-      totalPayments: (payments as any).length,
-      totalAmount: (payments as any).reduce((sum: number, p: any) => sum + parseFloat(p.montant_total || 0), 0),
-      totalPaid: (payments as any).reduce((sum: number, p: any) => sum + parseFloat(p.montant_paye || 0), 0),
-      totalRemaining: (payments as any).reduce((sum: number, p: any) => sum + parseFloat(p.montant_restant || 0), 0),
-              totalSessions: (payments as any).reduce((sum: number, p: any) => sum + (p.seances_total || 0), 0),
-        totalUnpaidSessions: (payments as any).reduce((sum: number, p: any) => sum + (p.seances_non_payees || 0), 0),
-              totalPaidSessions: (payments as any).reduce((sum: number, p: any) => sum + (p.seances_payees || 0), 0)
+      totalPayments: payments.length,
+      totalAmount: payments.reduce((sum: number, p: any) => sum + parseFloat(p.montant_total || 0), 0),
+      totalPaid: payments.reduce((sum: number, p: any) => sum + parseFloat(p.montant_paye || 0), 0),
+      totalRemaining: payments.reduce((sum: number, p: any) => sum + parseFloat(p.montant_restant || 0), 0),
+      totalSessions: payments.reduce((sum: number, p: any) => sum + (p.seances_total || 0), 0),
+      totalUnpaidSessions: payments.reduce((sum: number, p: any) => sum + (p.seances_non_payees || 0), 0),
+      totalPaidSessions: payments.reduce((sum: number, p: any) => sum + (p.seances_payees || 0), 0)
     };
 
     await connection.end();

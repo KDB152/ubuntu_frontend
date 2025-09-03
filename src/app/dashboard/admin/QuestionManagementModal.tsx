@@ -146,9 +146,9 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full h-full max-w-none max-h-none flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/20">
+        <div className="flex items-center justify-between p-6 border-b border-white/20 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center">
               <FileText className="w-6 h-6 text-blue-300 mr-3" />
@@ -192,7 +192,7 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
         )}
 
         {/* Questions List */}
-        <div className="p-6">
+        <div className="p-6 flex-1 overflow-y-auto">
           {isLoading && questions.length === 0 ? (
             <div className="text-center py-12">
               <Loader2 className="w-8 h-8 text-blue-300 mx-auto mb-4 animate-spin" />
@@ -211,12 +211,12 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {questions.map((question, index) => (
-                <div key={question.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <div key={question.id} className="bg-white/5 rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
+                      <div className="flex items-center space-x-3 mb-3">
                         <div className="flex items-center space-x-2 text-blue-300">
                           {getQuestionTypeIcon(question.type)}
                           <span className="text-sm font-medium">{getQuestionTypeLabel(question.type)}</span>
@@ -226,22 +226,22 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
                           <span className="text-sm">{question.points} point(s)</span>
                         </div>
                       </div>
-                      <h3 className="text-white font-medium mb-2">
+                      <h3 className="text-white font-medium mb-3 text-lg">
                         Question {index + 1}: {question.question}
                       </h3>
                       
                       {question.options && question.options.length > 0 && (
-                        <div className="mb-2">
-                          <p className="text-sm text-blue-200 mb-1">Options:</p>
-                          <ul className="space-y-1">
+                        <div className="mb-3">
+                          <p className="text-sm text-blue-200 mb-2 font-medium">Options:</p>
+                          <ul className="space-y-2">
                             {question.options.map((option, optIndex) => (
-                              <li key={optIndex} className="text-sm text-blue-300 flex items-center space-x-2">
-                                <span className="w-4 h-4 bg-white/10 rounded flex items-center justify-center text-xs">
+                              <li key={optIndex} className="text-sm text-blue-300 flex items-center space-x-2 p-2 bg-white/5 rounded-lg">
+                                <span className="w-5 h-5 bg-white/10 rounded flex items-center justify-center text-xs font-medium">
                                   {String.fromCharCode(65 + optIndex)}
                                 </span>
-                                <span>{option}</span>
+                                <span className="flex-1">{option}</span>
                                 {question.correct_answer === option && (
-                                  <CheckCircle className="w-3 h-3 text-green-400" />
+                                  <CheckCircle className="w-4 h-4 text-green-400" />
                                 )}
                               </li>
                             ))}
@@ -250,13 +250,13 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
                       )}
                       
                       {question.correct_answer && (
-                        <div className="mb-2">
+                        <div className="mb-3 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                           <p className="text-sm text-blue-200">Réponse correcte: <span className="text-green-300 font-medium">{question.correct_answer}</span></p>
                         </div>
                       )}
                       
                       {question.explanation && (
-                        <div className="mb-2">
+                        <div className="mb-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
                           <p className="text-sm text-blue-200">Explication: <span className="text-blue-300">{question.explanation}</span></p>
                         </div>
                       )}
@@ -382,7 +382,7 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-white/20">
           <h2 className="text-2xl font-bold text-white flex items-center">
             <FileText className="w-6 h-6 text-blue-300 mr-3" />
@@ -394,34 +394,35 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">Question *</label>
-            <textarea
-              value={formData.question}
-              onChange={(e) => setFormData(prev => ({ ...prev, question: e.target.value }))}
-              required
-              rows={3}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-              placeholder="Entrez votre question..."
-            />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-semibold text-white mb-2">Question *</label>
+              <textarea
+                value={formData.question}
+                onChange={(e) => setFormData(prev => ({ ...prev, question: e.target.value }))}
+                required
+                rows={3}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                placeholder="Entrez votre question..."
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">Type de question</label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-            >
-              <option value="single">Choix unique</option>
-              <option value="multiple">Choix multiple</option>
-              <option value="text">Texte libre</option>
-              <option value="boolean">Vrai/Faux</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Type de question</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+              >
+                <option value="single">Choix unique</option>
+                <option value="multiple">Choix multiple</option>
+                <option value="text">Texte libre</option>
+                <option value="boolean">Vrai/Faux</option>
+              </select>
+            </div>
 
           {(formData.type === 'single' || formData.type === 'multiple') && (
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-semibold text-white mb-2">Options</label>
               <div className="space-y-2">
                 {formData.options?.map((option, index) => (
@@ -505,7 +506,7 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
             />
           </div>
 
-          <div>
+          <div className="lg:col-span-2">
             <label className="block text-sm font-semibold text-white mb-2">Explication (optionnel)</label>
             <textarea
               value={formData.explanation}
@@ -515,6 +516,7 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
               placeholder="Explication de la réponse correcte..."
             />
           </div>
+        </div>
 
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/20">
             <button

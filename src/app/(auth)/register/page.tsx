@@ -35,12 +35,10 @@ const RegisterPage: React.FC = () => {
     studentBirthDate: '',
     studentClass: '',
     // Parent-specific fields
-                    childFirstName: '',
-        childLastName: '',
-        childBirthDate: '',
-        childClass: '',
-        childEmail: '',
-        childPhone: '',
+    childFirstName: '',
+    childLastName: '',
+    childBirthDate: '',
+    childClass: '',
     // Parent contact fields (for students)
     parentFirstName: '',
     parentLastName: '',
@@ -168,16 +166,6 @@ const RegisterPage: React.FC = () => {
       } else if (!AVAILABLE_CLASSES.includes(formData.childClass)) {
         newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
       }
-      if (!formData.childEmail) {
-        newErrors.childEmail = 'L\'email de l\'enfant est requis';
-      } else if (!validateEmail(formData.childEmail)) {
-        newErrors.childEmail = 'Veuillez entrer une adresse email valide pour l\'enfant';
-      }
-      if (!formData.childPhone) {
-        newErrors.childPhone = 'Le numéro de téléphone de l\'enfant est requis';
-      } else if (formData.childPhone.length < 8) {
-        newErrors.childPhone = 'Le numéro de téléphone de l\'enfant doit contenir au moins 8 chiffres';
-      }
     }
 
     if (!formData.acceptTerms) {
@@ -217,8 +205,6 @@ const RegisterPage: React.FC = () => {
         childLastName: formData.userType === 'parent' ? formData.childLastName : undefined,
         childBirthDate: formData.userType === 'parent' ? formData.childBirthDate : undefined,
         childClass: formData.userType === 'parent' ? formData.childClass : undefined,
-        childEmail: formData.userType === 'parent' ? formData.childEmail : undefined,
-        childPhone: formData.userType === 'parent' ? formData.childPhone : undefined,
         // Parent contact fields (for students)
         parentFirstName: formData.userType === 'student' ? formData.parentFirstName : undefined,
         parentLastName: formData.userType === 'student' ? formData.parentLastName : undefined,
@@ -237,27 +223,27 @@ const RegisterPage: React.FC = () => {
         throw new Error(data.message || "Erreur lors de l'inscription");
       }
 
-      setSuccessMessage('Inscription réussie ! Redirection vers la vérification d\'email...');
-      
-      // Attendre 2 secondes pour afficher le message, puis rediriger
-      setTimeout(() => {
-        // Rediriger vers la page de vérification d'email avec les informations nécessaires
-        const params = new URLSearchParams({
-          email: formData.email,
-          newUser: 'true',
-          firstName: formData.firstName,
-          lastName: formData.lastName
-        });
-        
-        // Ajouter les informations de l'enfant si c'est un parent
-        if (formData.userType === 'parent') {
-          params.append('childEmail', formData.childEmail);
-          params.append('childPhone', formData.childPhone);
-        }
-        
-        // Redirection vers la page de vérification
-        window.location.href = `/email-verification-required?${params.toString()}`;
-      }, 2000);
+      setSuccessMessage(data.message || 'Inscription réussie !');
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        userType: 'student',
+        acceptTerms: false,
+        studentBirthDate: '',
+        studentClass: '',
+        childFirstName: '',
+        childLastName: '',
+        childBirthDate: '',
+        childClass: '',
+        parentFirstName: '',
+        parentLastName: '',
+        parentEmail: '',
+        parentPhone: ''
+      });
     } catch (error) {
       setErrors({ ...errors, global: (error as Error).message });
     } finally {
@@ -466,592 +452,480 @@ const RegisterPage: React.FC = () => {
                   </div>
                 </div>
 
-                                 {/* Section 1 : Informations personnelles */}
-                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                     <User className="w-5 h-5 mr-2 text-amber-300" />
-                     {formData.userType === 'student' ? 'Informations personnelles' : 'Informations personnelles'}
-                   </h3>
-                   
-                   {/* Nom et prénom */}
-                   <div className="grid grid-cols-2 gap-4 mb-4">
-                     <div>
-                       <label className="block text-sm font-medium text-white/90 mb-3">Prénom</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="text"
-                           name="firstName"
-                           value={formData.firstName}
-                           onChange={handleInputChange}
-                           className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm hover:bg-white/15 ${
-                             errors.firstName ? 'border-red-400' : 'border-white/20'
-                           }`}
-                           placeholder="Votre prénom"
-                           required
-                         />
-                       </div>
-                       {errors.firstName && (
-                         <p className="mt-2 text-sm text-red-400">{errors.firstName}</p>
-                       )}
-                     </div>
+                {/* Informations personnelles */}
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-amber-300" />
+                    Informations personnelles
+                  </h3>
+                  
+                  {/* Nom et prénom */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Prénom</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm hover:bg-white/15 ${
+                            errors.firstName ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Votre prénom"
+                          required
+                        />
+                      </div>
+                      {errors.firstName && (
+                        <p className="mt-2 text-sm text-red-400">{errors.firstName}</p>
+                      )}
+                    </div>
 
-                     <div>
-                       <label className="block text-sm font-medium text-white/90 mb-3">Nom</label>
-                       <div className="relative group">
-                         <input
-                           type="text"
-                           name="lastName"
-                           value={formData.lastName}
-                           onChange={handleInputChange}
-                           className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                             errors.lastName ? 'border-red-400' : 'border-white/20'
-                           }`}
-                           placeholder="Votre nom"
-                           required
-                         />
-                       </div>
-                       {errors.lastName && (
-                         <p className="mt-2 text-sm text-red-400">{errors.lastName}</p>
-                       )}
-                     </div>
-                   </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Nom</label>
+                      <div className="relative group">
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.lastName ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Votre nom"
+                          required
+                        />
+                      </div>
+                      {errors.lastName && (
+                        <p className="mt-2 text-sm text-red-400">{errors.lastName}</p>
+                      )}
+                    </div>
+                  </div>
 
-                   {/* Email et téléphone */}
-                   <div className="grid grid-cols-2 gap-4 mb-4">
-                     <div>
-                       <label className="block text-sm font-medium text-white/90 mb-3">Adresse email</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="email"
-                           name="email"
-                           value={formData.email}
-                           onChange={handleInputChange}
-                           className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                             errors.email ? 'border-red-400' : 'border-white/20'
-                           }`}
-                           placeholder="votre@email.com"
-                           required
-                         />
-                       </div>
-                       {errors.email && (
-                         <p className="mt-2 text-sm text-red-400">{errors.email}</p>
-                       )}
-                     </div>
+                  {/* Email et téléphone */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Adresse email</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.email ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="votre@email.com"
+                          required
+                        />
+                      </div>
+                      {errors.email && (
+                        <p className="mt-2 text-sm text-red-400">{errors.email}</p>
+                      )}
+                    </div>
 
-                     <div>
-                       <label className="block text-sm font-medium text-white/90 mb-3">Numéro de téléphone</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="tel"
-                           name="phone"
-                           value={formData.phone}
-                           onChange={handleInputChange}
-                           className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                             errors.phone ? 'border-red-400' : 'border-white/20'
-                           }`}
-                           placeholder="Votre numéro de téléphone"
-                           required
-                         />
-                       </div>
-                       {errors.phone && (
-                         <p className="mt-2 text-sm text-red-400">{errors.phone}</p>
-                       )}
-                     </div>
-                   </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Numéro de téléphone</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.phone ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Votre numéro de téléphone"
+                          required
+                        />
+                      </div>
+                      {errors.phone && (
+                        <p className="mt-2 text-sm text-red-400">{errors.phone}</p>
+                      )}
+                    </div>
+                  </div>
 
-                   {/* Champs spécifiques selon le type d'utilisateur */}
-                   {formData.userType === 'student' && (
-                     <div className="grid grid-cols-2 gap-4 mb-4">
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="date"
-                             name="studentBirthDate"
-                             value={formData.studentBirthDate}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.studentBirthDate ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             required
-                           />
-                         </div>
-                         {errors.studentBirthDate && (
-                           <p className="mt-2 text-sm text-red-400">{errors.studentBirthDate}</p>
-                         )}
-                       </div>
+                  {/* Champs spécifiques selon le type d'utilisateur */}
+                  {formData.userType === 'student' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="date"
+                            name="studentBirthDate"
+                            value={formData.studentBirthDate}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.studentBirthDate ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            required
+                          />
+                        </div>
+                        {errors.studentBirthDate && (
+                          <p className="mt-2 text-sm text-red-400">{errors.studentBirthDate}</p>
+                        )}
+                      </div>
 
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Classe</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                             <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <select
-                             name="studentClass"
-                             value={formData.studentClass}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
-                               errors.studentClass ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             required
-                           >
-                             <option value="" className="bg-slate-800 text-white">Sélectionnez votre classe</option>
-                             {AVAILABLE_CLASSES.map((classe) => (
-                               <option 
-                                 key={classe} 
-                                 value={classe} 
-                                 className="bg-slate-800 text-white"
-                               >
-                                 {classe}
-                               </option>
-                             ))}
-                           </select>
-                           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                             <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                             </svg>
-                           </div>
-                         </div>
-                         {errors.studentClass && (
-                           <p className="mt-2 text-sm text-red-400">{errors.studentClass}</p>
-                         )}
-                       </div>
-                     </div>
-                   )}
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Classe</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                            <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <select
+                            name="studentClass"
+                            value={formData.studentClass}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
+                              errors.studentClass ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            required
+                          >
+                            <option value="" className="bg-slate-800 text-white">Sélectionnez votre classe</option>
+                            {AVAILABLE_CLASSES.map((classe) => (
+                              <option 
+                                key={classe} 
+                                value={classe} 
+                                className="bg-slate-800 text-white"
+                              >
+                                {classe}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                        {errors.studentClass && (
+                          <p className="mt-2 text-sm text-red-400">{errors.studentClass}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                   {/* Mot de passe pour la section 1 */}
-                   <div className="mb-4">
-                     <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
-                     <div className="relative group">
-                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                         <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                       </div>
-                       <input
-                         type={showPassword ? 'text' : 'password'}
-                         name="password"
-                         value={formData.password}
-                         onChange={handleInputChange}
-                         className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                           errors.password ? 'border-red-400' : 'border-white/20'
-                         }`}
-                         placeholder="Votre mot de passe"
-                         required
-                       />
-                       <button
-                         type="button"
-                         onClick={() => setShowPassword(!showPassword)}
-                         className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                       >
-                         {showPassword ? (
-                           <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                         ) : (
-                           <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                         )}
-                       </button>
-                     </div>
-                     
-                     {/* Indicateur de force du mot de passe */}
-                     {formData.password && (
-                       <div className="mt-3">
-                         <div className="flex items-center justify-between mb-2">
-                           <span className="text-xs text-white/70">Force du mot de passe</span>
-                           <span className={`text-xs font-medium ${getPasswordStrengthText().color}`}>
-                             {getPasswordStrengthText().text}
-                           </span>
-                         </div>
-                         <div className="w-full bg-white/10 rounded-full h-2">
-                           <div 
-                             className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                             style={{ width: getPasswordStrengthWidth() }}
-                           />
-                         </div>
-                       </div>
-                     )}
-                     
-                     {errors.password && (
-                       <p className="mt-2 text-sm text-red-400">{errors.password}</p>
-                     )}
-                   </div>
+                  {formData.userType === 'parent' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            name="childFirstName"
+                            value={formData.childFirstName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childFirstName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Prénom de l'enfant"
+                            required
+                          />
+                        </div>
+                        {errors.childFirstName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childFirstName}</p>
+                        )}
+                      </div>
 
-                   <div>
-                     <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
-                     <div className="relative group">
-                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                         <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                       </div>
-                       <input
-                         type={showConfirmPassword ? 'text' : 'password'}
-                         name="confirmPassword"
-                         value={formData.confirmPassword}
-                         onChange={handleInputChange}
-                         className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                           errors.confirmPassword ? 'border-red-400' : 'border-white/20'
-                         }`}
-                         placeholder="Confirmez votre mot de passe"
-                         required
-                       />
-                       <button
-                         type="button"
-                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                         className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                       >
-                         {showConfirmPassword ? (
-                           <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                         ) : (
-                           <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                         )}
-                       </button>
-                     </div>
-                     {errors.confirmPassword && (
-                       <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
-                     )}
-                   </div>
-                 </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant</label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            name="childLastName"
+                            value={formData.childLastName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childLastName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Nom de l'enfant"
+                            required
+                          />
+                        </div>
+                        {errors.childLastName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childLastName}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                                 {/* Section 2 : Informations des parents (pour les étudiants) OU Informations de l'enfant (pour les parents) */}
-                 {formData.userType === 'student' ? (
-                   <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                       <User className="w-5 h-5 mr-2 text-amber-300" />
-                       Informations des parents
-                     </h3>
-                     
-                     <div className="grid grid-cols-2 gap-4 mb-4">
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Prénom du parent</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="text"
-                             name="parentFirstName"
-                             value={formData.parentFirstName}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.parentFirstName ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="Prénom du parent"
-                             required
-                           />
-                         </div>
-                         {errors.parentFirstName && (
-                           <p className="mt-2 text-sm text-red-400">{errors.parentFirstName}</p>
-                         )}
-                       </div>
+                  {formData.userType === 'parent' && (
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="date"
+                            name="childBirthDate"
+                            value={formData.childBirthDate}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childBirthDate ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            required
+                          />
+                        </div>
+                        {errors.childBirthDate && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childBirthDate}</p>
+                        )}
+                      </div>
 
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Nom du parent</label>
-                         <div className="relative group">
-                           <input
-                             type="text"
-                             name="parentLastName"
-                             value={formData.parentLastName}
-                             onChange={handleInputChange}
-                             className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.parentLastName ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="Nom du parent"
-                             required
-                           />
-                         </div>
-                         {errors.parentLastName && (
-                           <p className="mt-2 text-sm text-red-400">{errors.parentLastName}</p>
-                         )}
-                       </div>
-                     </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                            <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <select
+                            name="childClass"
+                            value={formData.childClass}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
+                              errors.childClass ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            required
+                          >
+                            <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant</option>
+                            {AVAILABLE_CLASSES.map((classe) => (
+                              <option 
+                                key={classe} 
+                                value={classe} 
+                                className="bg-slate-800 text-white"
+                              >
+                                {classe}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                        {errors.childClass && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childClass}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                     <div className="grid grid-cols-2 gap-4 mb-4">
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Email du parent</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="email"
-                             name="parentEmail"
-                             value={formData.parentEmail}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.parentEmail ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="parent@email.com"
-                             required
-                           />
-                         </div>
-                         {errors.parentEmail && (
-                           <p className="mt-2 text-sm text-red-400">{errors.parentEmail}</p>
-                         )}
-                       </div>
+                {/* Informations des parents (pour les étudiants) */}
+                {formData.userType === 'student' && (
+                  <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <User className="w-5 h-5 mr-2 text-amber-300" />
+                      Informations des parents
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom du parent</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="text"
+                            name="parentFirstName"
+                            value={formData.parentFirstName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentFirstName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Prénom du parent"
+                            required
+                          />
+                        </div>
+                        {errors.parentFirstName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentFirstName}</p>
+                        )}
+                      </div>
 
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="tel"
-                             name="parentPhone"
-                             value={formData.parentPhone}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.parentPhone ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="Téléphone du parent"
-                             required
-                           />
-                         </div>
-                         {errors.parentPhone && (
-                           <p className="mt-2 text-sm text-red-400">{errors.parentPhone}</p>
-                         )}
-                       </div>
-                     </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom du parent</label>
+                        <div className="relative group">
+                          <input
+                            type="text"
+                            name="parentLastName"
+                            value={formData.parentLastName}
+                            onChange={handleInputChange}
+                            className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentLastName ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Nom du parent"
+                            required
+                          />
+                        </div>
+                        {errors.parentLastName && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentLastName}</p>
+                        )}
+                      </div>
+                    </div>
 
-                     {/* Mot de passe pour les parents (étudiants) */}
-                     <div className="mb-4">
-                       <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe du parent</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="password"
-                           name="parentPassword"
-                           className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                           placeholder="Mot de passe du parent"
-                           required
-                         />
-                       </div>
-                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Email du parent</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="email"
+                            name="parentEmail"
+                            value={formData.parentEmail}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentEmail ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="parent@email.com"
+                            required
+                          />
+                        </div>
+                        {errors.parentEmail && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentEmail}</p>
+                        )}
+                      </div>
 
-                     <div>
-                       <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe du parent</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="password"
-                           name="parentConfirmPassword"
-                           className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                           placeholder="Confirmez le mot de passe du parent"
-                           required
-                         />
-                       </div>
-                     </div>
-                   </div>
-                 ) : (
-                   <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                       <Baby className="w-5 h-5 mr-2 text-amber-300" />
-                       Informations de l'enfant
-                     </h3>
-                     
-                     <div className="grid grid-cols-2 gap-4 mb-4">
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="text"
-                             name="childFirstName"
-                             value={formData.childFirstName}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.childFirstName ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="Prénom de l'enfant"
-                             required
-                           />
-                         </div>
-                         {errors.childFirstName && (
-                           <p className="mt-2 text-sm text-red-400">{errors.childFirstName}</p>
-                         )}
-                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="tel"
+                            name="parentPhone"
+                            value={formData.parentPhone}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.parentPhone ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Téléphone du parent"
+                            required
+                          />
+                        </div>
+                        {errors.parentPhone && (
+                          <p className="mt-2 text-sm text-red-400">{errors.parentPhone}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant</label>
-                         <div className="relative group">
-                           <input
-                             type="text"
-                             name="childLastName"
-                             value={formData.childLastName}
-                             onChange={handleInputChange}
-                             className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.childLastName ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="Nom de l'enfant"
-                             required
-                           />
-                         </div>
-                         {errors.childLastName && (
-                           <p className="mt-2 text-sm text-red-400">{errors.childLastName}</p>
-                         )}
-                       </div>
-                     </div>
+                {/* Mot de passe */}
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Lock className="w-5 h-5 mr-2 text-amber-300" />
+                    Sécurité
+                  </h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                          errors.password ? 'border-red-400' : 'border-white/20'
+                        }`}
+                        placeholder="Votre mot de passe"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Indicateur de force du mot de passe */}
+                    {formData.password && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-white/70">Force du mot de passe</span>
+                          <span className={`text-xs font-medium ${getPasswordStrengthText().color}`}>
+                            {getPasswordStrengthText().text}
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                            style={{ width: getPasswordStrengthWidth() }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {errors.password && (
+                      <p className="mt-2 text-sm text-red-400">{errors.password}</p>
+                    )}
+                  </div>
 
-                     <div className="grid grid-cols-2 gap-4 mb-4">
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Email de l'enfant</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="email"
-                             name="childEmail"
-                             value={formData.childEmail}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.childEmail ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="email.enfant@example.com"
-                             required
-                           />
-                         </div>
-                         {errors.childEmail && (
-                           <p className="mt-2 text-sm text-red-400">{errors.childEmail}</p>
-                         )}
-                       </div>
-
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="tel"
-                             name="childPhone"
-                             value={formData.childPhone}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.childPhone ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             placeholder="Numéro de téléphone de l'enfant"
-                             required
-                           />
-                         </div>
-                         {errors.childPhone && (
-                           <p className="mt-2 text-sm text-red-400">{errors.childPhone}</p>
-                         )}
-                       </div>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-4 mb-4">
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                             <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <input
-                             type="date"
-                             name="childBirthDate"
-                             value={formData.childBirthDate}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                               errors.childBirthDate ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             required
-                           />
-                         </div>
-                         {errors.childBirthDate && (
-                           <p className="mt-2 text-sm text-red-400">{errors.childBirthDate}</p>
-                         )}
-                       </div>
-
-                       <div>
-                         <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
-                         <div className="relative group">
-                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                             <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                           </div>
-                           <select
-                             name="childClass"
-                             value={formData.childClass}
-                             onChange={handleInputChange}
-                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
-                               errors.childClass ? 'border-red-400' : 'border-white/20'
-                             }`}
-                             required
-                           >
-                             <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant</option>
-                             {AVAILABLE_CLASSES.map((classe) => (
-                               <option 
-                                 key={classe} 
-                                 value={classe} 
-                                 className="bg-slate-800 text-white"
-                               >
-                                 {classe}
-                               </option>
-                             ))}
-                           </select>
-                           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                             <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                             </svg>
-                           </div>
-                         </div>
-                         {errors.childClass && (
-                           <p className="mt-2 text-sm text-red-400">{errors.childClass}</p>
-                         )}
-                       </div>
-                     </div>
-
-                     {/* Mot de passe pour l'enfant (parents) */}
-                     <div className="mb-4">
-                       <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe de l'enfant</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="password"
-                           name="childPassword"
-                           className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                           placeholder="Mot de passe de l'enfant"
-                           required
-                         />
-                       </div>
-                     </div>
-
-                     <div>
-                       <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe de l'enfant</label>
-                       <div className="relative group">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                         </div>
-                         <input
-                           type="password"
-                           name="childConfirmPassword"
-                           className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                           placeholder="Confirmez le mot de passe de l'enfant"
-                           required
-                         />
-                       </div>
-                     </div>
-                   </div>
-                 )}
-
-
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                          errors.confirmPassword ? 'border-red-400' : 'border-white/20'
+                        }`}
+                        placeholder="Confirmez votre mot de passe"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+                </div>
 
                 {/* Conditions d'utilisation */}
                 <div className="flex items-center justify-between">

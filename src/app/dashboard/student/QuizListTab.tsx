@@ -96,32 +96,158 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
   useEffect(() => {
     const loadQuizzes = async () => {
       try {
-        const response = await quizzesAPI.getQuizzes({ status: 'Publié' });
-        const originalQuizzes = response.items || [];
-        const apiQuizzes: Quiz[] = originalQuizzes.map((q: any) => ({
-          id: String(q.id),
-          title: q.title,
-          description: q.description || '',
-          subject: q.subject === 'Histoire' ? 'history' : q.subject === 'Géographie' ? 'geography' : 'both',
-          difficulty: 'medium', // Default difficulty
-          duration: q.duration || 30,
-          questions: 0, // Will be updated when questions are loaded
-          points: q.total_points || 0,
-          attempts: q.attempts || 0,
-          averageScore: Number(q.average_score || 0),
-          completionRate: 0, // Will be calculated
-          tags: q.tags || [],
-          createdAt: q.created_at || new Date().toISOString(),
-          isCompleted: false, // Will be updated based on user attempts
-          isAvailable: true,
-          isNew: new Date(q.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // New if created in last 7 days
-          isFavorite: false,
-          author: 'Admin',
-          category: q.subject,
-          rewards: {
-            xp: q.total_points || 100
+        // Récupérer l'ID de l'étudiant connecté
+        const userDetails = localStorage.getItem('userDetails');
+        console.log('🔍 Debug - userDetails from localStorage:', userDetails);
+        
+        let studentId: number | undefined;
+        let user: any;
+        
+        if (userDetails) {
+          try {
+            user = JSON.parse(userDetails);
+            console.log('🔍 Debug - Parsed user:', user);
+            
+            // Essayer d'abord studentDetails.id, puis user.id
+            if (user.studentDetails && user.studentDetails.id) {
+              studentId = user.studentDetails.id;
+              console.log('🔍 Debug - Student ID from studentDetails.id:', studentId);
+            } else if (user.id) {
+              studentId = user.id;
+              console.log('🔍 Debug - Student ID from user.id (fallback):', studentId);
+            }
+            
+            console.log('🔍 Debug - Final studentId:', studentId);
+          } catch (error) {
+            console.error('❌ Error parsing userDetails:', error);
           }
-        }));
+        }
+        
+        // Si pas d'ID dans userDetails, essayer d'autres méthodes
+        if (!studentId) {
+          // Essayer de récupérer depuis d'autres clés localStorage
+          const userId = localStorage.getItem('userId');
+          const userEmail = localStorage.getItem('userEmail');
+          const currentUser = localStorage.getItem('currentUser');
+          
+          console.log('🔍 Debug - Alternative localStorage keys:');
+          console.log('  - userId:', userId);
+          console.log('  - userEmail:', userEmail);
+          console.log('  - currentUser:', currentUser);
+          
+          if (userId) {
+            studentId = parseInt(userId);
+            console.log('🔍 Debug - Using userId from localStorage:', studentId);
+          } else if (currentUser) {
+            try {
+              const parsedCurrentUser = JSON.parse(currentUser);
+              studentId = parseInt(parsedCurrentUser.id);
+              console.log('🔍 Debug - Using currentUser.id:', studentId);
+            } catch (error) {
+              console.error('❌ Error parsing currentUser:', error);
+            }
+          }
+        }
+        
+        if (!studentId) {
+          console.error('❌ No student ID found in localStorage');
+          console.log('🔍 Debug - All localStorage keys:', Object.keys(localStorage));
+          setQuizzes([]);
+          setFilteredQuizzes([]);
+          return;
+        }
+        
+        // Utiliser l'API de filtrage par groupe au lieu de tous les quizzes
+        const apiUrl = `http://localhost:3001/quizzes/accessible/${studentId}`;
+        console.log('🔍 Debug - API URL:', apiUrl);
+        
+        let response;
+        let accessibleQuizzes;
+        
+        try {
+          response = await fetch(apiUrl);
+          console.log('🔍 Debug - Response status:', response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API Error:', errorText);
+            throw new Error(`Failed to fetch accessible quizzes: ${response.status}`);
+          }
+          
+          const responseData = await response.json();
+          console.log('🔍 Debug - Raw API response:', responseData);
+          
+          // L'API retourne { value: [...], Count: X }
+          accessibleQuizzes = responseData.value || responseData;
+          console.log('🔍 Debug - Accessible quizzes (extracted):', accessibleQuizzes);
+        } catch (error) {
+          console.warn('⚠️ Fallback: Using old API with client-side filtering');
+          
+          // Fallback vers l'ancienne API avec filtrage côté client
+          const fallbackResponse = await quizzesAPI.getQuizzes({ status: 'Publié' });
+          console.log('🔍 Debug - Fallback response:', fallbackResponse);
+          
+          const allQuizzes = fallbackResponse.items || fallbackResponse.value || fallbackResponse || [];
+          console.log('🔍 Debug - All quizzes from fallback:', allQuizzes);
+          
+          // Filtrer selon les groupes de l'étudiant
+          accessibleQuizzes = allQuizzes.filter((quiz: any) => {
+            console.log('🔍 Debug - Checking quiz:', quiz);
+            console.log('🔍 Debug - Quiz target_groups:', quiz.target_groups);
+            console.log('🔍 Debug - User classLevel:', user?.studentDetails?.class_level);
+            
+            if (!quiz.target_groups || quiz.target_groups.length === 0) {
+              console.log('🔍 Debug - Quiz accessible à tous (pas de target_groups)');
+              return true; // Quiz accessible à tous
+            }
+            
+            const isAccessible = quiz.target_groups.includes(user?.studentDetails?.class_level);
+            console.log('🔍 Debug - Quiz accessible:', isAccessible);
+            return isAccessible;
+          });
+          
+          console.log('🔍 Debug - Fallback quizzes:', accessibleQuizzes);
+        }
+        
+        const originalQuizzes = accessibleQuizzes || [];
+        console.log('🔍 Debug - Original quizzes count:', originalQuizzes.length);
+        console.log('🔍 Debug - Original quizzes data:', originalQuizzes);
+        
+        console.log('🔍 Debug - Mapping quizzes from:', originalQuizzes);
+        
+        const apiQuizzes: Quiz[] = originalQuizzes.map((q: any) => {
+          console.log('🔍 Debug - Mapping quiz:', q);
+          
+          const mappedQuiz = {
+            id: String(q.id),
+            title: q.title || 'Sans titre',
+            description: q.description || '',
+            subject: q.subject === 'Histoire' ? 'history' : q.subject === 'Géographie' ? 'geography' : 'both',
+            difficulty: 'medium', // Default difficulty
+            duration: q.duration || 30,
+            questions: 0, // Will be updated when questions are loaded
+            points: q.total_points || 0,
+            attempts: q.attempts || 0,
+            averageScore: Number(q.average_score || 0),
+            completionRate: 0, // Will be calculated
+            tags: Array.isArray(q.tags) ? q.tags : [],
+            createdAt: q.created_at || new Date().toISOString(),
+            isCompleted: false, // Will be updated based on user attempts
+            isAvailable: true,
+            isNew: new Date(q.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // New if created in last 7 days
+            isFavorite: false,
+            author: 'Admin',
+            category: q.subject,
+            rewards: {
+              xp: q.total_points || 100
+            }
+          };
+          
+          console.log('🔍 Debug - Mapped quiz:', mappedQuiz);
+          return mappedQuiz;
+        });
+        
+        console.log('🔍 Debug - Final apiQuizzes:', apiQuizzes);
         
         // Load questions count for each quiz
         for (const quiz of apiQuizzes) {
@@ -134,11 +260,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
         }
         
         // Check user attempts and filter out quizzes that don't allow retakes
-        const userDetails = localStorage.getItem('userDetails');
-        if (userDetails) {
-          const user = JSON.parse(userDetails);
-          const studentId = user.id;
-          
+        if (studentId) {
           // Check attempts for each quiz
           for (let i = 0; i < apiQuizzes.length; i++) {
             const quiz = apiQuizzes[i];
@@ -164,8 +286,16 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
           }
         }
         
+        console.log('🔍 Debug - Setting quizzes state with:', apiQuizzes);
         setQuizzes(apiQuizzes);
         setFilteredQuizzes(apiQuizzes);
+        
+        // Log final pour debug
+        setTimeout(() => {
+          console.log('🔍 Debug - Final state check:');
+          console.log('  - quizzes state:', apiQuizzes);
+          console.log('  - filteredQuizzes state:', apiQuizzes);
+        }, 100);
       } catch (error) {
         console.error('Error loading quizzes:', error);
         // No fallback to mock data - only show real quizzes from API
@@ -753,6 +883,8 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
         </button>
       </div>
 
+
+
       {/* Liste des quiz */}
       <div className="space-y-6">
         {filteredQuizzes.length === 0 ? (
@@ -760,6 +892,10 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             <BookOpen className="w-16 h-16 text-blue-300 mx-auto mb-4" />
             <h3 className="text-white text-xl font-bold mb-2">Aucun quiz trouvé</h3>
             <p className="text-blue-200">Essayez de modifier vos critères de recherche</p>
+            <div className="mt-4 text-sm text-blue-300">
+              <div>Debug: quizzes.length = {quizzes.length}</div>
+              <div>Debug: filteredQuizzes.length = {filteredQuizzes.length}</div>
+            </div>
           </div>
         ) : (
           <div className={

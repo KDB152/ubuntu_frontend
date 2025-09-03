@@ -68,11 +68,11 @@ export async function POST() {
     
     await connection.end();
     
-    console.log('✅ Correction terminée ! Résultat:', (checkResult as any)[0]);
+    console.log('✅ Correction terminée ! Résultat:', checkResult[0]);
     
     return NextResponse.json({
       message: 'Correction des paiements terminée avec succès !',
-      result: (checkResult as any)[0],
+      result: checkResult[0],
       updates: {
         montants: updateResult,
         sessions: updateSessionsResult,

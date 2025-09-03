@@ -81,33 +81,74 @@ const MeetingsTab: React.FC = () => {
     parentReason: '',
   });
 
-  // Fonction pour charger le profil du parent
+  // Fonction pour charger le profil du parent avec les informations détaillées
   const loadParentProfile = useCallback(async () => {
     try {
-      const response = await fetch('/api/parent/profile');
+      // Récupérer l'ID du parent connecté depuis le localStorage ou la session
+      const userDetails = localStorage.getItem('userDetails');
+      let parentUserId = null;
+      
+      if (userDetails) {
+        const user = JSON.parse(userDetails);
+        parentUserId = user.id;
+        console.log('🔍 Parent connecté - ID:', parentUserId);
+      } else {
+        // Fallback pour les tests
+        parentUserId = 21;
+        console.log('⚠️ Utilisation de l\'ID de test:', parentUserId);
+      }
+      
+      // Utiliser la nouvelle API pour récupérer les informations complètes
+      const response = await fetch(`/api/parent/children?parentId=${parentUserId}`);
       
       if (!response.ok) {
         throw new Error('Erreur lors du chargement du profil parent');
       }
       
-      const profile: ParentProfile = await response.json();
-      setParentProfile(profile);
+      const profile = await response.json();
+      
+      // Transformer les données pour correspondre à l'interface ParentProfile
+      const transformedProfile: ParentProfile = {
+        id: profile.id,
+        firstName: profile.full_name.split(' ')[0] || '',
+        lastName: profile.full_name.split(' ').slice(1).join(' ') || '',
+        fullName: profile.full_name,
+        email: profile.email,
+        phoneNumber: profile.phone,
+        address: '',
+        occupation: '',
+        children: profile.children.map((child: any) => ({
+          id: child.id,
+          firstName: child.full_name.split(' ')[0] || '',
+          lastName: child.full_name.split(' ').slice(1).join(' ') || '',
+          fullName: child.full_name,
+          email: child.email,
+          classLevel: child.class_level,
+          birthDate: '',
+          phoneNumber: child.phone,
+          address: ''
+        }))
+      };
+      
+      setParentProfile(transformedProfile);
       
       // Mettre à jour le draft avec les informations du parent
       setDraft(prev => ({
         ...prev,
-        parentId: profile.id.toString(),
-        parentName: profile.fullName,
-        parentEmail: profile.email,
-        parentPhone: profile.phoneNumber,
-        childId: profile.children.length > 0 ? profile.children[0].id.toString() : '',
-        childName: profile.children.length > 0 ? profile.children[0].fullName : '',
-        childClass: profile.children.length > 0 ? profile.children[0].classLevel : '',
+        parentId: transformedProfile.id.toString(),
+        parentName: transformedProfile.fullName,
+        parentEmail: transformedProfile.email,
+        parentPhone: transformedProfile.phoneNumber,
+        childId: transformedProfile.children.length > 0 ? transformedProfile.children[0].id.toString() : '',
+        childName: transformedProfile.children.length > 0 ? transformedProfile.children[0].fullName : '',
+        childClass: transformedProfile.children.length > 0 ? transformedProfile.children[0].classLevel : '',
       }));
       
-      console.log('Profil parent chargé:', profile);
+      console.log('✅ Profil parent chargé avec succès:', transformedProfile);
+      console.log('📱 Téléphone parent:', transformedProfile.phoneNumber);
+      console.log('👶 Enfants:', transformedProfile.children.map(c => `${c.fullName} (${c.classLevel}) - Tél: ${c.phoneNumber}`));
     } catch (error) {
-      console.error('Erreur lors du chargement du profil parent:', error);
+      console.error('❌ Erreur lors du chargement du profil parent:', error);
     }
   }, []);
 
@@ -116,28 +157,49 @@ const MeetingsTab: React.FC = () => {
     try {
       setLoading(true);
       
-      // Vérifier que le profil parent est chargé
-      if (!parentProfile) {
-        console.log('Profil parent non encore chargé, attente...');
+      // Utiliser l'ID du parent connecté pour filtrer les rendez-vous
+      const parentId = parentProfile?.id;
+      if (!parentId) {
+        console.log('⚠️ Pas d\'ID parent, chargement de tous les rendez-vous');
+        setRendezVous([]);
         return;
       }
       
-      const response = await fetch(`/api/rendez-vous?parentId=${parentProfile.id}`);
+      console.log('🔍 Chargement des rendez-vous pour le parent:', parentId);
+      const response = await fetch(`/api/rendez-vous?parentId=${parentId}`);
       
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des rendez-vous');
       }
       
       const data = await response.json();
+      console.log('📋 Rendez-vous récupérés:', data);
       
-      // Les données sont déjà transformées par l'API
-      setRendezVous(data);
+      // Transformer les données de la base pour correspondre à l'interface
+      const transformedRendezVous: RendezVous[] = data.map((rdv: any) => ({
+        id: rdv.id.toString(),
+        parentId: rdv.parent_id,
+        parentName: rdv.parent_name,
+        parentEmail: rdv.parent_email,
+        parentPhone: rdv.parent_phone,
+        childName: rdv.child_name,
+        childClass: rdv.child_class,
+        timing: rdv.timing,
+        parentReason: rdv.parent_reason,
+        adminReason: rdv.admin_reason,
+        status: rdv.status,
+        createdAt: rdv.created_at,
+        updatedAt: rdv.updated_at
+      }));
+      
+      console.log('🔄 Rendez-vous transformés:', transformedRendezVous);
+      setRendezVous(transformedRendezVous);
     } catch (error) {
       console.error('Erreur lors du chargement des rendez-vous:', error);
     } finally {
       setLoading(false);
     }
-  }, [parentProfile]);
+  }, [parentProfile?.id]);
 
   // Fonction pour rafraîchir les données
   const refreshData = useCallback(async () => {

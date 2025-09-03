@@ -28,10 +28,10 @@ export async function POST(request: NextRequest) {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 heures
 
-      // Sauvegarder le token en base (utiliser verification_token qui est varchar(255))
+      // Sauvegarder le token en base (utiliser les colonnes existantes)
       await connection.execute(
-        'UPDATE users SET verification_token = ?, email_verification_code_expiry = ? WHERE id = ?',
-        [verificationToken, expiresAt, userId]
+        'UPDATE users SET verification_token = ?, email_verification_code = ?, email_verification_code_expiry = ? WHERE id = ?',
+        [verificationToken, verificationToken, expiresAt, userId]
       );
 
       // Simuler l'envoi d'email (pour le développement)

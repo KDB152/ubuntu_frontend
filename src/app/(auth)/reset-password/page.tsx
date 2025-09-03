@@ -80,7 +80,7 @@ const ResetPasswordPage = () => {
 
       setIsSuccess(true);
     } catch (error) {
-      setErrors({ global: (error as Error).message });
+      setErrors({ global: error.message });
     } finally {
       setIsLoading(false);
     }

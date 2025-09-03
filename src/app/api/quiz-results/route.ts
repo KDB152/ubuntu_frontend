@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         WHERE p.user_id = ?
       `, [parentUserId]);
 
-      finalStudentIds = (parentChildren as any).map((row: any) => row.student_id);
+      finalStudentIds = parentChildren.map((row: any) => row.student_id);
     } else {
       await connection.end();
       return NextResponse.json(
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     `, [...finalStudentIds, ...finalStudentIds]);
 
     // Transformer les données pour le frontend
-    const transformedResults = (quizResults as any).map((result: any) => ({
+    const transformedResults = quizResults.map((result: any) => ({
       id: result.id.toString(),
       quiz_id: result.quiz_id,
       student_id: result.correct_student_id || result.student_id,

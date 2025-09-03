@@ -71,6 +71,7 @@ interface Quiz {
   allowRetake: boolean;
   showResults: boolean;
   randomizeQuestions: boolean;
+  targetGroups?: string[]; // Groupes cibles qui peuvent tenter le quiz
 }
 
 interface QuizAttempt {
@@ -94,6 +95,17 @@ interface QuizResults {
   bestScore: number;
   worstScore: number;
 }
+
+// Groupes disponibles pour la sélection
+const AVAILABLE_GROUPS = [
+  'Terminale groupe 1',
+  'Terminale groupe 2',
+  'Terminale groupe 3',
+  'Terminale groupe 4',
+  '1ère groupe 1',
+  '1ère groupe 2',
+  '1ère groupe 3',
+];
 
 const QuizzesManagementTab = () => {
   const searchParams = useSearchParams();
@@ -183,6 +195,7 @@ const QuizzesManagementTab = () => {
           allowRetake: !!q.allow_retake,
           showResults: !!q.show_results,
           randomizeQuestions: !!q.randomize_questions,
+          targetGroups: q.target_groups || [],
         }));
         setQuizzes(mapped);
 
@@ -250,7 +263,8 @@ const QuizzesManagementTab = () => {
           duration: updatedQuiz.duration,
           pass_score: updatedQuiz.passScore,
           status: updatedQuiz.status,
-          tags: updatedQuiz.tags
+          tags: updatedQuiz.tags,
+          target_groups: updatedQuiz.targetGroups
         })
       });
       setQuizzes(prev => prev.map(q => q.id === updatedQuiz.id ? updatedQuiz : q));
@@ -284,6 +298,7 @@ const QuizzesManagementTab = () => {
           allow_retake: newQuiz.allowRetake,
           show_results: newQuiz.showResults,
           randomize_questions: newQuiz.randomizeQuestions,
+          target_groups: newQuiz.targetGroups || [],
         })
       });
       const created = await res.json();
@@ -307,6 +322,7 @@ const QuizzesManagementTab = () => {
         allowRetake: !!created.allow_retake,
         showResults: !!created.show_results,
         randomizeQuestions: !!created.randomize_questions,
+        targetGroups: created.target_groups || [],
       };
       setQuizzes(prev => [...prev, mapped]);
       showNotification('success', 'Quiz créé avec succès');
@@ -320,7 +336,7 @@ const QuizzesManagementTab = () => {
 
   const toggleQuizStatus = async (quiz: Quiz) => {
     const newStatus = quiz.status === 'Publié' ? 'Brouillon' : 'Publié';
-    const updatedQuiz = { ...quiz, status: newStatus, lastModified: new Date().toISOString().split('T')[0] };
+    const updatedQuiz = { ...quiz, status: newStatus as 'Publié' | 'Brouillon' | 'Archivé', lastModified: new Date().toISOString().split('T')[0] };
     await handleEditQuiz(updatedQuiz);
   };
 
@@ -368,6 +384,7 @@ const QuizzesManagementTab = () => {
           allowRetake: !!q.allow_retake,
           showResults: !!q.show_results,
           randomizeQuestions: !!q.randomize_questions,
+          targetGroups: q.target_groups || [],
         }));
         setQuizzes(mapped);
       } catch (e) {}
@@ -663,6 +680,23 @@ const QuizzesManagementTab = () => {
                           +{quiz.tags.length - 3}
                         </span>
                       )}
+                    </div>
+                  )}
+
+                  {/* Groupes cibles */}
+                  {quiz.targetGroups && quiz.targetGroups.length > 0 && (
+                    <div className="border-t border-white/20 pt-4">
+                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center">
+                        <Users className="w-4 h-4 mr-2" />
+                        Groupes cibles
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {quiz.targetGroups.map((group, index) => (
+                          <span key={index} className="px-2 py-1 text-xs bg-green-500/20 text-green-200 rounded-lg border border-green-500/30">
+                            {group}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -970,7 +1004,8 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
     isTimeLimited: true,
     allowRetake: true,
     showResults: true,
-    randomizeQuestions: false
+    randomizeQuestions: false,
+    targetGroups: []
   });
 
   const [tagsInput, setTagsInput] = useState('');
@@ -1080,6 +1115,41 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">Groupes cibles *</label>
+            <p className="text-sm text-blue-200 mb-3">Sélectionnez les groupes qui peuvent tenter ce quiz</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {AVAILABLE_GROUPS.map((group) => (
+                <label key={group} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.targetGroups?.includes(group) || false}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          targetGroups: [...(prev.targetGroups || []), group]
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          targetGroups: prev.targetGroups?.filter(g => g !== group) || []
+                        }));
+                      }
+                    }}
+                    className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <span className="text-white">{group}</span>
+                </label>
+              ))}
+            </div>
+            {(!formData.targetGroups || formData.targetGroups.length === 0) && (
+              <p className="text-yellow-300 text-sm mt-2">
+                ⚠️ Si aucun groupe n'est sélectionné, tous les étudiants pourront tenter ce quiz
+              </p>
+            )}
+          </div>
+
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white">Options du quiz</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1167,12 +1237,14 @@ interface EditQuizModalProps {
 const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, isLoading, subjects, levels }) => {
   const [formData, setFormData] = useState<Quiz>(quiz);
   const [tagsInput, setTagsInput] = useState(quiz.tags.join(', '));
+  const [selectedGroups, setSelectedGroups] = useState<string[]>(quiz.targetGroups || []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const updatedQuiz = {
       ...formData,
       tags: tagsInput.split(',').map(tag => tag.trim()).filter(Boolean),
+      targetGroups: selectedGroups,
       lastModified: new Date().toISOString().split('T')[0]
     };
     onSave(updatedQuiz);
@@ -1269,6 +1341,35 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
               onChange={(e) => setTagsInput(e.target.value)}
               className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">Groupes cibles</label>
+            <p className="text-sm text-blue-200 mb-3">Sélectionnez les groupes qui peuvent tenter ce quiz</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {AVAILABLE_GROUPS.map((group) => (
+                <label key={group} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedGroups.includes(group)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedGroups(prev => [...prev, group]);
+                      } else {
+                        setSelectedGroups(prev => prev.filter(g => g !== group));
+                      }
+                    }}
+                    className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <span className="text-white">{group}</span>
+                </label>
+              ))}
+            </div>
+            {(selectedGroups.length === 0) && (
+              <p className="text-yellow-300 text-sm mt-2">
+                ⚠️ Si aucun groupe n'est sélectionné, tous les étudiants pourront tenter ce quiz
+              </p>
+            )}
           </div>
 
           <div>

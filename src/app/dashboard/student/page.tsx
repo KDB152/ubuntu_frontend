@@ -57,7 +57,7 @@ import {
 import DashboardHomeTab from './DashboardHomeTab';
 import QuizListTab from './QuizListTab';
 import QuizTakeTab from './QuizTakeTab';
-import ResultsTab from './ResultsTab';
+import QuizResultsTab from './QuizResultsTab';
 import ProgressTab from './ProgressTab';
 import MessagesTab from './MessagesTab';
 import ProfileTab from './ProfileTab';
@@ -324,7 +324,7 @@ const StudentDashboard = () => {
       case 'quiz-take':
         return <QuizTakeTab quizId={currentQuizId} onComplete={() => handleTabChange('results')} />;
       case 'results':
-        return <ResultsTab />;
+        return <QuizResultsTab />;
       case 'progress':
         return <ProgressTab />;
       case 'messages':
@@ -501,19 +501,6 @@ const StudentDashboard = () => {
 
             {/* Actions du bas */}
             <div className="flex items-center justify-between">
-              {!sidebarCollapsed && (
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
-                    darkMode 
-                      ? 'text-blue-200 hover:text-white hover:bg-white/10' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  <span className="text-sm">{darkMode ? 'Mode clair' : 'Mode sombre'}</span>
-                </button>
-              )}
             </div>
           </div>
         </div>

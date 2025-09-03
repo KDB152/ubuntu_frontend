@@ -199,7 +199,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
       }
       
       const user = JSON.parse(userDetails);
-      const studentId = user.id;
+      const studentId = user.studentDetails?.id || user.id;
 
       // Check if student has already attempted this quiz
       const attemptsResponse = await fetch(`http://localhost:3001/quizzes/attempts?quiz_id=${quizId}&student_id=${studentId}`);
@@ -468,7 +468,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
       const user = JSON.parse(userDetails);
       const submitData = {
         quiz_id: parseInt(quiz.id),
-        student_id: user.id,
+        student_id: user.studentDetails?.id || user.id,
         student_name: `${user.firstName} ${user.lastName}`,
         score: score,
         total_points: totalPoints,
