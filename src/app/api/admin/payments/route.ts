@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         (COALESCE(p.montant_paye, 0) + COALESCE(p.montant_restant, 0)) as montant_total,
         COALESCE(p.montant_paye, 0) as montant_paye,
         COALESCE(p.montant_restant, 0) as montant_restant,
-        COALESCE(p.prix_seance, 50) as prix_seance,
+        COALESCE(p.prix_seance, 40) as prix_seance,
         COALESCE(p.statut, 'en_attente') as statut,
         p.date_derniere_presence,
         p.date_dernier_paiement,
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
        seances_total: parseInt(row.seances_total) || 0,
        seances_payees: parseInt(row.seances_payees) || 0,
        seances_non_payees: parseInt(row.seances_non_payees) || 0,
-       prix_seance: parseFloat(row.prix_seance) || 50
+       prix_seance: parseFloat(row.prix_seance) || 40
      }));
      
      // Log des données pour déboguer

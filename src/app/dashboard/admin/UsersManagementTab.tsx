@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { AVAILABLE_CLASSES, AVAILABLE_LEVELS } from '@/constants/classes';
 import {
   Users,
   UserPlus,
@@ -28,6 +29,8 @@ import {
   Heart,
   Clock,
   Star,
+  Lock,
+  Baby,
   Activity,
   Settings,
   Ban,
@@ -83,6 +86,8 @@ interface UsersManagementTabProps {
   onUpdateParent: (id: number, data: any) => Promise<any>;
   onDeleteParent: (id: number) => Promise<void>;
   onApproveUser: (id: number, approve: boolean) => Promise<void>;
+  loadStudents: () => Promise<void>;
+  loadParents: () => Promise<void>;
 }
 
 const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
@@ -96,6 +101,8 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
   onUpdateParent,
   onDeleteParent,
   onApproveUser,
+  loadStudents,
+  loadParents,
 }) => {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'students' | 'parents'>('students');
@@ -111,8 +118,8 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
-  const classes = ['Seconde', 'Première L', 'Première ES', 'Première S', 'Terminale L', 'Terminale ES', 'Terminale S'];
-  const levels = ['Seconde', 'Première', 'Terminale'];
+  const classes = AVAILABLE_CLASSES;
+  const levels = AVAILABLE_LEVELS;
 
   // Gérer les paramètres d'URL pour ouvrir automatiquement le modal de création
   useEffect(() => {
@@ -262,27 +269,84 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
   };
 
   const handleAddUser = async (newUser: Partial<Student | Parent>) => {
+    try {
+      setIsLoading(true);
+      
     if (activeTab === 'students') {
-      await handleCreateStudent({
-        firstName: (newUser as any).firstName,
-        lastName: (newUser as any).lastName,
+        // Créer un étudiant avec son parent via l'endpoint d'inscription
+        const registrationData = {
+          userType: 'student',
+          first_name: (newUser as any).firstName,
+          last_name: (newUser as any).lastName,
         email: (newUser as any).email,
         phone: (newUser as any).phoneNumber,
-        class: (newUser as any).classLevel,
-        level: (newUser as any).classLevel,
-        averageScore: (newUser as any).averageScore || 0,
-        completedCourses: 0,
-        totalCourses: 0,
-      });
+          password: 'changeme123', // Mot de passe temporaire
+          studentBirthDate: (newUser as any).birthDate || '2000-01-01',
+          studentClass: (newUser as any).classLevel,
+          // Informations du parent
+          parentFirstName: (newUser as any).parentFirstName || 'Parent',
+          parentLastName: (newUser as any).parentLastName || 'Temporaire',
+          parentEmail: (newUser as any).parentEmail || `parent.${(newUser as any).email}`,
+          parentPhone: (newUser as any).parentPhone || (newUser as any).phoneNumber,
+          parentPassword: 'changeme123'
+        };
+        
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(registrationData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la création de l\'étudiant et du parent');
+        }
+        
+        showNotification('success', 'Étudiant et parent créés avec succès');
     } else {
-      await handleCreateParent({
-        firstName: (newUser as any).firstName,
-        lastName: (newUser as any).lastName,
+        // Créer un parent avec son enfant via l'endpoint d'inscription
+        const registrationData = {
+          userType: 'parent',
+          first_name: (newUser as any).firstName,
+          last_name: (newUser as any).lastName,
         email: (newUser as any).email,
         phone: (newUser as any).phoneNumber,
-        address: (newUser as any).address || '',
-        occupation: (newUser as any).occupation || '',
-      });
+          password: 'changeme123', // Mot de passe temporaire
+          // Informations de l'enfant
+          childFirstName: (newUser as any).childFirstName || 'Enfant',
+          childLastName: (newUser as any).childLastName || 'Temporaire',
+          childEmail: (newUser as any).childEmail || `enfant.${(newUser as any).email}`,
+          childPhone: (newUser as any).childPhone || (newUser as any).phoneNumber,
+          childBirthDate: (newUser as any).childBirthDate || '2010-01-01',
+          childClass: (newUser as any).childClass || 'Terminale groupe 1',
+          childPassword: 'changeme123'
+        };
+        
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(registrationData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la création du parent et de l\'enfant');
+        }
+        
+        showNotification('success', 'Parent et enfant créés avec succès');
+      }
+      
+      setShowAddModal(false);
+      // Recharger les données
+      if (activeTab === 'students') {
+        loadStudents();
+      } else {
+        loadParents();
+      }
+    } catch (error) {
+      showNotification('error', error instanceof Error ? error.message : 'Erreur lors de la création');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -787,60 +851,420 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
 
           {userType === 'students' && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Informations personnelles de l'étudiant */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-amber-300" />
+                  Informations personnelles
+                </h3>
+                
+                {/* Date de naissance et classe */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Classe</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type="date"
+                        value={formData.birthDate || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Classe</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                        <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
                   <select
                     value={formData.classLevel}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, classLevel: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                  >
-                    {classes.map(cls => (
-                      <option key={cls} value={cls}>{cls}</option>
+                        onChange={(e) => setFormData(prev => ({ ...prev, classLevel: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none border-white/20"
+                        required
+                      >
+                        <option value="" className="bg-slate-800 text-white">Sélectionnez la classe</option>
+                        {classes.map((classe) => (
+                          <option 
+                            key={classe} 
+                            value={classe} 
+                            className="bg-slate-800 text-white"
+                          >
+                            {classe}
+                          </option>
                     ))}
                   </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                 </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mot de passe */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.password || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Mot de passe de l'étudiant"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Confirmation du mot de passe */}
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Niveau</label>
-                  <select
-                    value={formData.level}
-                    onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                  >
-                    {levels.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.confirmPassword || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Confirmez le mot de passe de l'étudiant"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Informations des parents */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-amber-300" />
+                  Informations des parents
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Nom du parent</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Prénom du parent</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
                   <input
                     type="text"
-                    value={formData.parentName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, parentName: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                        value={formData.parentFirstName || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, parentFirstName: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="Prénom du parent"
+                        required
                   />
                 </div>
+                  </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Email du parent</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Nom du parent</label>
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        value={formData.parentLastName || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, parentLastName: e.target.value }))}
+                        className="w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="Nom du parent"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Email du parent</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
                   <input
                     type="email"
-                    value={formData.parentEmail}
+                        value={formData.parentEmail || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, parentEmail: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="parent@email.com"
+                        required
                   />
                 </div>
+                  </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Téléphone du parent</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
                   <input
                     type="tel"
-                    value={formData.parentPhone}
+                        value={formData.parentPhone || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, parentPhone: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="Téléphone du parent"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mot de passe du parent */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe du parent</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.parentPassword || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, parentPassword: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Mot de passe du parent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe du parent</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.parentConfirmPassword || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, parentConfirmPassword: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Confirmez le mot de passe du parent"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {userType === 'parents' && (
+            <>
+              {/* Informations personnelles du parent */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-amber-300" />
+                  Informations personnelles
+                </h3>
+                
+                {/* Mot de passe */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.password || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Mot de passe du parent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Confirmation du mot de passe */}
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.confirmPassword || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Confirmez le mot de passe du parent"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations de l'enfant */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Baby className="w-5 h-5 mr-2 text-amber-300" />
+                  Informations de l'enfant
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.childFirstName || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, childFirstName: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="Prénom de l'enfant"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant</label>
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        value={formData.childLastName || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, childLastName: e.target.value }))}
+                        className="w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="Nom de l'enfant"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email et téléphone de l'enfant */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Email de l'enfant</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type="email"
+                        value={formData.childEmail || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, childEmail: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="enfant@email.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type="tel"
+                        value={formData.childPhone || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, childPhone: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        placeholder="Numéro de téléphone de l'enfant"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date de naissance et classe de l'enfant */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <input
+                        type="date"
+                        value={formData.childBirthDate || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, childBirthDate: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                        <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                      </div>
+                      <select
+                        value={formData.childClass || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, childClass: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none border-white/20"
+                        required
+                      >
+                        <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant</option>
+                        {classes.map((classe) => (
+                          <option 
+                            key={classe} 
+                            value={classe} 
+                            className="bg-slate-800 text-white"
+                          >
+                            {classe}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mot de passe de l'enfant */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe de l'enfant</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.childPassword || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, childPassword: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Mot de passe de l'enfant"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe de l'enfant</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.childConfirmPassword || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, childConfirmPassword: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
+                      placeholder="Confirmez le mot de passe de l'enfant"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             </>

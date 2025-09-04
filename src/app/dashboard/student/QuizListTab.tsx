@@ -891,10 +891,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
             <BookOpen className="w-16 h-16 text-blue-300 mx-auto mb-4" />
             <h3 className="text-white text-xl font-bold mb-2">Aucun quiz trouvé</h3>
-            <p className="text-blue-200">Essayez de modifier vos critères de recherche</p>
             <div className="mt-4 text-sm text-blue-300">
-              <div>Debug: quizzes.length = {quizzes.length}</div>
-              <div>Debug: filteredQuizzes.length = {filteredQuizzes.length}</div>
             </div>
           </div>
         ) : (

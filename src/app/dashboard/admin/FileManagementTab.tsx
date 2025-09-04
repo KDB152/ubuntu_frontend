@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { getAuthToken, checkAuthAndRedirect } from '../../../utils/auth';
 import { 
   Upload, 
   File, 
@@ -67,6 +68,7 @@ const FileManagementTabImproved = () => {
   const [courseSubject, setCourseSubject] = useState('Histoire');
   const [courseDescription, setCourseDescription] = useState('');
   const [courseLevel, setCourseLevel] = useState('Terminale');
+  const [courseClass, setCourseClass] = useState('Terminale groupe 1');
   const [courseTags, setCourseTags] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,47 +87,66 @@ const FileManagementTabImproved = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Charger les cours existants au démarrage
+  // Charger les fichiers existants au démarrage
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadFiles = async () => {
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         
-        // Test de connexion à l'API
-        const testResponse = await fetch(`${API_BASE}/content/courses`);
-        if (!testResponse.ok) {
-          throw new Error(`Erreur de connexion à l'API: ${testResponse.status}`);
+        // Vérifier l'authentification
+        const token = getAuthToken();
+        
+        if (!token) {
+          showNotification('error', 'Token d\'authentification manquant. Veuillez vous reconnecter.');
+          return;
         }
         
-        const json = await testResponse.json();
-        const mapped: Course[] = (json.items || []).map((c: any) => ({
-          id: String(c.id),
-          name: c.name,
-          title: c.title,
-          type: c.type,
-          subject: c.subject,
-          level: c.level,
-          size: c.size,
-          uploadDate: c.upload_date?.slice(0,10) || '',
-          views: c.views || 0,
-          status: c.status,
-          description: c.description,
-          tags: c.tags || [],
-          fileName: c.file_name,
-          fileUrl: c.file_url,
+        // Charger les fichiers depuis la nouvelle API
+        const response = await fetch(`${API_BASE}/files`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            showNotification('error', 'Session expirée. Veuillez vous reconnecter.');
+            // Rediriger vers la page de connexion
+            window.location.href = '/login';
+            return;
+          }
+          throw new Error(`Erreur de connexion à l'API: ${response.status}`);
+        }
+        
+        const json = await response.json();
+        const mapped: Course[] = (json || []).map((f: any) => ({
+          id: String(f.id),
+          name: f.fileName,
+          title: f.title,
+          type: f.fileType?.includes('pdf') ? 'PDF' : f.fileType?.includes('video') ? 'Vidéo' : 'Document',
+          subject: 'Histoire', // Par défaut, peut être amélioré
+          level: 'Terminale', // Par défaut, peut être amélioré
+          size: formatFileSize(f.fileSize),
+          uploadDate: f.createdAt?.slice(0,10) || '',
+          views: f.downloadCount || 0,
+          status: 'Publié',
+          description: f.description,
+          tags: [],
+          fileName: f.fileName,
+          fileUrl: f.filePath,
         }));
         setUploadedFiles(mapped);
         
         if (mapped.length > 0) {
-          showNotification('success', `${mapped.length} cours chargé(s) avec succès`);
+          showNotification('success', `${mapped.length} fichier(s) chargé(s) avec succès`);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des cours:', error);
-        showNotification('error', `Erreur lors du chargement des cours: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        console.error('Erreur lors du chargement des fichiers:', error);
+        showNotification('error', `Erreur lors du chargement des fichiers: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
       }
     };
     
-    loadCourses();
+    loadFiles();
   }, []);
 
   // Types de fichiers acceptés
@@ -139,6 +160,15 @@ const FileManagementTabImproved = () => {
 
   const subjects = ['Histoire', 'Géographie', 'EMC'];
   const levels = ['Seconde', 'Première', 'Terminale'];
+  const classes = [
+    'Terminale groupe 1',
+    'Terminale groupe 2', 
+    'Terminale groupe 3',
+    'Terminale groupe 4',
+    '1ère groupe 1',
+    '1ère groupe 2',
+    '1ère groupe 3'
+  ];
 
   // Fonction pour afficher les notifications
   const showNotification = (type: 'success' | 'error', message: string) => {
@@ -193,35 +223,52 @@ const FileManagementTabImproved = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  // Simulation d'upload améliorée avec gestion d'erreurs
-  const simulateUpload = async (fileUpload: FileUpload, index: number): Promise<{success: boolean, url?: string, error?: string}> => {
+  // Upload réel de fichier vers le serveur
+  const uploadFile = async (fileUpload: FileUpload, index: number): Promise<{success: boolean, url?: string, error?: string}> => {
     const { file } = fileUpload;
     
     try {
-      // Simulation d'une vérification de fichier
-      if (file.name.includes('error')) {
-        throw new Error('Fichier corrompu détecté');
-      }
-
       // Mise à jour du statut
       setCurrentFiles(prev => prev.map((f, i) => 
         i === index ? { ...f, status: 'uploading' as const } : f
       ));
 
-      // Simulation du progrès d'upload
-      for (let progress = 0; progress <= 100; progress += 10) {
-        setCurrentFiles(prev => prev.map((f, i) => 
-          i === index ? { ...f, progress } : f
-        ));
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Créer FormData pour l'upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', courseTitle);
+      formData.append('description', courseDescription);
+      formData.append('targetClass', courseClass);
+
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = getAuthToken();
+      
+      if (!token) {
+        throw new Error('Token d\'authentification manquant');
       }
+
+      // Upload du fichier
+      const response = await fetch(`${API_BASE}/files/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de l\'upload');
+      }
+
+      const result = await response.json();
       
       // Succès
       setCurrentFiles(prev => prev.map((f, i) => 
         i === index ? { ...f, status: 'success' as const } : f
       ));
 
-      return { success: true, url: `uploads/${file.name}` };
+      return { success: true, url: result.filePath };
     } catch (error) {
       // Erreur
       setCurrentFiles(prev => prev.map((f, i) => 
@@ -259,7 +306,7 @@ const FileManagementTabImproved = () => {
     
     try {
       // Upload des fichiers
-      const uploadPromises = currentFiles.map((fileUpload, index) => simulateUpload(fileUpload, index));
+      const uploadPromises = currentFiles.map((fileUpload, index) => uploadFile(fileUpload, index));
       const results = await Promise.all(uploadPromises);
       
       // Vérifier s'il y a des erreurs
@@ -272,56 +319,44 @@ const FileManagementTabImproved = () => {
       // Créer côté backend puis rafraîchir la liste
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       
+      // Vérifier l'authentification
+      const token = getAuthToken();
+      
+      if (!token) {
+        showNotification('error', 'Token d\'authentification manquant. Veuillez vous reconnecter.');
+        return;
+      }
+      
       try {
-        const createdCourses = await Promise.all(currentFiles.map(async (fileUpload, index) => {
-          const response = await fetch(`${API_BASE}/content/courses`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: fileUpload.file.name,
-              title: courseTitle,
-              type: acceptedTypes[fileUpload.file.type as keyof typeof acceptedTypes]?.label || 'Inconnu',
-              subject: courseSubject,
-              level: courseLevel,
-              size: formatFileSize(fileUpload.file.size),
-              status: 'Publié',
-              description: courseDescription,
-              tags: courseTags.split(',').map(tag => tag.trim()).filter(Boolean),
-              file_name: fileUpload.file.name,
-              file_url: results[index].url
-            })
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Erreur lors de la création du cours ${fileUpload.file.name}`);
-          }
-          
-          return response.json();
-        }));
+        // Les fichiers ont déjà été créés lors de l'upload, pas besoin de les recréer
+        console.log('✅ Fichiers uploadés avec succès');
         
         // Reload list
-        const res = await fetch(`${API_BASE}/content/courses`);
+        const res = await fetch(`${API_BASE}/files`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!res.ok) {
           throw new Error('Erreur lors du rechargement de la liste');
         }
         
         const json = await res.json();
-        const mapped: Course[] = (json.items || []).map((c: any) => ({
-          id: String(c.id),
-          name: c.name,
-          title: c.title,
-          type: c.type,
-          subject: c.subject,
-          level: c.level,
-          size: c.size,
-          uploadDate: c.upload_date?.slice(0,10) || '',
-          views: c.views || 0,
-          status: c.status,
-          description: c.description,
-          tags: c.tags || [],
-          fileName: c.file_name,
-          fileUrl: c.file_url,
+        const mapped: Course[] = (json || []).map((f: any) => ({
+          id: String(f.id),
+          name: f.fileName,
+          title: f.title,
+          type: f.fileType?.includes('pdf') ? 'PDF' : f.fileType?.includes('video') ? 'Vidéo' : 'Document',
+          subject: courseSubject,
+          level: courseLevel,
+          size: formatFileSize(f.fileSize),
+          uploadDate: f.createdAt?.slice(0,10) || '',
+          views: f.downloadCount || 0,
+          status: 'Publié',
+          description: f.description,
+          tags: [],
+          fileName: f.fileName,
+          fileUrl: f.filePath,
         }));
         setUploadedFiles(mapped);
       } catch (error) {
@@ -333,6 +368,7 @@ const FileManagementTabImproved = () => {
       setCourseTitle('');
       setCourseDescription('');
       setCourseTags('');
+      setCourseClass('Terminale groupe 1');
       setCurrentFiles([]);
       setShowUploadModal(false);
       
@@ -349,9 +385,12 @@ const FileManagementTabImproved = () => {
     setIsLoading(true);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_BASE}/content/courses/${course.id}`, { 
+      const response = await fetch(`${API_BASE}/files/${course.id}`, { 
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       
       if (!response.ok) {
@@ -377,17 +416,16 @@ const FileManagementTabImproved = () => {
     setIsLoading(true);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_BASE}/content/courses/${updatedCourse.id}`, {
+      const response = await fetch(`${API_BASE}/files/${updatedCourse.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
-          name: updatedCourse.name,
           title: updatedCourse.title,
-          subject: updatedCourse.subject,
-          level: updatedCourse.level,
           description: updatedCourse.description,
-          tags: updatedCourse.tags || [],
-          status: updatedCourse.status,
+          fileName: updatedCourse.name,
         })
       });
       
@@ -412,15 +450,28 @@ const FileManagementTabImproved = () => {
   // Fonction de téléchargement
   const handleDownload = async (course: Course) => {
     try {
-      // Simulation d'un téléchargement
-      const link = document.createElement('a');
-      link.href = course.fileUrl || '#';
-      link.download = course.fileName || course.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE}/files/${course.id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       
-      showNotification('success', 'Téléchargement démarré');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = course.fileName || course.name;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showNotification('success', 'Téléchargement démarré');
+      } else {
+        showNotification('error', 'Erreur lors du téléchargement');
+      }
     } catch (error) {
       showNotification('error', 'Erreur lors du téléchargement');
     }
@@ -721,6 +772,18 @@ const FileManagementTabImproved = () => {
                   >
                     {levels.map(level => (
                       <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-white mb-2">Classe cible *</label>
+                  <select
+                    value={courseClass}
+                    onChange={(e) => setCourseClass(e.target.value)}
+                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+                  >
+                    {classes.map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
                     ))}
                   </select>
                 </div>

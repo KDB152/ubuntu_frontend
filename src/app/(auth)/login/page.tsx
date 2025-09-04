@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, LogIn, Globe, MapPin, Clock, BookOpen, Eye, EyeOff, ArrowRight, Shield, Zap, Users } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, LogIn, Globe, MapPin, Clock, BookOpen, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 
 const LoginPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,6 +18,7 @@ const LoginPage = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const quotes = [
     { text: "L'éducation est l'arme la plus puissante qu'on puisse utiliser pour changer le monde", author: "Nelson Mandela" },
@@ -36,8 +38,21 @@ const LoginPage = () => {
       setCurrentQuote((prev) => (prev + 1) % quotes.length);
     }, 4000);
 
+    // Gérer les paramètres d'URL pour les messages de vérification
+    const verified = searchParams.get('verified');
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
+
+    if (verified === 'true') {
+      setSuccessMessage('Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.');
+    } else if (error === 'verification_failed') {
+      setErrorMessage(decodeURIComponent(message || 'Erreur lors de la vérification de l\'email'));
+    } else if (error === 'no_token') {
+      setErrorMessage('Token de vérification manquant');
+    }
+
     return () => clearInterval(quoteInterval);
-  }, [quotes.length]);
+  }, [quotes.length, searchParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -65,6 +80,23 @@ const LoginPage = () => {
 
       if (!res.ok) {
         const errorData = await res.json();
+        
+        // Vérifier si l'utilisateur n'a pas vérifié son email
+        if (errorData.message === 'EMAIL_NOT_VERIFIED') {
+          // Rediriger vers la page de vérification d'email
+          localStorage.setItem('pendingVerificationEmail', formData.email);
+          router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
+        
+        // Vérifier si l'utilisateur n'est pas approuvé (mais email vérifié)
+        if (errorData.message === 'ACCOUNT_NOT_APPROVED') {
+          // Rediriger vers la page d'attente d'approbation
+          localStorage.setItem('pendingApprovalEmail', formData.email);
+          router.push(`/pending-approval?email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
+        
         setErrorMessage(errorData.message || 'Email ou mot de passe sont incorrects');
         setIsLoading(false);
         return;
@@ -74,6 +106,7 @@ const LoginPage = () => {
 
       // Stockage du JWT et de l'utilisateur pour le dashboard
       localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('token', data.accessToken); // Compatibilité
       localStorage.setItem('userDetails', JSON.stringify(data.user));
 
       // Redirection selon rôle
@@ -211,6 +244,14 @@ const LoginPage = () => {
               {errorMessage && (
                 <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
                   <p className="text-red-300 text-sm">{errorMessage}</p>
+                </div>
+              )}
+              {successMessage && (
+                <div className="mt-4 p-4 bg-green-500/20 border border-green-500/30 rounded-xl">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-5 h-5 text-green-300 mr-2" />
+                    <p className="text-green-300 text-sm">{successMessage}</p>
+                  </div>
                 </div>
               )}
             </div>

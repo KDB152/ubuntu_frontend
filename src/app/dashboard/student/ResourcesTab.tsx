@@ -230,44 +230,193 @@ const ResourcesTab: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // Fonction de téléchargement
+  const handleDownload = async (resource: Resource) => {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      
+      if (!token) {
+        console.error('❌ Token d\'authentification manquant');
+        return;
+      }
+
+      console.log('📥 Téléchargement du fichier:', resource.title);
+      
+      const response = await fetch(`${API_BASE}/files/${resource.id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = resource.title || 'document';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        console.log('✅ Téléchargement réussi');
+      } else {
+        console.error('❌ Erreur lors du téléchargement:', response.status);
+        
+        // Gérer les erreurs spécifiques
+        if (response.status === 400) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.message && errorData.message.includes('Fichier non trouvé')) {
+            alert('Le fichier n\'est pas disponible sur le serveur. Veuillez contacter l\'administrateur.');
+            return;
+          }
+        }
+        
+        alert('Erreur lors du téléchargement du fichier. Veuillez réessayer.');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du téléchargement:', error);
+    }
+  };
+
+  // Fonction d'ouverture de fichier
+  const handleOpenFile = async (resource: Resource) => {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      
+      if (!token) {
+        console.error('❌ Token d\'authentification manquant');
+        return;
+      }
+
+      console.log('👁️ Ouverture du fichier:', resource.title);
+      
+      const response = await fetch(`${API_BASE}/files/${resource.id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Ouvrir le fichier dans un nouvel onglet
+        window.open(url, '_blank');
+        
+        console.log('✅ Fichier ouvert avec succès');
+      } else {
+        console.error('❌ Erreur lors de l\'ouverture:', response.status);
+        
+        // Gérer les erreurs spécifiques
+        if (response.status === 400) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.message && errorData.message.includes('Fichier non trouvé')) {
+            alert('Le fichier n\'est pas disponible sur le serveur. Veuillez contacter l\'administrateur.');
+            return;
+          }
+        }
+        
+        alert('Erreur lors de l\'ouverture du fichier. Veuillez réessayer.');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'ouverture:', error);
+    }
+  };
+
   useEffect(() => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const load = async () => {
       try {
-        // Charger seulement les cours publiés
-        const res = await fetch(`${API_BASE}/content/courses?status=Publié`);
+        // Récupérer les détails de l'utilisateur
+        const userDetails = localStorage.getItem('userDetails');
+        if (!userDetails) {
+          console.error('❌ Détails utilisateur non trouvés');
+          return;
+        }
+
+        const user = JSON.parse(userDetails);
+        console.log('🔍 Utilisateur connecté:', user);
+
+        // Récupérer la classe de l'étudiant depuis l'API
+        let userClass = 'Terminale groupe 1'; // Valeur par défaut
+        
+        try {
+          const studentResponse = await fetch(`${API_BASE}/students/by-user/${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('accessToken')}`
+            }
+          });
+          
+          if (studentResponse.ok) {
+            const studentData = await studentResponse.json();
+            userClass = studentData.class_level || userClass;
+            console.log('✅ Classe de l\'étudiant récupérée:', userClass);
+          } else {
+            console.warn('⚠️ Impossible de récupérer la classe de l\'étudiant, utilisation de la valeur par défaut');
+          }
+        } catch (error) {
+          console.warn('⚠️ Erreur lors de la récupération de la classe:', error);
+        }
+        
+        // Charger les fichiers pour la classe de l'étudiant
+        console.log('📁 Chargement des fichiers pour la classe:', userClass);
+        const res = await fetch(`${API_BASE}/files?class=${encodeURIComponent(userClass)}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.error('❌ Token d\'authentification invalide');
+            throw new Error('Session expirée. Veuillez vous reconnecter.');
+          }
+          throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+        }
+        
         const json = await res.json();
-        const mapped: Resource[] = (json.items || []).map((c: any) => ({
-          id: String(c.id),
-          title: c.title || c.name,
-          description: c.description || '',
-          type: (c.type?.toLowerCase() === 'pdf' ? 'document' : c.type?.toLowerCase() === 'vidéo' ? 'video' : 'document') as any,
+        console.log('📄 Fichiers récupérés pour la classe', userClass, ':', json);
+        
+        const mapped: Resource[] = (json || []).map((file: any) => ({
+          id: String(file.id),
+          title: file.title || file.fileName,
+          description: file.description || '',
+          type: (file.fileType?.includes('pdf') ? 'document' : 
+                 file.fileType?.includes('video') ? 'video' : 
+                 file.fileType?.includes('audio') ? 'audio' : 
+                 file.fileType?.includes('image') ? 'image' : 'document') as any,
           category: 'course',
-          subject: (c.subject?.toLowerCase() === 'histoire' ? 'history' : c.subject?.toLowerCase() === 'géographie' ? 'geography' : 'general') as any,
+          subject: (file.targetClass?.toLowerCase().includes('histoire') ? 'history' : 
+                   file.targetClass?.toLowerCase().includes('géographie') ? 'geography' : 'general') as any,
           level: 'intermediate',
-          url: c.file_url || '#',
+          url: file.filePath || '#',
           thumbnail: undefined,
-          fileSize: undefined,
+          fileSize: file.fileSize,
           duration: undefined,
-          author: 'Administration',
-          createdAt: c.upload_date || new Date().toISOString(),
-          updatedAt: c.updated_at,
-          tags: c.tags || [],
+          author: file.uploader?.firstName ? `${file.uploader.firstName} ${file.uploader.lastName}` : 'Administration',
+          createdAt: file.createdAt || new Date().toISOString(),
+          updatedAt: file.updatedAt,
+          tags: [],
           rating: 0,
           ratingsCount: 0,
-          downloads: 0,
-          views: c.views || 0,
+          downloads: file.downloadCount || 0,
+          views: 0,
           isFavorite: false,
           isBookmarked: false,
           isDownloaded: false,
           language: 'fr',
           difficulty: 2,
-          format: c.type || 'Document',
+          format: file.fileType || 'Document',
         }));
         setResources(mapped);
-        console.log(`✅ ${mapped.length} cours publiés chargés pour les étudiants`);
+        console.log(`✅ ${mapped.length} fichiers chargés pour la classe ${userClass}`);
       } catch (error) {
-        console.error('❌ Erreur lors du chargement des cours:', error);
+        console.error('❌ Erreur lors du chargement des fichiers:', error);
+        // Afficher un message d'erreur à l'utilisateur
+        setResources([]);
       }
       setFolders([]);
     };
@@ -483,19 +632,6 @@ const ResourcesTab: React.FC = () => {
             </div>
           )}
           
-          {/* Badges */}
-          <div className="absolute top-2 right-2 flex space-x-1">
-            {resource.isFavorite && (
-              <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                <Star className="w-3 h-3 text-white fill-current" />
-              </div>
-            )}
-            {resource.isDownloaded && (
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <Download className="w-3 h-3 text-white" />
-              </div>
-            )}
-          </div>
           
           {/* Durée pour les vidéos/audios */}
           {resource.duration && (
@@ -507,38 +643,10 @@ const ResourcesTab: React.FC = () => {
 
         {/* Contenu */}
         <div className="p-4">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-white font-semibold text-sm line-clamp-2 flex-1">
+          <div className="mb-2">
+            <h3 className="text-white font-semibold text-sm line-clamp-2">
               {resource.title}
             </h3>
-            <div className="flex items-center space-x-1 ml-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFavorite(resource.id);
-                }}
-                className={`p-1 rounded transition-all ${
-                  resource.isFavorite 
-                    ? 'text-yellow-400 hover:text-yellow-300' 
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${resource.isFavorite ? 'fill-current' : ''}`} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleBookmark(resource.id);
-                }}
-                className={`p-1 rounded transition-all ${
-                  resource.isBookmarked 
-                    ? 'text-blue-400 hover:text-blue-300' 
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                <Bookmark className={`w-4 h-4 ${resource.isBookmarked ? 'fill-current' : ''}`} />
-              </button>
-            </div>
           </div>
           
           <p className="text-blue-200 text-xs mb-3 line-clamp-2">
@@ -549,22 +657,13 @@ const ResourcesTab: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-blue-300">{resource.author}</span>
-              <div className="flex items-center space-x-1">
-                <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                <span className="text-yellow-400">{resource.rating}</span>
-                <span className="text-blue-400">({resource.ratingsCount})</span>
-              </div>
+              <span className="text-blue-400">{resource.format}</span>
             </div>
             
             <div className="flex items-center justify-between text-xs">
-              <span className="text-blue-400">{resource.format}</span>
               {resource.fileSize && (
                 <span className="text-blue-400">{formatFileSize(resource.fileSize)}</span>
               )}
-            </div>
-            
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-blue-400">{resource.views} vues</span>
               <span className="text-blue-400">{resource.downloads} téléchargements</span>
             </div>
           </div>
@@ -579,6 +678,31 @@ const ResourcesTab: React.FC = () => {
             {resource.tags.length > 3 && (
               <span className="text-blue-400 text-xs">+{resource.tags.length - 3}</span>
             )}
+          </div>
+          
+          {/* Boutons d'action */}
+          <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-white/10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload(resource);
+              }}
+              className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 hover:text-blue-200 rounded-lg transition-all text-xs font-medium"
+            >
+              <Download className="w-3 h-3" />
+              <span>Télécharger</span>
+            </button>
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenFile(resource);
+              }}
+              className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 hover:text-green-200 rounded-lg transition-all text-xs font-medium"
+            >
+              <Eye className="w-3 h-3" />
+              <span>Ouvrir</span>
+            </button>
           </div>
         </div>
       </div>
@@ -651,9 +775,32 @@ const ResourcesTab: React.FC = () => {
             </button>
             
             <button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                // Logique de téléchargement
+                try {
+                  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                  const response = await fetch(`${API_BASE}/files/${resource.id}/download`, {
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                  });
+                  
+                  if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = resource.title;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  } else {
+                    console.error('Erreur lors du téléchargement');
+                  }
+                } catch (error) {
+                  console.error('Erreur lors du téléchargement:', error);
+                }
               }}
               className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:text-blue-300 hover:bg-blue-500/30 transition-all"
             >
@@ -913,12 +1060,18 @@ const ResourcesTab: React.FC = () => {
                 
                 {/* Actions */}
                 <div className="flex items-center space-x-4">
-                  <button className="flex items-center space-x-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-semibold transition-all">
+                  <button 
+                    onClick={() => handleOpenFile(selectedResource)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-semibold transition-all"
+                  >
                     <Eye className="w-5 h-5" />
                     <span>Ouvrir</span>
                   </button>
                   
-                  <button className="flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 rounded-lg text-white font-semibold transition-all">
+                  <button 
+                    onClick={() => handleDownload(selectedResource)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 rounded-lg text-white font-semibold transition-all"
+                  >
                     <Download className="w-5 h-5" />
                     <span>Télécharger</span>
                   </button>
@@ -981,45 +1134,25 @@ const ResourcesTab: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Évaluation */}
+                {/* Actions */}
                 <div className="bg-white/10 rounded-xl p-4">
-                  <h4 className="text-white font-semibold mb-3">Évaluation</h4>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="flex items-center space-x-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-4 h-4 ${
-                            star <= Math.floor(selectedResource.rating)
-                              ? 'text-yellow-400 fill-current'
-                              : 'text-gray-400'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-white font-semibold">{selectedResource.rating}</span>
-                  </div>
-                  <p className="text-blue-200 text-sm">{selectedResource.ratingsCount} évaluations</p>
-                </div>
-                
-                {/* Statistiques */}
-                <div className="bg-white/10 rounded-xl p-4">
-                  <h4 className="text-white font-semibold mb-3">Statistiques</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-blue-200">Vues</span>
-                      <span className="text-white">{selectedResource.views.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200">Téléchargements</span>
-                      <span className="text-white">{selectedResource.downloads.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200">Ajouté le</span>
-                      <span className="text-white">
-                        {new Date(selectedResource.createdAt).toLocaleDateString('fr-FR')}
-                      </span>
-                    </div>
+                  <h4 className="text-white font-semibold mb-3">Actions</h4>
+                  <div className="flex flex-col space-y-3">
+                    <button
+                      onClick={() => handleDownload(selectedResource)}
+                      className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-200 font-semibold"
+                    >
+                      <Download className="w-5 h-5" />
+                      <span>Télécharger</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleOpenFile(selectedResource)}
+                      className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-200 font-semibold"
+                    >
+                      <Eye className="w-5 h-5" />
+                      <span>Ouvrir</span>
+                    </button>
                   </div>
                 </div>
                 

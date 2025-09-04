@@ -263,7 +263,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-200 text-sm">Montant Total</p>
-                <p className="text-2xl font-bold text-white">{stats.totalAmount.toFixed(2)}€</p>
+                <p className="text-2xl font-bold text-white">{stats.totalAmount.toFixed(2)}dt</p>
               </div>
               <Euro className="w-8 h-8 text-blue-300" />
             </div>
@@ -273,7 +273,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-200 text-sm">Montant Restant</p>
-                <p className="text-2xl font-bold text-orange-400">{stats.totalRemaining.toFixed(2)}€</p>
+                <p className="text-2xl font-bold text-orange-400">{stats.totalRemaining.toFixed(2)}dt</p>
               </div>
               <Wallet className="w-8 h-8 text-orange-400" />
             </div>
@@ -341,26 +341,26 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
                       <div className="bg-white/5 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <span className="text-blue-200 text-sm">Montant Total</span>
-                          <span className="text-white font-semibold">{payment.montant_total.toFixed(2)}€</span>
+                          <span className="text-white font-semibold">{payment.montant_total.toFixed(2)}dt</span>
                         </div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <span className="text-blue-200 text-sm">Payé</span>
-                          <span className="text-green-400 font-semibold">{payment.montant_paye.toFixed(2)}€</span>
+                          <span className="text-green-400 font-semibold">{payment.montant_paye.toFixed(2)}dt</span>
                         </div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <span className="text-blue-200 text-sm">Restant</span>
-                          <span className="text-orange-400 font-semibold">{payment.montant_restant.toFixed(2)}€</span>
+                          <span className="text-orange-400 font-semibold">{payment.montant_restant.toFixed(2)}dt</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between text-sm text-blue-200">
                       <div className="flex items-center space-x-4">
-                        <span>Prix/séance: {payment.prix_seance.toFixed(2)}€</span>
+                        <span>Prix/séance: {payment.prix_seance.toFixed(2)}dt</span>
                         {payment.date_derniere_presence && (
                           <span>Dernière présence: {formatDate(payment.date_derniere_presence)}</span>
                         )}
@@ -394,7 +394,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <h3 className="text-lg font-semibold text-blue-200 mb-2">Information sur les paiements</h3>
             <div className="text-blue-200 text-sm space-y-1">
               <p>• Les séances sont automatiquement ajoutées lors de la présence de votre enfant</p>
-              <p>• Le prix par défaut est de 50€ par séance</p>
+              <p>• Le prix par défaut est de 40dt par séance</p>
               <p>• Contactez l'administration pour effectuer un paiement ou modifier les informations</p>
               <p>• Les statistiques sont mises à jour en temps réel</p>
             </div>

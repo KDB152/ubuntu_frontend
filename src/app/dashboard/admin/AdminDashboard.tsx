@@ -284,6 +284,8 @@ const AdminDashboard = () => {
           onUpdateParent={updateParent}
           onDeleteParent={deleteParent}
           onApproveUser={approveUser}
+          loadStudents={loadStudents}
+          loadParents={loadParents}
         />;
       case 'quizzes':
         return <QuizzesManagementTab />;

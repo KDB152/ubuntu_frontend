@@ -10,16 +10,7 @@ export const viewport = {
   viewport: 'width=device-width, initial-scale=1',
 };
 
-// Liste des classes disponibles
-const AVAILABLE_CLASSES = [
-  'Terminale groupe 1',
-  'Terminale groupe 2',
-  'Terminale groupe 3',
-  'Terminale groupe 4',
-  '1ère groupe 1',
-  '1ère groupe 2',
-  '1ère groupe 3'
-];
+import { AVAILABLE_CLASSES } from '@/constants/classes';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -43,12 +34,24 @@ const RegisterPage: React.FC = () => {
     parentFirstName: '',
     parentLastName: '',
     parentEmail: '',
-    parentPhone: ''
+    parentPhone: '',
+    parentPassword: '',
+    parentConfirmPassword: '',
+    // Child password fields (for parents)
+    childPassword: '',
+    childConfirmPassword: '',
+    // Child contact fields (for parents)
+    childEmail: '',
+    childPhone: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showParentPassword, setShowParentPassword] = useState(false);
+  const [showParentConfirmPassword, setShowParentConfirmPassword] = useState(false);
+  const [showChildPassword, setShowChildPassword] = useState(false);
+  const [showChildConfirmPassword, setShowChildConfirmPassword] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(0);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
@@ -148,6 +151,16 @@ const RegisterPage: React.FC = () => {
       if (!formData.parentPhone) {
         newErrors.parentPhone = 'Le téléphone du parent est requis';
       }
+      if (!formData.parentPassword) {
+        newErrors.parentPassword = 'Le mot de passe du parent est requis';
+      } else if (formData.parentPassword.length < 8) {
+        newErrors.parentPassword = 'Le mot de passe du parent doit contenir au moins 8 caractères';
+      }
+      if (!formData.parentConfirmPassword) {
+        newErrors.parentConfirmPassword = 'Veuillez confirmer le mot de passe du parent';
+      } else if (formData.parentPassword !== formData.parentConfirmPassword) {
+        newErrors.parentConfirmPassword = 'Les mots de passe du parent ne correspondent pas';
+      }
     }
 
     // Validation spécifique aux parents
@@ -165,6 +178,26 @@ const RegisterPage: React.FC = () => {
         newErrors.childClass = 'La classe de l\'enfant est requise';
       } else if (!AVAILABLE_CLASSES.includes(formData.childClass)) {
         newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
+      }
+      if (!formData.childPassword) {
+        newErrors.childPassword = 'Le mot de passe de l\'enfant est requis';
+      } else if (formData.childPassword.length < 8) {
+        newErrors.childPassword = 'Le mot de passe de l\'enfant doit contenir au moins 8 caractères';
+      }
+      if (!formData.childConfirmPassword) {
+        newErrors.childConfirmPassword = 'Veuillez confirmer le mot de passe de l\'enfant';
+      } else if (formData.childPassword !== formData.childConfirmPassword) {
+        newErrors.childConfirmPassword = 'Les mots de passe de l\'enfant ne correspondent pas';
+      }
+      if (!formData.childEmail) {
+        newErrors.childEmail = 'L\'email de l\'enfant est requis';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.childEmail)) {
+        newErrors.childEmail = 'Veuillez entrer un email valide pour l\'enfant';
+      }
+      if (!formData.childPhone) {
+        newErrors.childPhone = 'Le téléphone de l\'enfant est requis';
+      } else if (!/^[0-9+\-\s()]+$/.test(formData.childPhone)) {
+        newErrors.childPhone = 'Veuillez entrer un numéro de téléphone valide pour l\'enfant';
       }
     }
 
@@ -191,8 +224,8 @@ const RegisterPage: React.FC = () => {
     try {
       // Prepare the data to send to the backend
       const requestData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
@@ -205,11 +238,15 @@ const RegisterPage: React.FC = () => {
         childLastName: formData.userType === 'parent' ? formData.childLastName : undefined,
         childBirthDate: formData.userType === 'parent' ? formData.childBirthDate : undefined,
         childClass: formData.userType === 'parent' ? formData.childClass : undefined,
+        childPassword: formData.userType === 'parent' ? formData.childPassword : undefined,
+        childEmail: formData.userType === 'parent' ? formData.childEmail : undefined,
+        childPhone: formData.userType === 'parent' ? formData.childPhone : undefined,
         // Parent contact fields (for students)
         parentFirstName: formData.userType === 'student' ? formData.parentFirstName : undefined,
         parentLastName: formData.userType === 'student' ? formData.parentLastName : undefined,
         parentEmail: formData.userType === 'student' ? formData.parentEmail : undefined,
         parentPhone: formData.userType === 'student' ? formData.parentPhone : undefined,
+        parentPassword: formData.userType === 'student' ? formData.parentPassword : undefined,
       };
 
       const response = await fetch('http://localhost:3001/auth/register', {
@@ -242,7 +279,13 @@ const RegisterPage: React.FC = () => {
         parentFirstName: '',
         parentLastName: '',
         parentEmail: '',
-        parentPhone: ''
+        parentPhone: '',
+        parentPassword: '',
+        parentConfirmPassword: '',
+        childPassword: '',
+        childConfirmPassword: '',
+        childEmail: '',
+        childPhone: ''
       });
     } catch (error) {
       setErrors({ ...errors, global: (error as Error).message });
@@ -456,7 +499,7 @@ const RegisterPage: React.FC = () => {
                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                     <User className="w-5 h-5 mr-2 text-amber-300" />
-                    Informations personnelles
+                    {formData.userType === 'student' ? 'Informations personnelles' : 'Informations personnelles'}
                   </h3>
                   
                   {/* Nom et prénom */}
@@ -554,7 +597,7 @@ const RegisterPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Champs spécifiques selon le type d'utilisateur */}
+                                    {/* Champs spécifiques selon le type d'utilisateur */}
                   {formData.userType === 'student' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -594,7 +637,7 @@ const RegisterPage: React.FC = () => {
                             }`}
                             required
                           >
-                            <option value="" className="bg-slate-800 text-white">Sélectionnez votre classe</option>
+                            <option value="" className="bg-slate-800 text-white">Votre classe</option>
                             {AVAILABLE_CLASSES.map((classe) => (
                               <option 
                                 key={classe} 
@@ -618,8 +661,164 @@ const RegisterPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Mot de passe pour les étudiants */}
+                  {formData.userType === 'student' && (
+                    <>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.password ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Votre mot de passe"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            )}
+                          </button>
+                        </div>
+                        {errors.password && (
+                          <p className="mt-2 text-sm text-red-400">{errors.password}</p>
+                        )}
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.confirmPassword ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Confirmez votre mot de passe"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            )}
+                          </button>
+                        </div>
+                        {errors.confirmPassword && (
+                          <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Mot de passe pour les parents */}
                   {formData.userType === 'parent' && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.password ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Votre mot de passe"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            )}
+                          </button>
+                        </div>
+                        {errors.password && (
+                          <p className="mt-2 text-sm text-red-400">{errors.password}</p>
+                        )}
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.confirmPassword ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Confirmez votre mot de passe"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                            )}
+                          </button>
+                        </div>
+                        {errors.confirmPassword && (
+                          <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                </div>
+
+                {/* Informations des enfants (pour les parents) */}
+                {formData.userType === 'parent' && (
+                  <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <Baby className="w-5 h-5 mr-2 text-amber-300" />
+                      Informations de l'enfant
+                    </h3>
+                    
+                    {/* Les champs enfant sont déjà dans la section précédente, on les déplace ici */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
                         <div className="relative group">
@@ -663,10 +862,58 @@ const RegisterPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                  )}
 
-                  {formData.userType === 'parent' && (
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    {/* Email et téléphone de l'enfant */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Email de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="email"
+                            name="childEmail"
+                            value={formData.childEmail}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childEmail ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="enfant@email.com"
+                            required
+                          />
+                        </div>
+                        {errors.childEmail && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childEmail}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant</label>
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                          </div>
+                          <input
+                            type="tel"
+                            name="childPhone"
+                            value={formData.childPhone}
+                            onChange={handleInputChange}
+                            className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                              errors.childPhone ? 'border-red-400' : 'border-white/20'
+                            }`}
+                            placeholder="Numéro de téléphone de l'enfant"
+                            required
+                          />
+                        </div>
+                        {errors.childPhone && (
+                          <p className="mt-2 text-sm text-red-400">{errors.childPhone}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Date de naissance et classe de l'enfant */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant</label>
                         <div className="relative group">
@@ -704,7 +951,7 @@ const RegisterPage: React.FC = () => {
                             }`}
                             required
                           >
-                            <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant</option>
+                            <option value="" className="bg-slate-800 text-white">La classe de votre enfant</option>
                             {AVAILABLE_CLASSES.map((classe) => (
                               <option 
                                 key={classe} 
@@ -726,8 +973,77 @@ const RegisterPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Mot de passe de l'enfant */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe de l'enfant</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type={showChildPassword ? 'text' : 'password'}
+                          name="childPassword"
+                          value={formData.childPassword}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.childPassword ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Mot de passe de l'enfant"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowChildPassword(!showChildPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          {showChildPassword ? (
+                            <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          )}
+                        </button>
+                      </div>
+                      {errors.childPassword && (
+                        <p className="mt-2 text-sm text-red-400">{errors.childPassword}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe de l'enfant</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type={showChildConfirmPassword ? 'text' : 'password'}
+                          name="childConfirmPassword"
+                          value={formData.childConfirmPassword}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.childConfirmPassword ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Confirmez le mot de passe de l'enfant"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowChildConfirmPassword(!showChildConfirmPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          {showChildConfirmPassword ? (
+                            <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          )}
+                        </button>
+                      </div>
+                      {errors.childConfirmPassword && (
+                        <p className="mt-2 text-sm text-red-400">{errors.childConfirmPassword}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Informations des parents (pour les étudiants) */}
                 {formData.userType === 'student' && (
@@ -782,7 +1098,7 @@ const RegisterPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-white/90 mb-3">Email du parent</label>
                         <div className="relative group">
@@ -829,103 +1145,78 @@ const RegisterPage: React.FC = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Mot de passe du parent */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe du parent</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type={showParentPassword ? 'text' : 'password'}
+                          name="parentPassword"
+                          value={formData.parentPassword}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.parentPassword ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Mot de passe du parent"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowParentPassword(!showParentPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          {showParentPassword ? (
+                            <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          )}
+                        </button>
+                      </div>
+                      {errors.parentPassword && (
+                        <p className="mt-2 text-sm text-red-400">{errors.parentPassword}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe du parent</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
+                        </div>
+                        <input
+                          type={showParentConfirmPassword ? 'text' : 'password'}
+                          name="parentConfirmPassword"
+                          value={formData.parentConfirmPassword}
+                          onChange={handleInputChange}
+                          className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
+                            errors.parentConfirmPassword ? 'border-red-400' : 'border-white/20'
+                          }`}
+                          placeholder="Confirmez le mot de passe du parent"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowParentConfirmPassword(!showParentConfirmPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          {showParentConfirmPassword ? (
+                            <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
+                          )}
+                        </button>
+                      </div>
+                      {errors.parentConfirmPassword && (
+                        <p className="mt-2 text-sm text-red-400">{errors.parentConfirmPassword}</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* Mot de passe */}
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <Lock className="w-5 h-5 mr-2 text-amber-300" />
-                    Sécurité
-                  </h3>
-                  
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                      </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                          errors.password ? 'border-red-400' : 'border-white/20'
-                        }`}
-                        placeholder="Votre mot de passe"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                        )}
-                      </button>
-                    </div>
-                    
-                    {/* Indicateur de force du mot de passe */}
-                    {formData.password && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-white/70">Force du mot de passe</span>
-                          <span className={`text-xs font-medium ${getPasswordStrengthText().color}`}>
-                            {getPasswordStrengthText().text}
-                          </span>
-                        </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                            style={{ width: getPasswordStrengthWidth() }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    
-                    {errors.password && (
-                      <p className="mt-2 text-sm text-red-400">{errors.password}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
-                      </div>
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
-                          errors.confirmPassword ? 'border-red-400' : 'border-white/20'
-                        }`}
-                        placeholder="Confirmez votre mot de passe"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-white/50 hover:text-white transition-colors" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.confirmPassword && (
-                      <p className="mt-2 text-sm text-red-400">{errors.confirmPassword}</p>
-                    )}
-                  </div>
-                </div>
 
                 {/* Conditions d'utilisation */}
                 <div className="flex items-center justify-between">

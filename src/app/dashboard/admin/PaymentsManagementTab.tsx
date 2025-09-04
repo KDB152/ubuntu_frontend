@@ -73,6 +73,11 @@ const PaymentsManagementTab: React.FC = () => {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editingSessions, setEditingSessions] = useState({
+    seances_payees: 0,
+    seances_non_payees: 0
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Charger la liste des paiements
   const loadPayments = useCallback(async () => {
@@ -188,12 +193,12 @@ const PaymentsManagementTab: React.FC = () => {
   const formatAmount = (amount: number) => {
     // Vérifier que le montant est un nombre valide
     if (isNaN(amount) || amount === null || amount === undefined) {
-      return '0,00 €';
+      return '0,00 dt';
     }
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount) + ' dt';
   };
 
   // Fonction pour voir les détails d'un paiement
@@ -205,6 +210,10 @@ const PaymentsManagementTab: React.FC = () => {
   // Fonction pour éditer un paiement
   const handleEdit = (payment: Payment) => {
     setSelectedPayment(payment);
+    setEditingSessions({
+      seances_payees: payment.seances_payees,
+      seances_non_payees: payment.seances_non_payees
+    });
     setShowEditModal(true);
   };
 
@@ -236,6 +245,47 @@ const PaymentsManagementTab: React.FC = () => {
     } catch (err) {
       console.error('Erreur lors du marquage comme payé:', err);
       alert('Erreur lors du marquage comme payé');
+    }
+  };
+
+  // Fonction pour sauvegarder les modifications des séances
+  const handleSaveSessions = async () => {
+    if (!selectedPayment) return;
+    
+    try {
+      setIsUpdating(true);
+      
+      const response = await fetch(`/api/admin/payments/${selectedPayment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seances_payees: editingSessions.seances_payees,
+          seances_non_payees: editingSessions.seances_non_payees,
+          seances_total: editingSessions.seances_payees + editingSessions.seances_non_payees
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour des séances');
+      }
+
+      // Recharger les paiements pour mettre à jour l'affichage
+      await loadPayments();
+      
+      // Fermer le modal
+      setShowEditModal(false);
+      setSelectedPayment(null);
+      
+      // Afficher un message de succès
+      alert('Séances mises à jour avec succès !');
+      
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour des séances:', err);
+      alert('Erreur lors de la mise à jour des séances');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -523,6 +573,112 @@ const PaymentsManagementTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal d'édition des séances */}
+      {showEditModal && selectedPayment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">Modifier les séances</h3>
+              <button
+                onClick={closeModals}
+                className="text-blue-300 hover:text-white transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-blue-200 text-sm mb-2">
+                  Étudiant: <span className="text-white font-medium">
+                    {selectedPayment.student_first_name} {selectedPayment.student_last_name}
+                  </span>
+                </p>
+                <p className="text-blue-200 text-sm mb-4">
+                  Parent: <span className="text-white font-medium">
+                    {selectedPayment.parent_first_name && selectedPayment.parent_last_name 
+                      ? `${selectedPayment.parent_first_name} ${selectedPayment.parent_last_name}`
+                      : 'Aucun parent'
+                    }
+                  </span>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-blue-200 text-sm font-medium mb-2">
+                    Séances payées
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editingSessions.seances_payees}
+                    onChange={(e) => setEditingSessions(prev => ({
+                      ...prev,
+                      seances_payees: parseInt(e.target.value) || 0
+                    }))}
+                    className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/10 text-white focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-blue-200 text-sm font-medium mb-2">
+                    Séances non payées
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editingSessions.seances_non_payees}
+                    onChange={(e) => setEditingSessions(prev => ({
+                      ...prev,
+                      seances_non_payees: parseInt(e.target.value) || 0
+                    }))}
+                    className="w-full px-3 py-2 border border-white/20 rounded-lg bg-white/10 text-white focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-blue-200 text-sm">
+                  Total: <span className="text-white font-medium">
+                    {editingSessions.seances_payees + editingSessions.seances_non_payees} séances
+                  </span>
+                </p>
+                <p className="text-blue-200 text-sm">
+                  Montant total: <span className="text-white font-medium">
+                    {formatAmount((editingSessions.seances_payees + editingSessions.seances_non_payees) * selectedPayment.prix_seance)}
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4">
+                <button
+                  onClick={closeModals}
+                  className="px-4 py-2 text-blue-300 hover:text-white transition-colors"
+                  disabled={isUpdating}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveSessions}
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mise à jour...</span>
+                    </>
+                  ) : (
+                    <span>Sauvegarder</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

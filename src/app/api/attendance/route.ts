@@ -37,7 +37,7 @@ async function synchronizePaymentRecord(connection: mysql.Connection, studentId:
       // Mettre à jour l'enregistrement existant
       const existing = (existingRows as any[])[0];
       const newUnpaidSessions = (existing.seances_non_payees || 0) + 1;
-      const prixSeance = 50; // Prix par défaut
+      const prixSeance = 40; // Prix par défaut
       const newTotalAmount = (newUnpaidSessions + (existing.seances_payees || 0)) * prixSeance;
       
       await connection.execute(`
@@ -65,7 +65,7 @@ async function synchronizePaymentRecord(connection: mysql.Connection, studentId:
       ]);
     } else {
       // Créer un nouvel enregistrement de paiement
-      const prixSeance = 50; // Prix par défaut
+      const prixSeance = 40; // Prix par défaut
       const totalAmount = prixSeance; // 1 séance non payée
       
       await connection.execute(`
@@ -123,7 +123,7 @@ async function synchronizePaidSessions(connection: mysql.Connection, studentId: 
     if ((existingRows as any[]).length > 0) {
       // Mettre à jour l'enregistrement existant
       const existing = (existingRows as any[])[0];
-      const prixSeance = 50; // Prix par défaut
+      const prixSeance = 40; // Prix par défaut
       const newTotalAmount = (newPaidSessions + (existing.seances_non_payees || 0)) * prixSeance;
       const newPaidAmount = newPaidSessions * prixSeance;
 
@@ -154,7 +154,7 @@ async function synchronizePaidSessions(connection: mysql.Connection, studentId: 
       ]);
     } else {
       // Créer un nouvel enregistrement de paiement
-      const prixSeance = 50; // Prix par défaut
+      const prixSeance = 40; // Prix par défaut
       const totalAmount = newPaidSessions * prixSeance;
 
       await connection.execute(`
@@ -194,7 +194,7 @@ async function synchronizePaidSessions(connection: mysql.Connection, studentId: 
 // Fonction pour synchroniser les deux types de séances
 async function synchronizeBothSessions(connection: mysql.Connection, studentId: number, paidSessions: number, unpaidSessions: number) {
   try {
-    const prixSeance = 50; // Prix par défaut
+    const prixSeance = 40; // Prix par défaut
     const totalAmount = (paidSessions + unpaidSessions) * prixSeance;
     const paidAmount = paidSessions * prixSeance;
     const unpaidAmount = unpaidSessions * prixSeance;

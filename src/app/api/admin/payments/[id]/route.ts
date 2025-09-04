@@ -24,51 +24,105 @@ async function getConnection() {
   }
 }
 
+// Mettre à jour un paiement spécifique
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const paymentId = parseInt(params.id);
+    const paymentId = params.id;
     const body = await request.json();
     
-    const { statut, montant_paye, montant_restant, seances_payees, seances_non_payees } = body;
-
+    console.log('🔄 Mise à jour du paiement:', paymentId, body);
+    
     const connection = await getConnection();
     
-    // Mettre à jour le paiement
-    const query = `
+    // Récupérer les données actuelles du paiement
+    const [currentRows] = await connection.execute(
+      'SELECT * FROM paiement WHERE id = ?',
+      [paymentId]
+    );
+    
+    if ((currentRows as any[]).length === 0) {
+      await connection.end();
+      return NextResponse.json(
+        { error: 'Paiement non trouvé' },
+        { status: 404 }
+      );
+    }
+    
+    const currentPayment = (currentRows as any[])[0];
+    
+    // Calculer les nouvelles valeurs
+    const seances_payees = body.seances_payees || currentPayment.seances_payees;
+    const seances_non_payees = body.seances_non_payees || currentPayment.seances_non_payees;
+    const seances_total = seances_payees + seances_non_payees;
+    const prix_seance = currentPayment.prix_seance || 40; // Prix par défaut
+    const montant_total = seances_total * prix_seance;
+    const montant_paye = seances_payees * prix_seance;
+    const montant_restant = seances_non_payees * prix_seance;
+    
+    // Déterminer le nouveau statut
+    let statut = 'en_attente';
+    if (seances_non_payees === 0) {
+      statut = 'paye';
+    } else if (seances_payees > 0) {
+      statut = 'partiel';
+    }
+    
+    // Mettre à jour le paiement dans la base de données
+    await connection.execute(`
       UPDATE paiement 
       SET 
-        statut = ?,
-        montant_paye = ?,
-        montant_restant = ?,
+        seances_total = ?,
         seances_payees = ?,
         seances_non_payees = ?,
-        date_dernier_paiement = CURRENT_TIMESTAMP
+        montant_total = ?,
+        montant_paye = ?,
+        montant_restant = ?,
+        statut = ?,
+        date_modification = CURRENT_TIMESTAMP
       WHERE id = ?
-    `;
-    
-    const [result] = await connection.execute(query, [
+    `, [
+      seances_total,
+      seances_payees,
+      seances_non_payees,
+      montant_total,
+      montant_paye,
+      montant_restant,
       statut,
-      montant_paye || 0,
-      montant_restant || 0,
-      seances_payees || 0,
-      seances_non_payees || 0,
       paymentId
     ]);
     
     await connection.end();
     
-    console.log(`✅ Paiement ${paymentId} mis à jour avec succès`);
+    console.log('✅ Paiement mis à jour avec succès:', {
+      id: paymentId,
+      seances_total,
+      seances_payees,
+      seances_non_payees,
+      montant_total,
+      montant_paye,
+      montant_restant,
+      statut
+    });
     
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Paiement mis à jour avec succès',
-      updated: true 
+      updatedPayment: {
+        id: paymentId,
+        seances_total,
+        seances_payees,
+        seances_non_payees,
+        montant_total,
+        montant_paye,
+        montant_restant,
+        statut
+      }
     });
     
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du paiement:', error);
+    console.error('❌ Erreur lors de la mise à jour du paiement:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour du paiement' },
       { status: 500 }
@@ -76,17 +130,17 @@ export async function PUT(
   }
 }
 
+// Récupérer un paiement spécifique
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const paymentId = parseInt(params.id);
+    const paymentId = params.id;
     
     const connection = await getConnection();
     
-    // Récupérer les détails du paiement
-    const query = `
+    const [rows] = await connection.execute(`
       SELECT 
         p.*,
         u.first_name as student_first_name,
@@ -100,9 +154,8 @@ export async function GET(
       LEFT JOIN parents par ON p.parent_id = par.id
       LEFT JOIN users parent_user ON par.user_id = parent_user.id
       WHERE p.id = ?
-    `;
+    `, [paymentId]);
     
-    const [rows] = await connection.execute(query, [paymentId]);
     await connection.end();
     
     if ((rows as any[]).length === 0) {
@@ -112,7 +165,9 @@ export async function GET(
       );
     }
     
-    return NextResponse.json((rows as any[])[0]);
+    const payment = (rows as any[])[0];
+    
+    return NextResponse.json(payment);
     
   } catch (error) {
     console.error('Erreur lors de la récupération du paiement:', error);

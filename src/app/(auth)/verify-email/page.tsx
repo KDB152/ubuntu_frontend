@@ -1,147 +1,215 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Globe, MapPin, BookOpen, CheckCircle, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Mail, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 
 export default function VerifyEmailPage() {
-  const [verified, setVerified] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
-    const token = searchParams.get('token');
-
-    if (!token) return; // pas de token => on ne fait rien
-
-    const verifyEmail = async () => {
-      try {
-        await fetch(`http://localhost:3001/auth/verify-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-        // On ne vérifie pas la réponse volontairement
-        // => peu importe succès/erreur, l'UI reste "succès"
-      } catch (error) {
-        console.error('Erreur lors de la vérification (cachée à l\'utilisateur):', error);
-      } finally {
-        setVerified(true);
+    // Récupérer l'email depuis les paramètres d'URL ou le localStorage
+    const emailParam = searchParams.get('email');
+    const statusParam = searchParams.get('status');
+    const storedEmail = localStorage.getItem('pendingVerificationEmail');
+    
+    if (emailParam) {
+      setEmail(emailParam);
+      localStorage.setItem('pendingVerificationEmail', emailParam);
+      
+      // Gérer le statut spécial
+      if (statusParam === 'pending') {
+        setMessage('Votre email a été vérifié mais votre compte est en attente d\'approbation par l\'administrateur.');
+        setMessageType('info');
       }
-    };
+    } else if (storedEmail) {
+      setEmail(storedEmail);
+    } else {
+      // Si aucun email n'est trouvé, rediriger vers la page de connexion
+      router.push('/login');
+    }
+  }, [searchParams, router]);
 
-    verifyEmail();
-  }, [searchParams]);
+  const handleResendVerification = async () => {
+    if (!email) return;
+
+    setIsResending(true);
+    setMessage('');
+    
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage('Email de vérification renvoyé avec succès ! Vérifiez votre boîte de réception.');
+        setMessageType('success');
+      } else {
+        setMessage(data.message || 'Erreur lors du renvoi de l\'email de vérification.');
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage('Erreur de connexion. Veuillez réessayer.');
+      setMessageType('error');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    localStorage.removeItem('pendingVerificationEmail');
+    router.push('/login');
+  };
+
+  const handleCheckVerification = async () => {
+    if (!email) return;
+
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE}/auth/check-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.verified && data.approved) {
+        setMessage('Votre email a été vérifié et votre compte approuvé ! Vous pouvez maintenant vous connecter.');
+        setMessageType('success');
+        setTimeout(() => {
+          localStorage.removeItem('pendingVerificationEmail');
+          router.push('/login');
+        }, 2000);
+      } else if (response.ok && data.verified && !data.approved) {
+        setMessage('Votre email a été vérifié mais votre compte n\'est pas encore approuvé par l\'administrateur.');
+        setMessageType('info');
+      } else {
+        setMessage('Votre email n\'est pas encore vérifié. Veuillez cliquer sur le lien dans votre email.');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage('Erreur de connexion. Veuillez réessayer.');
+      setMessageType('error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      {/* Fond animé et éléments historiques */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-amber-200/20 to-yellow-300/20 rounded-full animate-pulse blur-xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-emerald-200/20 to-green-300/20 rounded-full animate-bounce blur-lg"></div>
-        <div className="absolute bottom-1/4 left-1/3 w-20 h-20 bg-gradient-to-br from-purple-200/20 to-violet-300/20 rounded-full animate-ping blur-lg"></div>
-
-        <div className="absolute top-20 right-20 opacity-10">
-          <Globe className="w-40 h-40 text-white animate-spin" style={{ animationDuration: '20s' }} />
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-md w-full p-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+            <Mail className="w-8 h-8 text-blue-300" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Vérification d'email</h1>
+          <p className="text-blue-200 text-sm">
+            Nous avons envoyé un lien de vérification à
+          </p>
+          <p className="text-white font-semibold mt-1">{email}</p>
         </div>
-        <div className="absolute bottom-20 left-20 opacity-10">
-          <MapPin className="w-32 h-32 text-white animate-pulse" />
-        </div>
 
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
-          <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-amber-300/30 to-transparent animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-300/30 to-transparent animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
-      </div>
-
-      {/* Contenu principal */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="w-full max-w-2xl">
-          <div className="text-center mb-10">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                <BookOpen className="w-10 h-10 text-white" />
-              </div>
+        {/* Message */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-xl border ${
+            messageType === 'success' 
+              ? 'bg-green-500/20 border-green-500/40 text-green-300' 
+              : messageType === 'error'
+              ? 'bg-red-500/20 border-red-500/40 text-red-300'
+              : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+          }`}>
+            <div className="flex items-center">
+              {messageType === 'success' && <CheckCircle className="w-5 h-5 mr-2" />}
+              {messageType === 'error' && <AlertCircle className="w-5 h-5 mr-2" />}
+              {messageType === 'info' && <Mail className="w-5 h-5 mr-2" />}
+              <span className="text-sm">{message}</span>
             </div>
-            <h2 className="text-5xl font-bold text-white mb-3">Vérification d'email</h2>
-            <p className="text-blue-200 text-lg">Confirmation de votre inscription</p>
           </div>
+        )}
 
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-16 border border-white/20 shadow-2xl">
-            {verified ? (
-              <div className="text-center space-y-8">
-                <div className="flex justify-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-                    <CheckCircle className="w-12 h-12 text-white" />
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-3xl font-bold text-white">Inscription réussie !</h3>
-                  <p className="text-emerald-200 text-lg">
-                    Votre email a été vérifié avec succès. Vous pouvez maintenant se connecter.
-                  </p>
-                </div>
-
-                <Link
-                  href="/login?verified=true"
-                  className="group inline-flex items-center justify-center py-4 px-8 border border-transparent text-lg font-medium rounded-xl text-white bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  <CheckCircle className="w-6 h-6 mr-2 group-hover:translate-x-1 transition-transform" />
-                  Se connecter
-                </Link>
-              </div>
-            ) : (
-              <div className="text-center space-y-8">
-                <div className="flex justify-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center shadow-2xl">
-                    <Loader className="w-12 h-12 text-white animate-spin" />
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-3xl font-bold text-white">Vérification en cours...</h3>
-                  <p className="text-blue-200 text-lg">
-                    Nous vérifions votre email, veuillez patienter quelques instants.
-                  </p>
-                </div>
-
-                <div className="flex justify-center">
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
-                    <div className="w-3 h-3 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-3 h-3 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-xs text-white/60">
-              🔒 Vérification sécurisée • Données protégées RGPD
-            </p>
-          </div>
+        {/* Instructions */}
+        <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+          <h3 className="text-white font-semibold mb-2 flex items-center">
+            <Mail className="w-4 h-4 mr-2" />
+            Instructions
+          </h3>
+          <ul className="text-blue-200 text-sm space-y-1">
+            <li>• Vérifiez votre boîte de réception</li>
+            <li>• Cliquez sur le lien de vérification</li>
+            <li>• Attendez l'approbation de l'administrateur</li>
+            <li>• Revenez ici pour vérifier votre statut</li>
+          </ul>
         </div>
-      </div>
 
-      {/* Particules flottantes */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
-            }}
-          />
-        ))}
+        {/* Actions */}
+        <div className="space-y-3">
+          <button
+            onClick={handleCheckVerification}
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Vérification...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Vérifier mon statut
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleResendVerification}
+            disabled={isResending}
+            className="w-full bg-white/10 hover:bg-white/20 disabled:bg-white/5 text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center border border-white/20"
+          >
+            {isResending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Envoi...
+              </>
+            ) : (
+              <>
+                <Mail className="w-4 h-4 mr-2" />
+                Renvoyer l'email
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleBackToLogin}
+            className="w-full bg-transparent hover:bg-white/10 text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center border border-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Retour à la connexion
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <p className="text-blue-300 text-xs">
+            Si vous ne recevez pas l'email, vérifiez votre dossier spam ou contactez l'administrateur.
+          </p>
+        </div>
       </div>
     </div>
   );
