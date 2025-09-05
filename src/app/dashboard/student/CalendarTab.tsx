@@ -598,14 +598,6 @@ const CalendarTab: React.FC = () => {
             </div>
           );
         })}
-        
-        {upcomingEvents.length === 0 && (
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
-            <Calendar className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-            <h3 className="text-white text-xl font-bold mb-2">Aucun événement à venir</h3>
-            <p className="text-blue-200">Votre agenda est libre pour les prochains jours</p>
-          </div>
-        )}
       </div>
     );
   };

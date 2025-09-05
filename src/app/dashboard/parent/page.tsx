@@ -9,7 +9,6 @@ import {
   FileText,
   MessageSquare,
   Calendar,
-  ClipboardList,
   Users,
   CreditCard,
   Bell,
@@ -31,7 +30,6 @@ import ChildrenProgressTab from './ChildrenProgressTab';
 import QuizResultsTab from './QuizResultsTab';
 import MessagesTab from './MessagesTab';
 import CalendarTab from './CalendarTab';
-import ReportsTab from './ReportsTab';
 import MeetingsTab from './MeetingsTab';
 import PaymentsTab from './PaymentsTab';
 import NotificationsTab from './NotificationsTab';
@@ -220,12 +218,6 @@ const ParentDashboard: React.FC = () => {
       label: 'Calendrier',
       icon: Calendar,
       component: CalendarTab
-    },
-    {
-      id: 'reports',
-      label: 'Rapports',
-      icon: ClipboardList,
-      component: ReportsTab
     },
     {
       id: 'meetings',

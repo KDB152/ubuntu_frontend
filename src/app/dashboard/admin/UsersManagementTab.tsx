@@ -51,7 +51,6 @@ interface Student {
   phoneNumber: string;
   classLevel: string;
   birthDate: string;
-  progressPercentage: number;
   averageScore: number;
   role: string;
   isActive: boolean;
@@ -384,13 +383,6 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
     }
   };
 
-  const getProgressColor = (score: number) => {
-    if (score >= 16) return 'from-green-400 to-emerald-500';
-    if (score >= 14) return 'from-blue-400 to-indigo-500';
-    if (score >= 12) return 'from-yellow-400 to-orange-500';
-    return 'from-red-400 to-pink-500';
-  };
-
   return (
     <div className="space-y-4">
       {/* Notification */}
@@ -565,11 +557,8 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
                 {activeTab === 'students' && (
                   <>
                     <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Classe</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Progression</th>
                   </>
                 )}
-                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Inscription</th>
-                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Dernière connexion</th>
                 <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Statut</th>
                 <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Approbation</th>
                 <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Actions</th>
@@ -608,33 +597,8 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
                       <td className="px-3 py-4 whitespace-nowrap">
                         <span className="text-sm text-blue-200">{(user as Student).classLevel}</span>
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-blue-200">Moyenne</span>
-                            <span className="text-white font-bold">{(user as Student).averageScore}/20</span>
-                          </div>
-                          <div className="w-full bg-white/20 rounded-full h-2">
-                            <div
-                              className={`bg-gradient-to-r ${getProgressColor((user as Student).averageScore)} h-2 rounded-full transition-all duration-500`}
-                              style={{ width: `${((user as Student).averageScore / 20) * 100}%` }}
-                            />
-                          </div>
-                          <div className="text-xs text-blue-300">
-                            Progression: {(user as Student).progressPercentage}%
-                          </div>
-                        </div>
-                      </td>
                     </>
                   )}
-                  <td className="px-3 py-4 whitespace-nowrap">
-                    <span className="text-sm text-blue-200">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : '-'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap">
-                    <span className="text-sm text-blue-200">-</span>
-                  </td>
                   <td className="px-3 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user.isActive ? 'Actif' : 'Inactif')}`}>
                       {user.isActive ? 'Actif' : 'Inactif'}
@@ -778,7 +742,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
     ...(userType === 'students' ? {
       classLevel: 'Terminale S',
       averageScore: 0,
-      progressPercentage: 0,
       notes: ''
     } : {
       address: '',

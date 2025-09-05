@@ -35,18 +35,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ admin }) => {
         userId={userId}
         currentEmail={admin?.email || ''}
       />
-
-      {/* Paramètres d'administration */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-base mb-4">Paramètres d'administration</h3>
-        <p className="text-blue-200 text-sm">Configuration des privilèges et accès à venir...</p>
-      </div>
-
-      {/* Paramètres système */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-base mb-4">Paramètres système</h3>
-        <p className="text-blue-200 text-sm">Configuration du système à venir...</p>
-      </div>
     </div>
   );
 };

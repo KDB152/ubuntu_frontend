@@ -61,7 +61,6 @@ import QuizResultsTab from './QuizResultsTab';
 import ProgressTab from './ProgressTab';
 import MessagesTab from './MessagesTab';
 import ProfileTab from './ProfileTab';
-import AchievementsTab from './AchievmentsTab';
 import CalendarTab from './CalendarTab';
 import ResourcesTab from './ResourcesTab';
 

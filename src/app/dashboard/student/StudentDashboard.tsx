@@ -16,7 +16,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedStats } from '../../components/ui/animations';
+import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedStats } from '../../../components/ui/animations';
 
 interface StudentData {
   id: number;

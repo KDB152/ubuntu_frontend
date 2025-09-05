@@ -43,7 +43,7 @@ const MessagesTab: React.FC<MessagesTabProps> = ({
 
   if (!currentUserId) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center text-gray-400">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p>Chargement...</p>
@@ -53,7 +53,7 @@ const MessagesTab: React.FC<MessagesTabProps> = ({
   }
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col overflow-hidden">
       <MessagingSystem 
         currentUserId={currentUserId} 
         currentUserRole={currentUserRole} 
@@ -63,4 +63,3 @@ const MessagesTab: React.FC<MessagesTabProps> = ({
 };
 
 export default MessagesTab;
-

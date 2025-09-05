@@ -167,9 +167,9 @@ const AdminPage = () => {
 
   // Interface d'administration complète
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex flex-col">
       {/* Message de bienvenue pour la première visite */}
-      <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-b border-white/20 backdrop-blur-xl">
+      <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-b border-white/20 backdrop-blur-xl flex-shrink-0">
         <div className="max-w-7xl mx-auto px-3 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -200,7 +200,9 @@ const AdminPage = () => {
       </div>
 
       {/* Composant AdminDashboard complet */}
-      <AdminDashboard />
+      <div className="flex-1 overflow-hidden">
+        <AdminDashboard />
+      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-import AchievementsTab from './AchievmentsTab';
 import CalendarTab from './CalendarTab';
 import DashboardHomeTab from './DashboardHomeTab';
 import MessagesTab from './MessagesTab';
@@ -19,7 +18,6 @@ export { default as ResultsTab } from './ResultsTab';
 export { default as ProgressTab } from './ProgressTab';
 export { default as MessagesTab } from './MessagesTab';
 export { default as ProfileTab } from './ProfileTab';
-export { default as AchievementsTab } from './AchievmentsTab';
 export { default as CalendarTab } from './CalendarTab';
 export { default as ResourcesTab } from './ResourcesTab';
 
@@ -457,7 +455,6 @@ export default {
   ProgressTab,
   MessagesTab,
   ProfileTab,
-  AchievementsTab,
   CalendarTab,
   ResourcesTab
 };

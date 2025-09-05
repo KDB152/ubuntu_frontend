@@ -30,7 +30,6 @@ import {
   Flag,
   Sparkles,
   Flame,
-  Lightning,
   Rocket,
   Mountain,
   Compass,

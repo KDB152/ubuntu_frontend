@@ -61,7 +61,8 @@ import {
   Flame,
   Droplets,
   Leaf,
-  TreePine
+  TreePine,
+  BookOpen
 } from 'lucide-react';
 
 interface Child {
@@ -192,11 +193,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ children }) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
     
     const days = [];
     
     // Add empty cells for days before the first day of the month
+    // This ensures proper alignment with the day names header
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
@@ -204,6 +206,15 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ children }) => {
     // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day));
+    }
+    
+    // Add empty cells to complete the last row if needed
+    const totalCells = days.length;
+    const remainingCells = 7 - (totalCells % 7);
+    if (remainingCells < 7) {
+      for (let i = 0; i < remainingCells; i++) {
+        days.push(null);
+      }
     }
     
     return days;
@@ -422,7 +433,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ children }) => {
       </div>
 
       {/* Calendar */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-xl">
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-6">
           <button
@@ -443,19 +454,19 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ children }) => {
         </div>
 
         {/* Day Names */}
-        <div className="grid grid-cols-7 gap-2 mb-4">
+        <div className="grid grid-cols-7 gap-1 mb-4">
           {dayNames.map(day => (
-            <div key={day} className="text-center text-white font-semibold py-2">
+            <div key={day} className="text-center text-white font-semibold py-3 text-sm">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1">
           {days.map((day, index) => {
             if (!day) {
-              return <div key={index} className="h-24"></div>;
+              return <div key={index} className="h-28 border border-white/10 rounded-lg"></div>;
             }
 
             const dayEvents = getEventsForDate(day);
@@ -466,44 +477,53 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ children }) => {
               <div
                 key={day.toISOString()}
                 onClick={() => handleDateClick(day)}
-                className={`h-24 p-2 rounded-lg cursor-pointer transition-colors ${
+                className={`h-28 p-2 rounded-lg cursor-pointer transition-all duration-200 border ${
                   isCurrentDay 
-                    ? 'bg-blue-600 text-white' 
+                    ? 'bg-blue-600 text-white border-blue-400 shadow-lg' 
                     : isSelectedDay
-                    ? 'bg-blue-500/50 text-white'
-                    : 'hover:bg-white/10 text-white'
+                    ? 'bg-blue-500/50 text-white border-blue-300'
+                    : 'hover:bg-white/10 text-white border-white/20 hover:border-white/40'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-sm font-semibold ${
-                    isCurrentDay ? 'text-white' : 'text-white'
-                  }`}>
-                    {day.getDate()}
-                  </span>
-                  {dayEvents.length > 0 && (
-                    <span className="text-xs bg-white/20 rounded-full px-2 py-1">
-                      {dayEvents.length}
+                <div className="relative h-full">
+                  {/* Numéro centré */}
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+                    <span className={`text-sm font-bold ${
+                      isCurrentDay ? 'text-white' : 'text-white'
+                    }`}>
+                      {day.getDate()}
                     </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {dayEvents.slice(0, 2).map(event => (
-                    <div
-                      key={event.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event);
-                      }}
-                      className={`text-xs p-1 rounded truncate ${getEventColor(event.type)} text-white`}
-                    >
-                      {event.title}
-                    </div>
-                  ))}
-                  {dayEvents.length > 2 && (
-                    <div className="text-xs text-white/70">
-                      +{dayEvents.length - 2} autres
+                  </div>
+                  
+                  {/* Compteur d'événements en haut à droite */}
+                  {dayEvents.length > 0 && (
+                    <div className="absolute top-1 right-1">
+                      <span className="text-xs bg-white/20 rounded-full px-2 py-1 min-w-[20px] text-center">
+                        {dayEvents.length}
+                      </span>
                     </div>
                   )}
+                  
+                  {/* Zone des événements */}
+                  <div className="pt-8 space-y-1 overflow-hidden">
+                    {dayEvents.slice(0, 2).map(event => (
+                      <div
+                        key={event.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEventClick(event);
+                        }}
+                        className={`text-xs p-1 rounded truncate ${getEventColor(event.type)} text-white hover:opacity-80 transition-opacity`}
+                      >
+                        {event.title}
+                      </div>
+                    ))}
+                    {dayEvents.length > 2 && (
+                      <div className="text-xs text-white/70">
+                        +{dayEvents.length - 2} autres
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
