@@ -235,30 +235,30 @@ const StudentDashboard = () => {
         type: 'quiz',
         title: 'Nouveau quiz disponible',
         message: 'Le quiz "La Révolution française" est maintenant disponible',
-        timestamp: '2024-12-20T09:30:00',
+        timestamp: '2025-12-20T09:30:00',
         isRead: false,
         priority: 'normal',
-        createdAt: '2024-12-20T09:30:00'
+        createdAt: '2025-12-20T09:30:00'
       },
       {
         id: '2',
         type: 'message',
         title: 'Message du professeur',
         message: 'Votre professeur a répondu à votre question',
-        timestamp: '2024-12-20T08:45:00',
+        timestamp: '2025-12-20T08:45:00',
         isRead: false,
         priority: 'high',
-        createdAt: '2024-12-20T08:45:00'
+        createdAt: '2025-12-20T08:45:00'
       },
       {
         id: '3',
         type: 'achievement',
         title: 'Nouveau badge obtenu !',
         message: 'Félicitations ! Vous avez obtenu le badge "Historien en herbe"',
-        timestamp: '2024-12-19T16:20:00',
+        timestamp: '2025-12-19T16:20:00',
         isRead: true,
         priority: 'normal',
-        createdAt: '2024-12-19T16:20:00'
+        createdAt: '2025-12-19T16:20:00'
       }
     ];
     // setNotifications(mockNotifications); // This state is now managed by the hook
@@ -686,24 +686,7 @@ const StudentDashboard = () => {
             <div className={`transition-colors duration-300 ${
               darkMode ? 'text-blue-300' : 'text-gray-600'
             }`}>
-              © 2024 Chrono-Carto. Plateforme éducative.
-            </div>
-            <div className={`flex items-center space-x-4 transition-colors duration-300 ${
-              darkMode ? 'text-blue-300' : 'text-gray-600'
-            }`}>
-              <span>Version 2.1.0</span>
-              <span>•</span>
-              <button className={`transition-colors duration-300 ${
-                darkMode ? 'hover:text-white' : 'hover:text-gray-900'
-              }`}>
-                Aide
-              </button>
-              <span>•</span>
-              <button className={`transition-colors duration-300 ${
-                darkMode ? 'hover:text-white' : 'hover:text-gray-900'
-              }`}>
-                Support
-              </button>
+              © 2025 Chrono-Carto. Plateforme éducative.
             </div>
           </div>
         </footer>

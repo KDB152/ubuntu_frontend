@@ -23,10 +23,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ admin }) => {
   const userId = getUserDetails();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h1 className="text-white text-2xl font-bold mb-2">Paramètres Administrateur</h1>
+        <h1 className="text-white text-base font-bold mb-2">Paramètres Administrateur</h1>
         <p className="text-blue-200">Gérez vos préférences et paramètres de sécurité</p>
       </div>
 
@@ -38,13 +38,13 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ admin }) => {
 
       {/* Paramètres d'administration */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Paramètres d'administration</h3>
+        <h3 className="text-white font-semibold text-base mb-4">Paramètres d'administration</h3>
         <p className="text-blue-200 text-sm">Configuration des privilèges et accès à venir...</p>
       </div>
 
       {/* Paramètres système */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Paramètres système</h3>
+        <h3 className="text-white font-semibold text-base mb-4">Paramètres système</h3>
         <p className="text-blue-200 text-sm">Configuration du système à venir...</p>
       </div>
     </div>

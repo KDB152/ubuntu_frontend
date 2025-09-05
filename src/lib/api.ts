@@ -494,6 +494,16 @@ export const messagingAPI = {
     });
   },
 
+  downloadFile: (messageId: number) => {
+    const token = localStorage.getItem('token');
+    return fetch(`${API_BASE_URL}/messaging/download/${messageId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
   markMessageAsRead: (messageId: number) =>
     apiRequest(`/messaging/messages/${messageId}/read`, {
       method: 'PATCH',

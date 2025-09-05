@@ -181,7 +181,7 @@ const QuizResultsTab: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
       </div>
     );
@@ -189,21 +189,21 @@ const QuizResultsTab: React.FC = () => {
 
   if (results.length === 0) {
     return (
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
-        <Trophy className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-        <h3 className="text-white text-xl font-bold mb-2">Aucun résultat disponible</h3>
+      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 text-center">
+        <Trophy className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+        <h3 className="text-white text-base font-bold mb-2">Aucun résultat disponible</h3>
         <p className="text-blue-200">Vous n'avez pas encore terminé de quiz ou les résultats ne sont pas encore disponibles</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
         <div className="flex items-center space-x-3 mb-2">
-          <Trophy className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Mes Résultats de Quiz</h2>
+          <Trophy className="w-5 h-5" />
+          <h2 className="text-base font-bold">Mes Résultats de Quiz</h2>
         </div>
         <p className="text-blue-100">Consultez vos performances et vos réponses</p>
       </div>
@@ -212,7 +212,7 @@ const QuizResultsTab: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
           <div className="flex items-center space-x-3">
-            <BookOpen className="w-6 h-6 text-blue-400" />
+            <BookOpen className="w-5 h-5 text-blue-400" />
             <div>
               <div className="text-white font-semibold">{results.length}</div>
               <div className="text-blue-200 text-sm">Quiz terminés</div>
@@ -222,7 +222,7 @@ const QuizResultsTab: React.FC = () => {
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
           <div className="flex items-center space-x-3">
-            <Star className="w-6 h-6 text-yellow-400" />
+            <Star className="w-5 h-5 text-yellow-400" />
             <div>
               <div className="text-white font-semibold">
                 {Math.round(results.reduce((acc, r) => acc + r.percentage, 0) / results.length)}%
@@ -234,7 +234,7 @@ const QuizResultsTab: React.FC = () => {
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
           <div className="flex items-center space-x-3">
-            <Target className="w-6 h-6 text-green-400" />
+            <Target className="w-5 h-5 text-green-400" />
             <div>
               <div className="text-white font-semibold">
                 {results.reduce((acc, r) => acc + r.score, 0)}/{results.reduce((acc, r) => acc + r.total_points, 0)}
@@ -246,7 +246,7 @@ const QuizResultsTab: React.FC = () => {
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
           <div className="flex items-center space-x-3">
-            <Clock className="w-6 h-6 text-purple-400" />
+            <Clock className="w-5 h-5 text-purple-400" />
             <div>
               <div className="text-white font-semibold">
                 {Math.round(results.reduce((acc, r) => acc + r.time_spent, 0) / results.length)} min
@@ -265,9 +265,9 @@ const QuizResultsTab: React.FC = () => {
             <div className={`bg-gradient-to-r ${getSubjectColor(result.quiz.subject)} p-4`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-white font-bold text-lg mb-1">{result.quiz.title}</h3>
+                  <h3 className="text-white font-bold text-base mb-1">{result.quiz.title}</h3>
                   <p className="text-white/80 text-sm mb-2">{result.quiz.subject}</p>
-                  <div className="flex items-center space-x-4 text-white/90 text-sm">
+                  <div className="flex items-center space-x-3 text-white/90 text-sm">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(result.completed_at)}</span>
@@ -279,7 +279,7 @@ const QuizResultsTab: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-2xl font-bold ${getScoreColor(result.percentage)}`}>
+                  <div className={`text-base font-bold ${getScoreColor(result.percentage)}`}>
                     {result.percentage}%
                   </div>
                   <div className="text-white/80 text-sm">
@@ -309,7 +309,7 @@ const QuizResultsTab: React.FC = () => {
                   {result.quiz.questions.map((question, index) => (
                     <div key={question.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
                       <div className="flex items-start space-x-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-sm font-bold ${
                           question.is_correct ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                         }`}>
                           {index + 1}

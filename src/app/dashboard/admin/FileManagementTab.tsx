@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getAuthToken, checkAuthAndRedirect } from '../../../utils/auth';
+import { generateDownloadFileName, getDisplayFileType } from '@/lib/fileUtils';
 import { 
   Upload, 
   File, 
@@ -33,7 +34,27 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Types pour TypeScript
+// Types pour TypeScript - Interface pour les fichiers de la base de données
+interface FileFromDB {
+  id: number;
+  title: string;
+  description: string;
+  fileName: string;
+  storedName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: number;
+  isPublic: boolean;
+  isActive: boolean;
+  downloadCount: number;
+  createdAt: string;
+  updatedAt: string;
+  targetClass: string;
+  targetClasses: string[];
+}
+
+// Interface pour l'affichage dans l'interface
 interface Course {
   id: string;
   name: string;
@@ -49,6 +70,7 @@ interface Course {
   tags?: string[];
   fileName?: string;
   fileUrl?: string;
+  targetClasses?: string[];
 }
 
 interface FileUpload {
@@ -68,7 +90,7 @@ const FileManagementTabImproved = () => {
   const [courseSubject, setCourseSubject] = useState('Histoire');
   const [courseDescription, setCourseDescription] = useState('');
   const [courseLevel, setCourseLevel] = useState('Terminale');
-  const [courseClass, setCourseClass] = useState('Terminale groupe 1');
+  const [courseClass, setCourseClass] = useState<string[]>(['Terminale groupe 1']);
   const [courseTags, setCourseTags] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -118,23 +140,94 @@ const FileManagementTabImproved = () => {
           throw new Error(`Erreur de connexion à l'API: ${response.status}`);
         }
         
-        const json = await response.json();
-        const mapped: Course[] = (json || []).map((f: any) => ({
-          id: String(f.id),
-          name: f.fileName,
-          title: f.title,
-          type: f.fileType?.includes('pdf') ? 'PDF' : f.fileType?.includes('video') ? 'Vidéo' : 'Document',
-          subject: 'Histoire', // Par défaut, peut être amélioré
-          level: 'Terminale', // Par défaut, peut être amélioré
-          size: formatFileSize(f.fileSize),
-          uploadDate: f.createdAt?.slice(0,10) || '',
-          views: f.downloadCount || 0,
-          status: 'Publié',
-          description: f.description,
-          tags: [],
-          fileName: f.fileName,
-          fileUrl: f.filePath,
-        }));
+        const filesFromDB: FileFromDB[] = await response.json();
+        
+        // Mapper les données de la base vers l'interface d'affichage
+        // Filtrer seulement les fichiers actifs
+        const activeFiles = (filesFromDB || []).filter(f => f.isActive === true);
+        const mapped: Course[] = activeFiles.map((f: FileFromDB) => {
+          // Déterminer le type d'affichage
+          const displayType = getDisplayFileType(f.fileName, f.fileType);
+          
+          // Nettoyer et normaliser les classes cibles
+          let cleanTargetClasses: string[] = [];
+          
+          // Essayer d'abord targetClasses (nouveau format)
+          if (f.targetClasses) {
+            try {
+              // Si c'est déjà un tableau, l'utiliser directement
+              if (Array.isArray(f.targetClasses)) {
+                cleanTargetClasses = f.targetClasses.filter(cls => typeof cls === 'string');
+              } else {
+                // Si c'est une chaîne JSON, la parser
+                const parsed = JSON.parse(f.targetClasses);
+                if (Array.isArray(parsed)) {
+                  cleanTargetClasses = parsed.filter(cls => typeof cls === 'string');
+                } else {
+                  cleanTargetClasses = [parsed];
+                }
+              }
+            } catch (error) {
+              console.warn(`Erreur parsing targetClasses pour fichier ${f.id}:`, error);
+            }
+          }
+          
+          // Fallback sur targetClass (ancien format)
+          if (cleanTargetClasses.length === 0 && f.targetClass) {
+            try {
+              // Si c'est déjà une chaîne, l'utiliser directement
+              if (typeof f.targetClass === 'string' && !f.targetClass.startsWith('[')) {
+                cleanTargetClasses = [f.targetClass];
+              } else {
+                // Si c'est du JSON, le parser
+                const parsed = JSON.parse(f.targetClass);
+                if (Array.isArray(parsed)) {
+                  cleanTargetClasses = parsed.filter(cls => typeof cls === 'string');
+                } else {
+                  cleanTargetClasses = [parsed];
+                }
+              }
+            } catch (e) {
+              cleanTargetClasses = [f.targetClass];
+            }
+          }
+          
+          // Déterminer la matière basée sur les classes cibles nettoyées
+          let subject = 'Général';
+          if (cleanTargetClasses.length > 0) {
+            const firstClass = cleanTargetClasses[0];
+            if (firstClass.includes('Histoire')) subject = 'Histoire';
+            else if (firstClass.includes('Géographie')) subject = 'Géographie';
+            else if (firstClass.includes('EMC')) subject = 'EMC';
+          }
+          
+          // Déterminer le niveau basé sur les classes cibles nettoyées
+          let level = 'Tous niveaux';
+          if (cleanTargetClasses.length > 0) {
+            const firstClass = cleanTargetClasses[0];
+            if (firstClass.includes('Terminale')) level = 'Terminale';
+            else if (firstClass.includes('1ère') || firstClass.includes('Première')) level = 'Première';
+            else if (firstClass.includes('Seconde')) level = 'Seconde';
+          }
+          
+          return {
+            id: String(f.id),
+            name: f.fileName,
+            title: f.title,
+            type: displayType,
+            subject: subject,
+            level: level,
+            size: formatFileSize(f.fileSize),
+            uploadDate: f.createdAt ? new Date(f.createdAt).toISOString().split('T')[0] : '',
+            views: f.downloadCount || 0,
+            status: f.isActive ? 'Publié' : 'Brouillon',
+            description: f.description || '',
+            tags: [],
+            fileName: f.fileName,
+            fileUrl: f.filePath,
+            targetClasses: cleanTargetClasses
+          };
+        });
         setUploadedFiles(mapped);
         
         if (mapped.length > 0) {
@@ -149,13 +242,38 @@ const FileManagementTabImproved = () => {
     loadFiles();
   }, []);
 
-  // Types de fichiers acceptés
-  const acceptedTypes = {
-    'application/pdf': { label: 'PDF', icon: FileText, color: 'text-red-500 bg-red-100' },
-    'text/plain': { label: 'TXT', icon: File, color: 'text-blue-500 bg-blue-100' },
-    'video/mp4': { label: 'MP4', icon: Video, color: 'text-purple-500 bg-purple-100' },
-    'video/avi': { label: 'AVI', icon: Video, color: 'text-purple-500 bg-purple-100' },
-    'video/mov': { label: 'MOV', icon: Video, color: 'text-purple-500 bg-purple-100' }
+  // Types de fichiers acceptés - tous les types maintenant acceptés
+  const getFileTypeInfo = (fileType: string) => {
+    const typeMap: { [key: string]: { label: string; icon: any; color: string } } = {
+      'application/pdf': { label: 'PDF', icon: FileText, color: 'text-red-500 bg-red-100' },
+      'text/plain': { label: 'TXT', icon: File, color: 'text-blue-500 bg-blue-100' },
+      'video/mp4': { label: 'MP4', icon: Video, color: 'text-purple-500 bg-purple-100' },
+      'video/avi': { label: 'AVI', icon: Video, color: 'text-purple-500 bg-purple-100' },
+      'video/mov': { label: 'MOV', icon: Video, color: 'text-purple-500 bg-purple-100' },
+      'image/jpeg': { label: 'JPG', icon: File, color: 'text-green-500 bg-green-100' },
+      'image/png': { label: 'PNG', icon: File, color: 'text-green-500 bg-green-100' },
+      'application/msword': { label: 'DOC', icon: FileText, color: 'text-blue-500 bg-blue-100' },
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { label: 'DOCX', icon: FileText, color: 'text-blue-500 bg-blue-100' },
+      'application/vnd.ms-excel': { label: 'XLS', icon: FileText, color: 'text-green-500 bg-green-100' },
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { label: 'XLSX', icon: FileText, color: 'text-green-500 bg-green-100' },
+      'application/vnd.ms-powerpoint': { label: 'PPT', icon: FileText, color: 'text-orange-500 bg-orange-100' },
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': { label: 'PPTX', icon: FileText, color: 'text-orange-500 bg-orange-100' },
+      'application/zip': { label: 'ZIP', icon: File, color: 'text-gray-500 bg-gray-100' },
+      'application/x-rar-compressed': { label: 'RAR', icon: File, color: 'text-gray-500 bg-gray-100' },
+      'application/x-msdownload': { label: 'EXE', icon: Settings, color: 'text-yellow-500 bg-yellow-100' },
+      'application/octet-stream': { label: 'BIN', icon: File, color: 'text-gray-500 bg-gray-100' }
+    };
+    
+    // Vérifier si c'est un fichier exécutable par extension
+    if (fileType === 'application/octet-stream' || fileType === 'application/x-msdownload') {
+      return typeMap['application/x-msdownload'];
+    }
+    
+    return typeMap[fileType] || { 
+      label: fileType.split('/')[1]?.toUpperCase() || 'FILE', 
+      icon: File, 
+      color: 'text-gray-500 bg-gray-100' 
+    };
   };
 
   const subjects = ['Histoire', 'Géographie', 'EMC'];
@@ -199,7 +317,7 @@ const FileManagementTabImproved = () => {
 
   const handleFiles = (files: File[]) => {
     const validFiles = files.filter(file => {
-      return Object.keys(acceptedTypes).includes(file.type) && file.size <= 100 * 1024 * 1024; // 100MB max
+      return file.size <= 100 * 1024 * 1024; // 100MB max - tous les types acceptés
     });
 
     const newFileUploads: FileUpload[] = validFiles.map(file => ({
@@ -238,7 +356,7 @@ const FileManagementTabImproved = () => {
       formData.append('file', file);
       formData.append('title', courseTitle);
       formData.append('description', courseDescription);
-      formData.append('targetClass', courseClass);
+      formData.append('targetClass', JSON.stringify(courseClass));
 
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const token = getAuthToken();
@@ -294,11 +412,11 @@ const FileManagementTabImproved = () => {
     // Validation des fichiers
     const invalidFiles = currentFiles.filter(fileUpload => {
       const file = fileUpload.file;
-      return !Object.keys(acceptedTypes).includes(file.type) || file.size > 100 * 1024 * 1024;
+      return file.size > 100 * 1024 * 1024; // 100MB max
     });
     
     if (invalidFiles.length > 0) {
-      showNotification('error', `${invalidFiles.length} fichier(s) invalide(s). Vérifiez le type et la taille (max 100MB)`);
+      showNotification('error', `${invalidFiles.length} fichier(s) trop volumineux. Taille maximum autorisée : 100MB`);
       return;
     }
 
@@ -342,22 +460,38 @@ const FileManagementTabImproved = () => {
         }
         
         const json = await res.json();
-        const mapped: Course[] = (json || []).map((f: any) => ({
-          id: String(f.id),
-          name: f.fileName,
-          title: f.title,
-          type: f.fileType?.includes('pdf') ? 'PDF' : f.fileType?.includes('video') ? 'Vidéo' : 'Document',
-          subject: courseSubject,
-          level: courseLevel,
-          size: formatFileSize(f.fileSize),
-          uploadDate: f.createdAt?.slice(0,10) || '',
-          views: f.downloadCount || 0,
-          status: 'Publié',
-          description: f.description,
-          tags: [],
-          fileName: f.fileName,
-          fileUrl: f.filePath,
-        }));
+        const mapped: Course[] = (json || []).map((f: any) => {
+          // Parser les classes cibles
+          let cleanTargetClasses: string[] = [];
+          if (f.targetClasses && Array.isArray(f.targetClasses)) {
+            cleanTargetClasses = f.targetClasses;
+          } else if (f.targetClass) {
+            try {
+              const parsed = JSON.parse(f.targetClass);
+              cleanTargetClasses = Array.isArray(parsed) ? parsed : [parsed];
+            } catch (e) {
+              cleanTargetClasses = [f.targetClass];
+            }
+          }
+          
+          return {
+            id: String(f.id),
+            name: f.fileName,
+            title: f.title,
+            type: f.fileType?.includes('pdf') ? 'PDF' : f.fileType?.includes('video') ? 'Vidéo' : 'Document',
+            subject: courseSubject,
+            level: courseLevel,
+            size: formatFileSize(f.fileSize),
+            uploadDate: f.createdAt?.slice(0,10) || '',
+            views: f.downloadCount || 0,
+            status: 'Publié',
+            description: f.description,
+            tags: [],
+            fileName: f.fileName,
+            fileUrl: f.filePath,
+            targetClasses: cleanTargetClasses,
+          };
+        });
         setUploadedFiles(mapped);
       } catch (error) {
         console.error('Erreur lors de la création des cours:', error);
@@ -368,7 +502,7 @@ const FileManagementTabImproved = () => {
       setCourseTitle('');
       setCourseDescription('');
       setCourseTags('');
-      setCourseClass('Terminale groupe 1');
+      setCourseClass(['Terminale groupe 1']);
       setCurrentFiles([]);
       setShowUploadModal(false);
       
@@ -385,27 +519,77 @@ const FileManagementTabImproved = () => {
     setIsLoading(true);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = getAuthToken();
+      
+      console.log(`🗑️ Tentative de suppression du fichier ID: ${course.id}`);
+      
       const response = await fetch(`${API_BASE}/files/${course.id}`, { 
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
+      });
+      
+      console.log(`📡 Réponse API: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Erreur de connexion au serveur' }));
+        throw new Error(errorData.message || `Erreur ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Suppression réussie:', result);
+      
+      // Mettre à jour l'état local
+      setUploadedFiles(prev => prev.filter(f => f.id !== course.id));
+      
+      showNotification('success', 'Fichier supprimé avec succès');
+      setShowDeleteModal(false);
+      setFileToDelete(null);
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression:', error);
+      showNotification('error', error instanceof Error ? error.message : 'Erreur lors de la suppression');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction pour modifier les classes cibles
+  const handleUpdateTargetClasses = async (fileId: string, newTargetClasses: string[]) => {
+    setIsLoading(true);
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = getAuthToken();
+      
+      const response = await fetch(`${API_BASE}/files/${fileId}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          targetClass: newTargetClasses[0] || '',
+          targetClasses: newTargetClasses
+        })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la suppression');
+        throw new Error(errorData.message || 'Erreur lors de la modification des classes cibles');
       }
       
-      setUploadedFiles(prev => prev.filter(f => f.id !== course.id));
+      // Mettre à jour l'état local
+      setUploadedFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, targetClasses: newTargetClasses }
+          : f
+      ));
       
-      showNotification('success', 'Cours supprimé avec succès');
-      setShowDeleteModal(false);
-      setFileToDelete(null);
+      showNotification('success', 'Classes cibles mises à jour avec succès');
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      showNotification('error', error instanceof Error ? error.message : 'Erreur lors de la suppression');
+      console.error('Erreur lors de la modification des classes cibles:', error);
+      showNotification('error', error instanceof Error ? error.message : 'Erreur lors de la modification des classes cibles');
     } finally {
       setIsLoading(false);
     }
@@ -426,6 +610,8 @@ const FileManagementTabImproved = () => {
           title: updatedCourse.title,
           description: updatedCourse.description,
           fileName: updatedCourse.name,
+          targetClass: updatedCourse.targetClasses?.[0] || '',
+          targetClasses: updatedCourse.targetClasses || []
         })
       });
       
@@ -451,42 +637,101 @@ const FileManagementTabImproved = () => {
   const handleDownload = async (course: Course) => {
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      
+      // Afficher un indicateur de chargement
+      const loadingElement = document.createElement('div');
+      loadingElement.innerHTML = 'Téléchargement en cours...';
+      loadingElement.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #1f2937;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-family: system-ui;
+      `;
+      document.body.appendChild(loadingElement);
+      
+      const token = getAuthToken();
+      console.log(`📥 Tentative de téléchargement du fichier ID: ${course.id}`);
+      
       const response = await fetch(`${API_BASE}/files/${course.id}/download`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
+      console.log(`📡 Réponse téléchargement: ${response.status} ${response.statusText}`);
+      
+      // Supprimer l'indicateur de chargement
+      document.body.removeChild(loadingElement);
+      
       if (response.ok) {
         const blob = await response.blob();
+        
+        // Vérifier que le blob n'est pas vide
+        if (blob.size === 0) {
+          showNotification('error', 'Le fichier téléchargé est vide');
+          return;
+        }
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = course.fileName || course.name;
+        
+        // Utiliser le nom de fichier original
+        const originalFileName = course.fileName || course.name || 'document';
+        
+        // Générer un nom de fichier sécurisé avec la bonne extension
+        const fileName = generateDownloadFileName(originalFileName, (course as any).fileType);
+        
+        a.download = fileName;
+        
+        // Ajouter des attributs pour forcer le téléchargement
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
         
-        showNotification('success', 'Téléchargement démarré');
+        // Nettoyer après un délai
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 1000);
+        
+        console.log(`✅ Téléchargement réussi: ${fileName} (${blob.size} bytes)`);
+        showNotification('success', `Téléchargement réussi: ${fileName}`);
       } else {
-        showNotification('error', 'Erreur lors du téléchargement');
+        const errorData = await response.json().catch(() => ({ message: 'Erreur de téléchargement' }));
+        console.error('❌ Erreur téléchargement:', errorData);
+        showNotification('error', errorData.message || `Erreur lors du téléchargement (${response.status})`);
       }
     } catch (error) {
-      showNotification('error', 'Erreur lors du téléchargement');
+      console.error('❌ Erreur lors du téléchargement:', error);
+      showNotification('error', error instanceof Error ? error.message : 'Erreur de connexion lors du téléchargement');
     }
   };
 
   // Fonction de changement de statut
   const toggleStatus = async (course: Course) => {
     const newStatus = course.status === 'Publié' ? 'Brouillon' : 'Publié';
-    const updatedCourse = { ...course, status: newStatus };
+    const updatedCourse = { ...course, status: newStatus as 'Publié' | 'Brouillon' };
     await handleEdit(updatedCourse);
   };
 
-  const getFileIcon = (type: string) => {
-    const config = Object.values(acceptedTypes).find(t => t.label === type) || acceptedTypes['text/plain'];
-    return config;
+  const getFileIcon = (type: string, fileName?: string) => {
+    // Utiliser la fonction utilitaire pour déterminer le type d'affichage
+    const displayType = getDisplayFileType(fileName || '', type);
+    
+    // Mapper le type d'affichage vers le type MIME pour getFileTypeInfo
+    let mimeType = type;
+    if (displayType === 'EXE' || displayType === 'MSI') {
+      mimeType = 'application/x-msdownload';
+    }
+    
+    return getFileTypeInfo(mimeType);
   };
 
   // Filtrage amélioré
@@ -618,6 +863,7 @@ const FileManagementTabImproved = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Cours</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Matière</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Classes cibles</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Taille</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Date</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Vues</th>
@@ -627,7 +873,7 @@ const FileManagementTabImproved = () => {
             </thead>
             <tbody className="divide-y divide-white/10">
               {filteredFiles.map((file) => {
-                const iconConfig = getFileIcon(file.type);
+                const iconConfig = getFileIcon(file.type, file.fileName);
                 const IconComponent = iconConfig.icon;
                 
                 return (
@@ -651,6 +897,22 @@ const FileManagementTabImproved = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-blue-200">{file.subject}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-wrap gap-1">
+                        {file.targetClasses && file.targetClasses.length > 0 ? (
+                          file.targetClasses.map((cls, index) => (
+                            <span 
+                              key={index}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {cls}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400">Aucune classe</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-blue-200">{file.size}</span>
@@ -776,16 +1038,31 @@ const FileManagementTabImproved = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Classe cible *</label>
-                  <select
-                    value={courseClass}
-                    onChange={(e) => setCourseClass(e.target.value)}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                  >
+                  <label className="block text-sm font-semibold text-white mb-2">Classes cibles *</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto border border-white/20 rounded-xl p-3 bg-white/10 backdrop-blur-md">
                     {classes.map(cls => (
-                      <option key={cls} value={cls}>{cls}</option>
+                      <label key={cls} className="flex items-center space-x-2 text-white cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-all">
+                        <input
+                          type="checkbox"
+                          checked={courseClass.includes(cls)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCourseClass(prev => [...prev, cls]);
+                            } else {
+                              setCourseClass(prev => prev.filter(c => c !== cls));
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <span className="text-sm">{cls}</span>
+                      </label>
                     ))}
-                  </select>
+                  </div>
+                  {courseClass.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-blue-300">Classes sélectionnées : {courseClass.join(', ')}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par des virgules)</label>
@@ -827,13 +1104,12 @@ const FileManagementTabImproved = () => {
                   Glissez-déposez vos fichiers ici
                 </p>
                 <p className="text-blue-200 mb-4">
-                  ou cliquez pour sélectionner (PDF, TXT, MP4, AVI, MOV - max 100MB)
+                  ou cliquez pour sélectionner (Tous types de fichiers - max 100MB)
                 </p>
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept=".pdf,.txt,.mp4,.avi,.mov"
                   onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
                   className="hidden"
                 />
@@ -852,7 +1128,7 @@ const FileManagementTabImproved = () => {
                   <h3 className="text-lg font-semibold text-white">Fichiers sélectionnés</h3>
                   {currentFiles.map((fileUpload, index) => {
                     const { file, progress, status, error } = fileUpload;
-                    const iconConfig = acceptedTypes[file.type as keyof typeof acceptedTypes] || acceptedTypes['text/plain'];
+                    const iconConfig = getFileTypeInfo(file.type);
                     const IconComponent = iconConfig.icon;
                     
                     return (
@@ -1106,6 +1382,44 @@ const EditCourseModal: React.FC<EditCourseModalProps> = ({
               rows={3}
               className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">Classes cibles</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-white/20 rounded-xl p-3 bg-white/5">
+              {[
+                'Terminale groupe 1',
+                'Terminale groupe 2', 
+                'Terminale groupe 3',
+                'Terminale groupe 4',
+                '1ère groupe 1',
+                '1ère groupe 2',
+                '1ère groupe 3'
+              ].map(cls => (
+                <label key={cls} className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={editedCourse.targetClasses?.includes(cls) || false}
+                    onChange={(e) => {
+                      const currentClasses = editedCourse.targetClasses || [];
+                      if (e.target.checked) {
+                        setEditedCourse(prev => ({ 
+                          ...prev, 
+                          targetClasses: [...currentClasses, cls] 
+                        }));
+                      } else {
+                        setEditedCourse(prev => ({ 
+                          ...prev, 
+                          targetClasses: currentClasses.filter(c => c !== cls) 
+                        }));
+                      }
+                    }}
+                    className="rounded border-white/20 text-blue-500 focus:ring-blue-400"
+                  />
+                  <span className="text-sm text-white">{cls}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div>

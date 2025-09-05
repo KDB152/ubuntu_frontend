@@ -238,11 +238,11 @@ const AdminProfileTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
                    <div>
-             <h1 className="text-2xl font-bold text-white">Mon Profil</h1>
+             <h1 className="text-base font-bold text-white">Mon Profil</h1>
              <p className="text-blue-200">Gérez vos informations personnelles et préférences</p>
              <p className="text-blue-300 text-sm mt-1">💾 Les données sont sauvegardées localement</p>
            </div>
@@ -279,7 +279,7 @@ const AdminProfileTab: React.FC = () => {
 
       {/* Informations personnelles */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
+        <h2 className="text-base font-bold text-white mb-3 flex items-center">
           <User className="w-5 h-5 text-blue-300 mr-2" />
           Informations personnelles
         </h2>
@@ -365,7 +365,7 @@ const AdminProfileTab: React.FC = () => {
 
       {/* Préférences */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
+        <h2 className="text-base font-bold text-white mb-3 flex items-center">
           <Settings className="w-5 h-5 text-blue-300 mr-2" />
           Préférences
         </h2>
@@ -410,8 +410,8 @@ const AdminProfileTab: React.FC = () => {
           </div>
         </div>
         
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Notifications</h3>
+        <div className="mt-3">
+          <h3 className="text-base font-semibold text-white mb-4">Notifications</h3>
           <div className="space-y-3">
             {Object.entries(profile.preferences.notifications).map(([key, value]) => (
               <div key={key} className="flex items-center justify-between">
@@ -445,7 +445,7 @@ const AdminProfileTab: React.FC = () => {
 
       {/* Sécurité */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
+        <h2 className="text-base font-bold text-white mb-3 flex items-center">
           <Shield className="w-5 h-5 text-blue-300 mr-2" />
           Sécurité
         </h2>
@@ -482,7 +482,7 @@ const AdminProfileTab: React.FC = () => {
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 w-full max-w-md">
-            <h3 className="text-xl font-bold text-white mb-4">Changer le mot de passe</h3>
+            <h3 className="text-base font-bold text-white mb-4">Changer le mot de passe</h3>
             
             <div className="space-y-4">
               <div>
@@ -549,7 +549,7 @@ const AdminProfileTab: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex space-x-3 mt-6">
+            <div className="flex space-x-3 mt-3">
               <button
                 onClick={() => setShowPasswordModal(false)}
                 className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

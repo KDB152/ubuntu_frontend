@@ -65,10 +65,24 @@ export default function SettingsManagementTab() {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   useEffect(() => {
     loadSettings();
+    loadUserData();
   }, []);
+
+  const loadUserData = () => {
+    try {
+      const userData = localStorage.getItem('userDetails');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setCurrentUserId(user.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des données utilisateur:', error);
+    }
+  };
 
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
@@ -188,9 +202,14 @@ export default function SettingsManagementTab() {
       return;
     }
 
+    if (!currentUserId) {
+      showNotification('error', 'ID utilisateur non trouvé');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await authAPI.changePassword(passwords.current, passwords.new);
+      await authAPI.changePassword(passwords.current, passwords.new, currentUserId);
       showNotification('success', 'Mot de passe modifié avec succès');
       setPasswords({ current: '', new: '', confirm: '' });
       setShowPasswordFields(false);
@@ -213,12 +232,12 @@ export default function SettingsManagementTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Settings className="w-6 h-6" />
+          <h1 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Settings className="w-5 h-5" />
             Paramètres
             </h1>
           <p className="text-gray-600 dark:text-gray-400">Configuration simplifiée du système</p>
@@ -291,11 +310,11 @@ export default function SettingsManagementTab() {
       </div>
 
       {/* Tab Content */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* General Settings */}
         {activeTab === 'general' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5" />
                 Paramètres généraux
             </h3>
@@ -361,7 +380,7 @@ export default function SettingsManagementTab() {
         {/* Appearance Settings */}
         {activeTab === 'appearance' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Palette className="w-5 h-5" />
               Apparence
               </h3>
@@ -386,7 +405,7 @@ export default function SettingsManagementTab() {
         {/* Security Settings */}
         {activeTab === 'security' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5" />
               Sécurité
             </h3>
@@ -440,7 +459,7 @@ export default function SettingsManagementTab() {
         {/* Notifications Settings */}
         {activeTab === 'notifications' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Bell className="w-5 h-5" />
               Notifications
             </h3>
@@ -494,7 +513,7 @@ export default function SettingsManagementTab() {
 
       {/* Admin Password Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Key className="w-5 h-5" />
           Mot de passe administrateur
         </h3>

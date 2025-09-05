@@ -73,8 +73,8 @@ const StudentDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-blue-600 text-lg">Chargement...</p>
+          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-blue-600 text-base">Chargement...</p>
         </div>
       </div>
     );
@@ -84,8 +84,8 @@ const StudentDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 text-lg">Erreur de chargement des données</p>
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 text-base">Erreur de chargement des données</p>
         </div>
       </div>
     );
@@ -103,7 +103,7 @@ const StudentDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Chrono-Carto</h1>
+                  <h1 className="text-base font-bold text-gray-900">Chrono-Carto</h1>
                   <p className="text-blue-600 text-sm">Étudiant</p>
                 </div>
               )}
@@ -189,9 +189,9 @@ const StudentDashboard: React.FC = () => {
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-80'}`}>
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center justify-between px-3 py-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Tableau de bord</h2>
+              <h2 className="text-base font-bold text-gray-900">Tableau de bord</h2>
               <p className="text-gray-600">Bienvenue, {studentData.name}</p>
             </div>
             <div className="flex items-center space-x-3">
@@ -217,16 +217,16 @@ const StudentDashboard: React.FC = () => {
         </header>
 
         {/* Contenu */}
-        <main className="p-6 space-y-6">
+        <main className="p-6 space-y-4">
           {/* Statistiques principales */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <AnimatedStats delay={0} className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Total Séances</p>
-                  <p className="text-3xl font-bold text-gray-900">{studentData.total_sessions}</p>
+                  <p className="text-base font-bold text-gray-900">{studentData.total_sessions}</p>
                 </div>
-                <BookOpen className="w-12 h-12 text-blue-600" />
+                <BookOpen className="w-10 h-10 text-blue-600" />
               </div>
             </AnimatedStats>
 
@@ -234,9 +234,9 @@ const StudentDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Séances Payées</p>
-                  <p className="text-3xl font-bold text-green-600">{studentData.paid_sessions}</p>
+                  <p className="text-base font-bold text-green-600">{studentData.paid_sessions}</p>
                 </div>
-                <CheckCircle className="w-12 h-12 text-green-600" />
+                <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
             </AnimatedStats>
 
@@ -244,9 +244,9 @@ const StudentDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Séances Non Payées</p>
-                  <p className="text-3xl font-bold text-orange-600">{studentData.unpaid_sessions}</p>
+                  <p className="text-base font-bold text-orange-600">{studentData.unpaid_sessions}</p>
                 </div>
-                <Clock className="w-12 h-12 text-orange-600" />
+                <Clock className="w-10 h-10 text-orange-600" />
               </div>
             </AnimatedStats>
 
@@ -254,9 +254,9 @@ const StudentDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Statut Paiement</p>
-                  <p className="text-lg font-semibold text-gray-900 capitalize">{studentData.payment_status}</p>
+                  <p className="text-base font-semibold text-gray-900 capitalize">{studentData.payment_status}</p>
                 </div>
-                <CreditCard className="w-12 h-12 text-purple-600" />
+                <CreditCard className="w-10 h-10 text-purple-600" />
               </div>
             </AnimatedStats>
           </div>
@@ -266,10 +266,10 @@ const StudentDashboard: React.FC = () => {
             {/* Prochaine séance */}
             <AnimatedCard className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
               <div className="flex items-center space-x-3 mb-4">
-                <Calendar className="w-6 h-6 text-blue-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Prochaine séance</h3>
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-semibold text-gray-900">Prochaine séance</h3>
               </div>
-              <div className="text-center py-8">
+              <div className="text-center py-4">
                 <div className="text-4xl font-bold text-blue-600 mb-2">
                   {new Date(studentData.next_session).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
                 </div>
@@ -280,10 +280,10 @@ const StudentDashboard: React.FC = () => {
             {/* Dernier paiement */}
             <AnimatedCard className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
               <div className="flex items-center space-x-3 mb-4">
-                <CreditCard className="w-6 h-6 text-green-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Dernier paiement</h3>
+                <CreditCard className="w-5 h-5 text-green-600" />
+                <h3 className="text-base font-semibold text-gray-900">Dernier paiement</h3>
               </div>
-              <div className="text-center py-8">
+              <div className="text-center py-4">
                 <div className="text-4xl font-bold text-green-600 mb-2">
                   {new Date(studentData.last_payment).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
                 </div>
@@ -294,7 +294,7 @@ const StudentDashboard: React.FC = () => {
 
           {/* Actions rapides */}
           <AnimatedCard className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Actions rapides</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-3">Actions rapides</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <AnimatedButton className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center space-x-3">
                 <Calendar className="w-5 h-5" />

@@ -18,6 +18,7 @@ import {
   Mic,
   Video,
   Phone,
+  Download,
   Settings,
   Trash2,
   Archive,
@@ -157,6 +158,13 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                 email: '',
                 role: 'user'
               };
+            } else {
+              // Map camelCase to snake_case for consistency
+              otherUser = {
+                ...otherUser,
+                first_name: otherUser.firstName || otherUser.first_name || `Utilisateur ${otherUserId}`,
+                last_name: otherUser.lastName || otherUser.last_name || ''
+              };
             }
 
             // Get last message if conversation has messages
@@ -201,8 +209,16 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
     try {
       setIsLoading(true);
       const data = await messagingAPI.getAvailableRecipients(currentUserId);
-      setAvailableUsers(data);
-      console.log('Available users loaded:', data.length);
+      
+      // Map camelCase to snake_case for consistency
+      const mappedUsers = data.map((user: any) => ({
+        ...user,
+        first_name: user.firstName || user.first_name || 'Utilisateur',
+        last_name: user.lastName || user.last_name || ''
+      }));
+      
+      setAvailableUsers(mappedUsers);
+      console.log('Available users loaded:', mappedUsers.length);
     } catch (error) {
       console.error('Error loading available users:', error);
       setError('Erreur lors du chargement des utilisateurs disponibles');
@@ -250,6 +266,70 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Erreur lors de l\'envoi du message');
+    }
+  };
+
+  // Send a file message
+  const sendFileMessage = async (file: File) => {
+    if (!currentConversation) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Upload the file first
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResult = await messagingAPI.uploadFile(formData);
+      console.log('File uploaded:', uploadResult);
+      
+      // Send message with file info
+      const messageData = {
+        conversationId: currentConversation.id,
+        senderId: currentUserId,
+        content: uploadResult.fileName, // Use original filename as content
+        messageType: 'file' as const,
+        filePath: uploadResult.filePath,
+        fileName: uploadResult.fileName,
+        fileType: uploadResult.fileType
+      };
+
+      const sentMessage = await messagingAPI.sendMessage(messageData);
+      
+      // Add the new message to the list
+      setMessages(prev => [...prev, sentMessage]);
+      
+      // Refresh conversations to update last message
+      loadConversations();
+    } catch (error) {
+      console.error('Error sending file:', error);
+      setError('Erreur lors de l\'envoi du fichier');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Download a file
+  const downloadFile = async (messageId: number, fileName: string) => {
+    try {
+      const response = await messagingAPI.downloadFile(messageId);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setError('Erreur lors du téléchargement du fichier');
     }
   };
 
@@ -387,16 +467,23 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
   };
 
   // Handle file selection
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check file size (25MB = 25 * 1024 * 1024 bytes)
-      const maxSize = 25 * 1024 * 1024;
+      // Check file size (50MB = 50 * 1024 * 1024 bytes)
+      const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
-        setError('Le fichier est trop volumineux. La taille maximale est de 25 MB.');
+        setError('Le fichier est trop volumineux. La taille maximale est de 50 MB.');
         return;
       }
-      setSelectedFile(file);
+      
+      // Send the file immediately
+      await sendFileMessage(file);
+      
+      // Clear the input
+      if (event.target) {
+        event.target.value = '';
+      }
       setError(null);
     }
   };
@@ -661,14 +748,13 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                       {message.message_type === 'file' && message.file_path ? (
                         <div className="flex items-center space-x-2">
                           <Paperclip className="w-4 h-4" />
-                          <a
-                            href={message.file_path}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm underline hover:no-underline transition-all duration-300"
+                          <button
+                            onClick={() => downloadFile(message.id, message.content || 'fichier')}
+                            className="text-sm underline hover:no-underline transition-all duration-300 flex items-center space-x-1"
                           >
-                            {message.content || 'Fichier joint'}
-                          </a>
+                            <span>{message.content || 'Fichier joint'}</span>
+                            <Download className="w-3 h-3" />
+                          </button>
                         </div>
                       ) : (
                         <p className="text-sm leading-relaxed">{message.content}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { generateDownloadFileName } from '@/lib/fileUtils';
 import {
   BookOpen,
   Video,
@@ -243,24 +244,83 @@ const ResourcesTab: React.FC = () => {
 
       console.log('📥 Téléchargement du fichier:', resource.title);
       
+      // Afficher un indicateur de chargement
+      const loadingElement = document.createElement('div');
+      loadingElement.innerHTML = 'Téléchargement en cours...';
+      loadingElement.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #1f2937;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-family: system-ui;
+      `;
+      document.body.appendChild(loadingElement);
+      
       const response = await fetch(`${API_BASE}/files/${resource.id}/download`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      // Supprimer l'indicateur de chargement
+      document.body.removeChild(loadingElement);
+      
       if (response.ok) {
         const blob = await response.blob();
+        
+        // Vérifier que le blob n'est pas vide
+        if (blob.size === 0) {
+          alert('Le fichier téléchargé est vide. Veuillez contacter l\'administrateur.');
+          return;
+        }
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = resource.title || 'document';
+        
+        // Utiliser le nom de fichier original ou le titre
+        const originalFileName = resource.fileName || resource.title || 'document';
+        
+        // Générer un nom de fichier sécurisé avec la bonne extension
+        const fileName = generateDownloadFileName(originalFileName, resource.fileType);
+        
+        a.download = fileName;
+        
+        // Ajouter des attributs pour forcer le téléchargement
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
         
-        console.log('✅ Téléchargement réussi');
+        // Nettoyer après un délai
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 1000);
+        
+        console.log('✅ Téléchargement réussi:', fileName);
+        
+        // Afficher une notification de succès
+        const successElement = document.createElement('div');
+        successElement.innerHTML = '✅ Téléchargement réussi!';
+        successElement.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #10b981;
+          color: white;
+          padding: 12px 20px;
+          border-radius: 6px;
+          z-index: 10000;
+          font-family: system-ui;
+        `;
+        document.body.appendChild(successElement);
+        setTimeout(() => document.body.removeChild(successElement), 3000);
+        
       } else {
         console.error('❌ Erreur lors du téléchargement:', response.status);
         
@@ -273,10 +333,11 @@ const ResourcesTab: React.FC = () => {
           }
         }
         
-        alert('Erreur lors du téléchargement du fichier. Veuillez réessayer.');
+        alert(`Erreur lors du téléchargement du fichier (${response.status}). Veuillez réessayer.`);
       }
     } catch (error) {
       console.error('❌ Erreur lors du téléchargement:', error);
+      alert('Erreur de connexion lors du téléchargement. Vérifiez votre connexion internet.');
     }
   };
 
@@ -389,8 +450,11 @@ const ResourcesTab: React.FC = () => {
                  file.fileType?.includes('audio') ? 'audio' : 
                  file.fileType?.includes('image') ? 'image' : 'document') as any,
           category: 'course',
-          subject: (file.targetClass?.toLowerCase().includes('histoire') ? 'history' : 
-                   file.targetClass?.toLowerCase().includes('géographie') ? 'geography' : 'general') as any,
+          subject: (Array.isArray(file.targetClass) 
+                   ? (file.targetClass.some((cls: string) => cls.toLowerCase().includes('histoire')) ? 'history' : 
+                      file.targetClass.some((cls: string) => cls.toLowerCase().includes('géographie')) ? 'geography' : 'general')
+                   : (file.targetClass?.toLowerCase().includes('histoire') ? 'history' : 
+                      file.targetClass?.toLowerCase().includes('géographie') ? 'geography' : 'general')) as any,
           level: 'intermediate',
           url: file.filePath || '#',
           thumbnail: undefined,

@@ -136,7 +136,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         type: 'quiz',
         title: 'Quiz terminé : La Révolution française',
         description: 'Score : 18/20 - Excellent travail !',
-        timestamp: '2024-12-20T10:30:00',
+        timestamp: '2025-12-20T10:30:00',
         score: 90,
         icon: BookOpen,
         color: 'from-green-500 to-emerald-600'
@@ -146,7 +146,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         type: 'achievement',
         title: 'Nouveau badge obtenu !',
         description: 'Badge "Historien en herbe" débloqué',
-        timestamp: '2024-12-20T09:15:00',
+        timestamp: '2025-12-20T09:15:00',
         icon: Award,
         color: 'from-yellow-500 to-amber-600'
       },
@@ -155,7 +155,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         type: 'message',
         title: 'Message du professeur',
         description: 'Félicitations pour vos progrès récents',
-        timestamp: '2024-12-19T16:45:00',
+        timestamp: '2025-12-19T16:45:00',
         icon: MessageSquare,
         color: 'from-blue-500 to-indigo-600'
       }
@@ -166,7 +166,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         id: '1',
         title: 'Quiz : L\'Empire de Napoléon',
         subject: 'Histoire',
-        dueDate: '2024-12-22T14:00:00',
+        dueDate: '2025-12-22T14:00:00',
         priority: 'high',
         type: 'quiz',
         completed: false
@@ -175,7 +175,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         id: '2',
         title: 'Devoir : Les climats européens',
         subject: 'Géographie',
-        dueDate: '2024-12-23T18:00:00',
+        dueDate: '2025-12-23T18:00:00',
         priority: 'medium',
         type: 'assignment',
         completed: false
@@ -184,7 +184,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         id: '3',
         title: 'Révisions : Contrôle d\'Histoire',
         subject: 'Histoire',
-        dueDate: '2024-12-25T08:00:00',
+        dueDate: '2025-12-25T08:00:00',
         priority: 'high',
         type: 'exam',
         completed: false
@@ -197,7 +197,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         title: 'Nouveaux quiz disponibles',
         content: 'De nouveaux quiz sur la géographie européenne sont maintenant disponibles dans votre espace.',
         author: 'Mme Martin',
-        timestamp: '2024-12-20T08:00:00',
+        timestamp: '2025-12-20T08:00:00',
         priority: 'important',
         category: 'academic'
       },
@@ -206,7 +206,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         title: 'Maintenance programmée',
         content: 'Une maintenance de la plateforme aura lieu dimanche de 2h à 4h du matin.',
         author: 'Administration',
-        timestamp: '2024-12-19T15:30:00',
+        timestamp: '2025-12-19T15:30:00',
         priority: 'normal',
         category: 'general'
       }

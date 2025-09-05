@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     
     await connection.end();
     
-    console.log('Données récupérées de la base:', rows.length, 'lignes');
+    console.log('Données récupérées de la base:', (rows as any).length, 'lignes');
     
     // Transformer les données pour utiliser les vraies informations quand disponibles
     const transformedRows = (rows as any[]).map(row => ({
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
         FROM students s
         JOIN users su ON s.user_id = su.id
         WHERE s.id = ?
-      `, [body.childId]);
+      `, [(body as any).childId]);
       
       if ((childRows as any[]).length > 0) {
         realChildInfo = (childRows as any[])[0];

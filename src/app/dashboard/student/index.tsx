@@ -440,7 +440,7 @@ export const DEMO_STUDENT: Student = {
   recentActivity: {
     lastQuiz: 'La Révolution française',
     lastScore: 92,
-    lastActive: '2024-12-20T16:30:00'
+    lastActive: '2025-12-20T16:30:00'
   },
   parents: [
     { id: 'parent-1', name: 'Parent 1' },

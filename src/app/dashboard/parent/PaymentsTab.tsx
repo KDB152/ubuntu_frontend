@@ -184,10 +184,10 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px]">
         <div className="flex items-center space-x-2">
-          <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
-          <span className="text-lg text-white">Chargement des paiements...</span>
+          <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+          <span className="text-base text-white">Chargement des paiements...</span>
         </div>
       </div>
     );
@@ -197,8 +197,8 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
     return (
       <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-6">
         <div className="flex items-center space-x-2 mb-4">
-          <XCircle className="w-6 h-6 text-red-400" />
-          <h3 className="text-lg font-semibold text-red-400">Erreur</h3>
+          <XCircle className="w-5 h-5 text-red-400" />
+          <h3 className="text-base font-semibold text-red-400">Erreur</h3>
         </div>
         <p className="text-red-200 mb-4">{error}</p>
         <button
@@ -213,13 +213,13 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center">
-              <CreditCard className="w-6 h-6 text-blue-300 mr-3" />
+            <h1 className="text-base font-bold text-white flex items-center">
+              <CreditCard className="w-5 h-5 text-blue-300 mr-3" />
               Paiements et Séances
             </h1>
             <p className="text-blue-200 mt-1">
@@ -243,9 +243,9 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-200 text-sm">Séances Totales</p>
-                <p className="text-2xl font-bold text-white">{stats.totalSessions}</p>
+                <p className="text-base font-bold text-white">{stats.totalSessions}</p>
               </div>
-              <BookOpen className="w-8 h-8 text-blue-300" />
+              <BookOpen className="w-5 h-5 text-blue-300" />
             </div>
           </div>
           
@@ -253,9 +253,9 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-200 text-sm">Séances Non Payées</p>
-                <p className="text-2xl font-bold text-red-400">{stats.totalUnpaidSessions}</p>
+                <p className="text-base font-bold text-red-400">{stats.totalUnpaidSessions}</p>
               </div>
-              <AlertTriangle className="w-8 h-8 text-red-400" />
+              <AlertTriangle className="w-5 h-5 text-red-400" />
             </div>
           </div>
           
@@ -263,9 +263,9 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-200 text-sm">Montant Total</p>
-                <p className="text-2xl font-bold text-white">{stats.totalAmount.toFixed(2)}dt</p>
+                <p className="text-base font-bold text-white">{stats.totalAmount.toFixed(2)}dt</p>
               </div>
-              <Euro className="w-8 h-8 text-blue-300" />
+              <Euro className="w-5 h-5 text-blue-300" />
             </div>
           </div>
           
@@ -273,9 +273,9 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-200 text-sm">Montant Restant</p>
-                <p className="text-2xl font-bold text-orange-400">{stats.totalRemaining.toFixed(2)}dt</p>
+                <p className="text-base font-bold text-orange-400">{stats.totalRemaining.toFixed(2)}dt</p>
               </div>
-              <Wallet className="w-8 h-8 text-orange-400" />
+              <Wallet className="w-5 h-5 text-orange-400" />
             </div>
           </div>
         </div>
@@ -284,16 +284,16 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
       {/* Liste des paiements */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
         <div className="p-6 border-b border-white/20">
-          <h2 className="text-xl font-bold text-white flex items-center">
+          <h2 className="text-base font-bold text-white flex items-center">
             <Receipt className="w-5 h-5 text-blue-300 mr-2" />
             Détails des Paiements ({filteredPayments.length})
           </h2>
         </div>
 
         {filteredPayments.length === 0 ? (
-          <div className="text-center py-12">
-            <Receipt className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
-            <h3 className="text-xl font-semibold text-white mb-2">Aucun paiement trouvé</h3>
+          <div className="text-center py-6">
+            <Receipt className="w-10 h-10 text-blue-300 mx-auto mb-4 opacity-50" />
+            <h3 className="text-base font-semibold text-white mb-2">Aucun paiement trouvé</h3>
             <p className="text-blue-200">
               {payments.length === 0 
                 ? "Aucune séance enregistrée pour le moment."
@@ -308,7 +308,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
                       <User className="w-5 h-5 text-blue-300" />
-                      <h3 className="text-lg font-semibold text-white">
+                      <h3 className="text-base font-semibold text-white">
                         {payment.student_first_name} {payment.student_last_name}
                       </h3>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -359,7 +359,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
                     </div>
 
                     <div className="flex items-center justify-between text-sm text-blue-200">
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-3">
                         <span>Prix/séance: {payment.prix_seance.toFixed(2)}dt</span>
                         {payment.date_derniere_presence && (
                           <span>Dernière présence: {formatDate(payment.date_derniere_presence)}</span>
@@ -369,7 +369,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
                     </div>
                   </div>
 
-                  <div className="ml-6">
+                  <div className="ml-3">
                     <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${getStatusBgColor(payment.statut)}`}>
                       <span className={getStatusColor(payment.statut)}>
                         {getStatusIcon(payment.statut)}
@@ -389,9 +389,9 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
       {/* Informations sur les paiements */}
       <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-6">
         <div className="flex items-start space-x-3">
-          <Info className="w-6 h-6 text-blue-400 mt-0.5" />
+          <Info className="w-5 h-5 text-blue-400 mt-0.5" />
           <div>
-            <h3 className="text-lg font-semibold text-blue-200 mb-2">Information sur les paiements</h3>
+            <h3 className="text-base font-semibold text-blue-200 mb-2">Information sur les paiements</h3>
             <div className="text-blue-200 text-sm space-y-1">
               <p>• Les séances sont automatiquement ajoutées lors de la présence de votre enfant</p>
               <p>• Le prix par défaut est de 40dt par séance</p>

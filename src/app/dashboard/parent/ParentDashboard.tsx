@@ -104,8 +104,8 @@ const ParentDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-green-600 text-lg">Chargement...</p>
+          <div className="w-10 h-10 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-green-600 text-base">Chargement...</p>
         </div>
       </div>
     );
@@ -115,8 +115,8 @@ const ParentDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 text-lg">Erreur de chargement des données</p>
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 text-base">Erreur de chargement des données</p>
         </div>
       </div>
     );
@@ -136,7 +136,7 @@ const ParentDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Chrono-Carto</h1>
+                  <h1 className="text-base font-bold text-gray-900">Chrono-Carto</h1>
                   <p className="text-green-600 text-sm">Parent</p>
                 </div>
               )}
@@ -222,9 +222,9 @@ const ParentDashboard: React.FC = () => {
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-80'}`}>
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center justify-between px-3 py-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Tableau de bord Parent</h2>
+              <h2 className="text-base font-bold text-gray-900">Tableau de bord Parent</h2>
               <p className="text-gray-600">Bienvenue, {parentData.name}</p>
             </div>
             <div className="flex items-center space-x-3">
@@ -250,16 +250,16 @@ const ParentDashboard: React.FC = () => {
         </header>
 
         {/* Contenu */}
-        <main className="p-6 space-y-6">
+        <main className="p-6 space-y-4">
           {/* Statistiques principales */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <AnimatedStats delay={0} className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Total Enfants</p>
-                  <p className="text-3xl font-bold text-gray-900">{parentData.children.length}</p>
+                  <p className="text-base font-bold text-gray-900">{parentData.children.length}</p>
                 </div>
-                <Users className="w-12 h-12 text-green-600" />
+                <Users className="w-10 h-10 text-green-600" />
               </div>
             </AnimatedStats>
 
@@ -267,9 +267,9 @@ const ParentDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Séances Payées</p>
-                  <p className="text-3xl font-bold text-green-600">{parentData.total_paid}</p>
+                  <p className="text-base font-bold text-green-600">{parentData.total_paid}</p>
                 </div>
-                <CheckCircle className="w-12 h-12 text-green-600" />
+                <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
             </AnimatedStats>
 
@@ -277,9 +277,9 @@ const ParentDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Séances Non Payées</p>
-                  <p className="text-3xl font-bold text-orange-600">{parentData.total_unpaid}</p>
+                  <p className="text-base font-bold text-orange-600">{parentData.total_unpaid}</p>
                 </div>
-                <Clock className="w-12 h-12 text-orange-600" />
+                <Clock className="w-10 h-10 text-orange-600" />
               </div>
             </AnimatedStats>
 
@@ -287,18 +287,18 @@ const ParentDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">Dernier Paiement</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-base font-semibold text-gray-900">
                     {new Date(parentData.last_payment).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <CreditCard className="w-12 h-12 text-purple-600" />
+                <CreditCard className="w-10 h-10 text-purple-600" />
               </div>
             </AnimatedStats>
           </div>
 
           {/* Sélection de l'enfant */}
           <AnimatedCard className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Sélectionner un enfant</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Sélectionner un enfant</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {parentData.children.map((child) => (
                 <AnimatedButton
@@ -311,7 +311,7 @@ const ParentDashboard: React.FC = () => {
                   }`}
                 >
                   <div className="text-center">
-                    <User className="w-8 h-8 mx-auto mb-2" />
+                    <User className="w-5 h-5 mx-auto mb-2" />
                     <div className="font-semibold">{child.name}</div>
                     <div className="text-sm opacity-75">{child.class_level}</div>
                   </div>
@@ -323,7 +323,7 @@ const ParentDashboard: React.FC = () => {
           {/* Informations de l'enfant sélectionné */}
           {currentChild && (
             <AnimatedCard className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-3">
                 Informations de {currentChild.name}
               </h3>
               
@@ -332,15 +332,15 @@ const ParentDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Total Séances</span>
-                    <span className="text-2xl font-bold text-gray-900">{currentChild.total_sessions}</span>
+                    <span className="text-base font-bold text-gray-900">{currentChild.total_sessions}</span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
                     <span className="text-gray-600">Séances Payées</span>
-                    <span className="text-2xl font-bold text-green-600">{currentChild.paid_sessions}</span>
+                    <span className="text-base font-bold text-green-600">{currentChild.paid_sessions}</span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
                     <span className="text-gray-600">Séances Non Payées</span>
-                    <span className="text-2xl font-bold text-orange-600">{currentChild.unpaid_sessions}</span>
+                    <span className="text-base font-bold text-orange-600">{currentChild.unpaid_sessions}</span>
                   </div>
                 </div>
 
@@ -348,7 +348,7 @@ const ParentDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 rounded-xl">
                     <h4 className="font-semibold text-blue-900 mb-2">Prochaine séance</h4>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-base font-bold text-blue-600">
                       {new Date(currentChild.next_session).toLocaleDateString('fr-FR', { 
                         weekday: 'long', 
                         day: 'numeric', 
@@ -359,7 +359,7 @@ const ParentDashboard: React.FC = () => {
                   
                   <div className="p-4 bg-purple-50 rounded-xl">
                     <h4 className="font-semibold text-purple-900 mb-2">Statut Paiement</h4>
-                    <div className={`text-lg font-semibold capitalize ${
+                    <div className={`text-base font-semibold capitalize ${
                       currentChild.payment_status === 'paid' ? 'text-green-600' :
                       currentChild.payment_status === 'partial' ? 'text-orange-600' : 'text-red-600'
                     }`}>
@@ -374,7 +374,7 @@ const ParentDashboard: React.FC = () => {
 
           {/* Actions rapides */}
           <AnimatedCard className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Actions rapides</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-3">Actions rapides</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <AnimatedButton className="p-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors flex items-center space-x-3">
                 <CreditCard className="w-5 h-5" />

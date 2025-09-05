@@ -162,20 +162,34 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         allowRetake: quizData.allow_retake || false,
         isTimeLimited: quizData.is_time_limited || false,
         showResults: quizData.show_results || false,
-        questions: questionsData.map((q: any, index: number) => ({
-          id: String(q.id),
-          type: q.type === 'single' ? 'multiple_choice' : 
+        questions: questionsData.map((q: any, index: number) => {
+          console.log('🔍 Question data:', {
+            id: q.id,
+            type: q.type,
+            question: q.question,
+            options: q.options,
+            correct_answer: q.correct_answer
+          });
+          
+          const transformedType = q.type === 'single' ? 'multiple_choice' : 
                 q.type === 'multiple' ? 'multiple_choice' : 
                 q.type === 'boolean' ? 'true_false' : 
-                q.type === 'text' ? 'short_answer' : 'multiple_choice',
-          question: q.question,
-          options: q.options || [],
-          correctAnswer: q.correct_answer,
-          explanation: q.explanation || '',
-          points: q.points || 1,
-          difficulty: 'medium' as const,
-          hint: q.explanation || ''
-        }))
+                q.type === 'text' ? 'short_answer' : 'multiple_choice';
+          
+          console.log('🔄 Transformed type:', transformedType);
+          
+          return {
+            id: String(q.id),
+            type: transformedType,
+            question: q.question,
+            options: q.options || [],
+            correctAnswer: q.correct_answer,
+            explanation: q.explanation || '',
+            points: q.points || 1,
+            difficulty: 'medium' as const,
+            hint: q.explanation || ''
+          };
+        })
       };
 
       setQuiz(transformedQuiz);
@@ -260,27 +274,27 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-6">
-          <h2 className="text-2xl font-bold text-white mb-4">Résultats détaillés</h2>
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-3">
+          <h2 className="text-base font-bold text-white mb-4">Résultats détaillés</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
             <div className="bg-white/5 rounded-lg p-4">
-              <div className="text-2xl font-bold text-white mb-1">{quizResults.percentage}%</div>
+              <div className="text-base font-bold text-white mb-1">{quizResults.percentage}%</div>
               <div className="text-blue-300 text-sm">Score final</div>
             </div>
             <div className="bg-white/5 rounded-lg p-4">
-              <div className="text-2xl font-bold text-white mb-1">{quizResults.score}/{quizResults.total_points}</div>
+              <div className="text-base font-bold text-white mb-1">{quizResults.score}/{quizResults.total_points}</div>
               <div className="text-blue-300 text-sm">Points obtenus</div>
             </div>
             <div className="bg-white/5 rounded-lg p-4">
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-base font-bold text-white mb-1">
                 {quizResults.time_spent ? `${Math.floor(quizResults.time_spent / 60)}:${(quizResults.time_spent % 60).toString().padStart(2, '0')}` : 'N/A'}
               </div>
               <div className="text-blue-300 text-sm">Temps utilisé</div>
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {quiz.questions.map((question, index) => {
               const userAnswer = quizResults.answers?.[question.id];
               const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer);
@@ -290,7 +304,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                   isCorrect ? 'border-green-500/50 bg-green-500/10' : 'border-red-500/50 bg-red-500/10'
                 }`}>
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className="text-base font-semibold text-white">
                       Question {index + 1}: {question.question}
                     </h3>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -339,10 +353,10 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             })}
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-3 flex justify-center">
             <button
               onClick={onComplete}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Retour à la liste des quiz
             </button>
@@ -356,7 +370,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-white">Chargement du quiz...</p>
         </div>
       </div>
@@ -375,7 +389,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
       return (
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-white">Redirection...</p>
           </div>
         </div>
@@ -515,6 +529,14 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 
   const renderQuestion = () => {
     const userAnswer = answers[currentQuestion.id];
+    
+    console.log('🎯 Rendering question:', {
+      id: currentQuestion.id,
+      type: currentQuestion.type,
+      question: currentQuestion.question,
+      options: currentQuestion.options,
+      userAnswer
+    });
 
     switch (currentQuestion.type) {
       case 'multiple_choice':
@@ -531,7 +553,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                     userAnswer === option
                       ? 'border-blue-500 bg-blue-500'
                       : 'border-white/40'
@@ -559,7 +581,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                     userAnswer === option
                       ? 'border-blue-500 bg-blue-500'
                       : 'border-white/40'
@@ -598,19 +620,19 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
   if (showInstructions && !isStarted) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-          <div className="text-center mb-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+          <div className="text-center mb-4">
             <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-white text-3xl font-bold mb-2">{quiz.title}</h1>
-            <p className="text-blue-200 text-lg">{quiz.description}</p>
+            <h1 className="text-white text-base font-bold mb-2">{quiz.title}</h1>
+            <p className="text-blue-200 text-base">{quiz.description}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
             <div className="bg-white/5 rounded-xl p-6 text-center">
-              <Clock className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-              <div className="text-white text-2xl font-bold">
+              <Clock className="w-5 h-5 text-blue-400 mx-auto mb-3" />
+              <div className="text-white text-base font-bold">
                 {quiz.isTimeLimited ? `${quiz.duration} min` : 'Illimité'}
               </div>
               <div className="text-blue-300 text-sm">
@@ -618,18 +640,18 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               </div>
             </div>
             <div className="bg-white/5 rounded-xl p-6 text-center">
-              <Target className="w-8 h-8 text-green-400 mx-auto mb-3" />
-              <div className="text-white text-2xl font-bold">{quiz.questions.length}</div>
+              <Target className="w-5 h-5 text-green-400 mx-auto mb-3" />
+              <div className="text-white text-base font-bold">{quiz.questions.length}</div>
               <div className="text-blue-300 text-sm">Questions</div>
             </div>
             <div className="bg-white/5 rounded-xl p-6 text-center">
-              <Star className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-              <div className="text-white text-2xl font-bold">{quiz.totalPoints}</div>
+              <Star className="w-5 h-5 text-yellow-400 mx-auto mb-3" />
+              <div className="text-white text-base font-bold">{quiz.totalPoints}</div>
               <div className="text-blue-300 text-sm">Points</div>
             </div>
             <div className="bg-white/5 rounded-xl p-6 text-center">
-              <RefreshCw className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-              <div className="text-white text-2xl font-bold">
+              <RefreshCw className="w-5 h-5 text-purple-400 mx-auto mb-3" />
+              <div className="text-white text-base font-bold">
                 {quiz.allowRetake ? 'Oui' : 'Non'}
               </div>
               <div className="text-blue-300 text-sm">
@@ -639,8 +661,8 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
           </div>
 
           {quiz.instructions && (
-            <div className="bg-blue-500/20 rounded-xl p-6 mb-8">
-              <h3 className="text-white font-bold text-lg mb-3 flex items-center">
+            <div className="bg-blue-500/20 rounded-xl p-6 mb-4">
+              <h3 className="text-white font-bold text-base mb-3 flex items-center">
                 <Info className="w-5 h-5 mr-2" />
                 Instructions
               </h3>
@@ -649,8 +671,8 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
           )}
 
           {/* Informations sur les paramètres du quiz */}
-          <div className="bg-yellow-500/20 rounded-xl p-6 mb-8">
-            <h3 className="text-white font-bold text-lg mb-3 flex items-center">
+          <div className="bg-yellow-500/20 rounded-xl p-6 mb-4">
+            <h3 className="text-white font-bold text-base mb-3 flex items-center">
               <Settings className="w-5 h-5 mr-2" />
               Paramètres du quiz
             </h3>
@@ -682,16 +704,16 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-center space-x-4">
+          <div className="flex items-center justify-center space-x-3">
             <button
               onClick={() => window.history.back()}
-              className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all"
+              className="px-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all"
             >
               Retour
             </button>
             <button
               onClick={handleStartQuiz}
-              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center space-x-2"
+              className="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center space-x-2"
             >
               <Play className="w-5 h-5" />
               <span>Commencer le quiz</span>
@@ -717,57 +739,57 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 text-center">
-          <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-center">
+          <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-3 ${
             passed 
               ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
               : 'bg-gradient-to-r from-orange-500 to-red-600'
           }`}>
             {passed ? (
-              <Trophy className="w-12 h-12 text-white" />
+              <Trophy className="w-10 h-10 text-white" />
             ) : (
-              <Target className="w-12 h-12 text-white" />
+              <Target className="w-10 h-10 text-white" />
             )}
           </div>
 
-          <h1 className="text-white text-3xl font-bold mb-2">
+          <h1 className="text-white text-base font-bold mb-2">
             {passed ? 'Félicitations !' : 'Quiz terminé'}
           </h1>
-          <p className="text-blue-200 text-lg mb-8">
+          <p className="text-blue-200 text-base mb-4">
             {passed 
               ? 'Vous avez réussi ce quiz avec brio !' 
               : 'Continuez vos efforts, vous progressez !'}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
             <div className="bg-white/5 rounded-xl p-6">
-              <div className={`text-3xl font-bold mb-2 ${passed ? 'text-green-400' : 'text-orange-400'}`}>
+              <div className={`text-base font-bold mb-2 ${passed ? 'text-green-400' : 'text-orange-400'}`}>
                 {percentage}%
               </div>
               <div className="text-blue-300 text-sm">Score final</div>
             </div>
             <div className="bg-white/5 rounded-xl p-6">
-              <div className="text-white text-3xl font-bold mb-2">{score}/{quiz.totalPoints}</div>
+              <div className="text-white text-base font-bold mb-2">{score}/{quiz.totalPoints}</div>
               <div className="text-blue-300 text-sm">Points obtenus</div>
             </div>
             <div className="bg-white/5 rounded-xl p-6">
-              <div className="text-white text-3xl font-bold mb-2">{answeredQuestions}/{quiz.questions.length}</div>
+              <div className="text-white text-base font-bold mb-2">{answeredQuestions}/{quiz.questions.length}</div>
               <div className="text-blue-300 text-sm">Questions répondues</div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center space-x-4">
+          <div className="flex items-center justify-center space-x-3">
             {quiz.showResults ? (
               <button
                 onClick={() => setShowResults(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
+                className="px-3 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
               >
                 Voir les résultats détaillés
               </button>
             ) : (
               <button
                 onClick={onComplete}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
+                className="px-3 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
               >
                 Retour à la liste des quiz
               </button>
@@ -788,23 +810,23 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     <div className={`${fullscreen ? 'fixed inset-0 z-50 bg-slate-900' : ''}`}>
       <div className="max-w-6xl mx-auto h-full flex flex-col">
         {/* Header du quiz */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 mb-6">
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 mb-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-white text-xl font-bold">{quiz.title}</h1>
+            <div className="flex items-center space-x-3">
+              <h1 className="text-white text-base font-bold">{quiz.title}</h1>
               <span className="text-blue-300 text-sm">
                 Question {currentQuestionIndex + 1} sur {quiz.questions.length}
               </span>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {/* Timer - Only show if time limited */}
               {quiz.isTimeLimited && (
                 <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
                   timeRemaining < 300 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
                 }`}>
                   <Clock className="w-5 h-5" />
-                  <span className="font-mono text-lg">{formatTime(timeRemaining)}</span>
+                  <span className="font-mono text-base">{formatTime(timeRemaining)}</span>
                 </div>
               )}
 
@@ -844,7 +866,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
           <div className="lg:col-span-3">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 h-full">
               {/* En-tête de la question */}
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -865,7 +887,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                     </div>
                   </div>
                   
-                  <h2 className="text-white text-xl font-semibold mb-4">
+                  <h2 className="text-white text-base font-semibold mb-4">
                     {currentQuestion.question}
                   </h2>
                 </div>
@@ -885,7 +907,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 
               {/* Média si présent */}
               {currentQuestion.media && (
-                <div className="mb-6">
+                <div className="mb-3">
                   {currentQuestion.media.type === 'image' && (
                     <img
                       src={currentQuestion.media.url}
@@ -897,13 +919,13 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               )}
 
               {/* Réponse */}
-              <div className="mb-6">
+              <div className="mb-3">
                 {renderQuestion()}
               </div>
 
               {/* Indice */}
               {currentQuestion.hint && (
-                <div className="mb-6">
+                <div className="mb-3">
                   <button
                     onClick={() => setShowHint(!showHint)}
                     className="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300 transition-colors"
@@ -935,7 +957,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                 {currentQuestionIndex === quiz.questions.length - 1 ? (
                   <button
                     onClick={handleSubmitQuiz}
-                    className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
+                    className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
                   >
                     <Send className="w-5 h-5" />
                     <span>Terminer</span>
@@ -954,7 +976,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Navigation des questions */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
               <h3 className="text-white font-semibold mb-4">Questions</h3>

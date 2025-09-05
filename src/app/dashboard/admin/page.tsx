@@ -150,14 +150,14 @@ const AdminPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-3 mx-auto">
+            <Loader2 className="w-5 h-5 text-white animate-spin" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Chargement du tableau de bord</h2>
+          <h2 className="text-base font-bold text-white mb-2">Chargement du tableau de bord</h2>
           <p className="text-blue-200">Initialisation de l'interface d'administration...</p>
           
           {/* Barre de progression animée */}
-          <div className="w-64 h-2 bg-white/10 rounded-full mt-6 mx-auto overflow-hidden">
+          <div className="w-64 h-2 bg-white/10 rounded-full mt-3 mx-auto overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
           </div>
         </div>
@@ -170,18 +170,18 @@ const AdminPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       {/* Message de bienvenue pour la première visite */}
       <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-b border-white/20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-3 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Interface d'administration Chrono-Carto</h1>
+                <h1 className="text-base font-bold text-white">Interface d'administration Chrono-Carto</h1>
                 <p className="text-blue-200 text-sm">Toutes les fonctionnalités sont maintenant disponibles</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4 text-sm text-blue-300">
+            <div className="flex items-center space-x-3 text-sm text-blue-300">
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4" />
                 <span>{stats.totalUsers} utilisateurs</span>

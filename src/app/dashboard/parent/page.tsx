@@ -288,8 +288,8 @@ const ParentDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <h2 className="text-white text-xl font-semibold mb-2">Chargement du tableau de bord</h2>
+          <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-white text-base font-semibold mb-2">Chargement du tableau de bord</h2>
           <p className="text-blue-200">Préparation de l'espace parent...</p>
         </div>
       </div>
@@ -307,7 +307,7 @@ const ParentDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             {sidebarOpen && (
               <div>
-                <h1 className="text-white text-xl font-bold">Espace Parent</h1>
+                <h1 className="text-white text-base font-bold">Espace Parent</h1>
                 <p className="text-blue-200 text-sm">Chrono-Carto</p>
               </div>
             )}
@@ -333,10 +333,10 @@ const ParentDashboard: React.FC = () => {
                     <img
                       src={selectedChildData.avatar}
                       alt={selectedChildData.firstName}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-5 h-5 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -365,10 +365,10 @@ const ParentDashboard: React.FC = () => {
                         <img
                           src={child.avatar}
                           alt={child.firstName}
-                          className="w-8 h-8 rounded-full object-cover"
+                          className="w-5 h-5 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                           <User className="w-4 h-4 text-white" />
                         </div>
                       )}
@@ -473,7 +473,7 @@ const ParentDashboard: React.FC = () => {
         <div className="bg-white/10 backdrop-blur-md border-b border-white/20 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-white text-2xl font-bold mb-1">
+              <h1 className="text-white text-base font-bold mb-1">
                 {getGreeting()}
               </h1>
               <p className="text-blue-200">
@@ -482,7 +482,7 @@ const ParentDashboard: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {/* Barre de recherche */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-300" />

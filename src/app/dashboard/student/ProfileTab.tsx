@@ -162,11 +162,11 @@ const ProfileTab: React.FC = () => {
       totalStudents: 28
     },
     security: {
-      lastLogin: '2024-12-20T14:30:00',
+      lastLogin: '2025-12-20T14:30:00',
       loginHistory: [
-        { date: '2024-12-20T14:30:00', device: 'Chrome sur Windows', location: 'Lyon, France' },
-        { date: '2024-12-19T16:45:00', device: 'Safari sur iPhone', location: 'Lyon, France' },
-        { date: '2024-12-18T09:15:00', device: 'Chrome sur Windows', location: 'Lyon, France' }
+        { date: '2025-12-20T14:30:00', device: 'Chrome sur Windows', location: 'Lyon, France' },
+        { date: '2025-12-19T16:45:00', device: 'Safari sur iPhone', location: 'Lyon, France' },
+        { date: '2025-12-18T09:15:00', device: 'Chrome sur Windows', location: 'Lyon, France' }
       ],
       twoFactorEnabled: false,
       connectedApps: []

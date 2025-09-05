@@ -23,10 +23,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ parent }) => {
   const userId = getUserDetails();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h1 className="text-white text-2xl font-bold mb-2">Paramètres</h1>
+        <h1 className="text-white text-base font-bold mb-2">Paramètres</h1>
         <p className="text-blue-200">Gérez vos préférences et paramètres de sécurité</p>
       </div>
 
@@ -38,7 +38,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ parent }) => {
 
       {/* Autres paramètres peuvent être ajoutés ici */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Préférences de notification</h3>
+        <h3 className="text-white font-semibold text-base mb-4">Préférences de notification</h3>
         <p className="text-blue-200 text-sm">Configuration des notifications à venir...</p>
       </div>
     </div>

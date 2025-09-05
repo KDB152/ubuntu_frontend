@@ -35,7 +35,7 @@ export function StudentDashboard() {
       title: 'Histoire - La Révolution française',
       progress: 75,
       type: 'course',
-      lastAccessed: '2024-03-10',
+      lastAccessed: '2025-03-10',
       duration: '45 min'
     },
     {
@@ -43,7 +43,7 @@ export function StudentDashboard() {
       title: 'Géographie - Les espaces urbains',
       progress: 60,
       type: 'course',
-      lastAccessed: '2024-03-08',
+      lastAccessed: '2025-03-08',
       duration: '30 min'
     },
     {
@@ -51,7 +51,7 @@ export function StudentDashboard() {
       title: 'EMC - Citoyenneté et démocratie',
       progress: 90,
       type: 'course',
-      lastAccessed: '2024-03-12',
+      lastAccessed: '2025-03-12',
       duration: '25 min'
     }
   ]);
@@ -64,7 +64,7 @@ export function StudentDashboard() {
       score: 88,
       maxScore: 100,
       completed: true,
-      date: '2024-03-10'
+      date: '2025-03-10'
     },
     {
       id: 2,
@@ -73,7 +73,7 @@ export function StudentDashboard() {
       score: null,
       maxScore: 100,
       completed: false,
-      deadline: '2024-03-15'
+      deadline: '2025-03-15'
     }
   ]);
 

@@ -137,35 +137,35 @@ const DashboardOverviewTab = () => {
         type: 'user_registration',
         user: 'Utilisateur',
         description: 'Nouvelle inscription d\'étudiant',
-        timestamp: '2024-12-20T10:30:00'
+        timestamp: '2025-12-20T10:30:00'
       },
       {
         id: '2',
         type: 'quiz_completed',
         user: getGenericUserName(1),
         description: 'Quiz "La Révolution française" terminé avec 85%',
-        timestamp: '2024-12-20T09:45:00'
+        timestamp: '2025-12-20T09:45:00'
       },
       {
         id: '3',
         type: 'message_sent',
         user: getGenericUserName(2),
         description: 'Nouveau message reçu',
-        timestamp: '2024-12-20T09:15:00'
+        timestamp: '2025-12-20T09:15:00'
       },
       {
         id: '4',
         type: 'achievement',
         user: getGenericUserName(3),
         description: 'Badge "Expert en Histoire" obtenu',
-        timestamp: '2024-12-20T08:30:00'
+        timestamp: '2025-12-20T08:30:00'
       },
       {
         id: '5',
         type: 'login',
         user: getGenericUserName(4),
         description: 'Connexion depuis mobile',
-        timestamp: '2024-12-20T08:00:00'
+        timestamp: '2025-12-20T08:00:00'
       }
     ];
 

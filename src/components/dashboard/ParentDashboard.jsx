@@ -27,7 +27,7 @@ export function ParentDashboard() {
         class: 'Terminale S',
         progress: 68,
         averageScore: 85,
-        lastActivity: '2024-03-12',
+        lastActivity: '2025-03-12',
         upcomingDeadlines: 2,
         recentScores: [88, 92, 76, 85, 90]
       },
@@ -37,7 +37,7 @@ export function ParentDashboard() {
         class: '1ère ES',
         progress: 72,
         averageScore: 78,
-        lastActivity: '2024-03-11',
+        lastActivity: '2025-03-11',
         upcomingDeadlines: 1,
         recentScores: [82, 75, 88, 79, 85]
       }

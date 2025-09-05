@@ -364,7 +364,7 @@ const MeetingsTab: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-5 h-5 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-blue-200">Chargement des rendez-vous...</p>
         </div>
       </div>
@@ -372,11 +372,11 @@ const MeetingsTab: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-white text-2xl font-bold">Rendez-vous</h1>
+            <h1 className="text-white text-base font-bold">Rendez-vous</h1>
             <p className="text-blue-200">Planifiez et suivez vos réunions avec les professeurs</p>
           </div>
           <div className="flex items-center gap-2">
@@ -402,9 +402,9 @@ const MeetingsTab: React.FC = () => {
 
       <div className="space-y-4">
         {filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
-            <h3 className="text-white text-lg font-semibold mb-2">Aucun rendez-vous trouvé</h3>
+          <div className="text-center py-6">
+            <Calendar className="w-10 h-10 text-blue-300 mx-auto mb-4 opacity-50" />
+            <h3 className="text-white text-base font-semibold mb-2">Aucun rendez-vous trouvé</h3>
             <p className="text-blue-200">Aucun rendez-vous ne correspond à vos critères.</p>
           </div>
         ) : (
@@ -412,11 +412,11 @@ const MeetingsTab: React.FC = () => {
             <div key={m.id} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center">
-                    <Users className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold text-lg">Rendez-vous avec l'administration</h3>
+                    <h3 className="text-white font-semibold text-base">Rendez-vous avec l'administration</h3>
                     <div className="text-blue-200 text-sm flex flex-wrap gap-3 mt-1">
                       <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" /> {formatDateTime(m.timing)}</span>
                       <span className="inline-flex items-center gap-1"><BookOpen className="w-4 h-4" /> {m.childName} ({m.childClass})</span>
@@ -488,8 +488,8 @@ const MeetingsTab: React.FC = () => {
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-white text-2xl font-bold">Nouveau rendez-vous</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-white text-base font-bold">Nouveau rendez-vous</h2>
               <button onClick={() => setShowCreate(false)} className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all">
                 <X className="w-5 h-5" />
               </button>

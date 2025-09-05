@@ -139,7 +139,6 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
       case 'multiple': return 'Choix multiple';
       case 'single': return 'Choix unique';
       case 'text': return 'Texte libre';
-      case 'boolean': return 'Vrai/Faux';
       default: return type;
     }
   };
@@ -150,8 +149,8 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/20 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center">
-              <FileText className="w-6 h-6 text-blue-300 mr-3" />
+            <h2 className="text-base font-bold text-white flex items-center">
+              <FileText className="w-5 h-5 text-blue-300 mr-3" />
               Gestion des questions - {quizTitle}
             </h2>
             <p className="text-blue-200 mt-1">Ajoutez et gérez les questions de ce quiz</p>
@@ -168,7 +167,7 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
               onClick={onClose}
               className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -194,18 +193,18 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
         {/* Questions List */}
         <div className="p-6 flex-1 overflow-y-auto">
           {isLoading && questions.length === 0 ? (
-            <div className="text-center py-12">
-              <Loader2 className="w-8 h-8 text-blue-300 mx-auto mb-4 animate-spin" />
+            <div className="text-center py-6">
+              <Loader2 className="w-5 h-5 text-blue-300 mx-auto mb-4 animate-spin" />
               <p className="text-blue-200">Chargement des questions...</p>
             </div>
           ) : questions.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-              <p className="text-blue-200 text-xl mb-2">Aucune question</p>
-              <p className="text-blue-300 mb-6">Ajoutez votre première question pour commencer</p>
+            <div className="text-center py-6">
+              <FileText className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+              <p className="text-blue-200 text-base mb-2">Aucune question</p>
+              <p className="text-blue-300 mb-3">Ajoutez votre première question pour commencer</p>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold"
+                className="px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold"
               >
                 Ajouter une question
               </button>
@@ -226,7 +225,7 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
                           <span className="text-sm">{question.points} point(s)</span>
                         </div>
                       </div>
-                      <h3 className="text-white font-medium mb-3 text-lg">
+                      <h3 className="text-white font-medium mb-3 text-base">
                         Question {index + 1}: {question.question}
                       </h3>
                       
@@ -384,16 +383,16 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-white/20">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <FileText className="w-6 h-6 text-blue-300 mr-3" />
+          <h2 className="text-base font-bold text-white flex items-center">
+            <FileText className="w-5 h-5 text-blue-300 mr-3" />
             {title}
           </h2>
           <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="lg:col-span-2">
               <label className="block text-sm font-semibold text-white mb-2">Question *</label>
@@ -417,7 +416,6 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
                 <option value="single">Choix unique</option>
                 <option value="multiple">Choix multiple</option>
                 <option value="text">Texte libre</option>
-                <option value="boolean">Vrai/Faux</option>
               </select>
             </div>
 
@@ -465,8 +463,6 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
                 className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
               >
                 <option value="">Sélectionnez...</option>
-                <option value="true">Vrai</option>
-                <option value="false">Faux</option>
               </select>
             ) : formData.type === 'text' ? (
               <input
@@ -518,18 +514,18 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
           </div>
         </div>
 
-          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/20">
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-white/20">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+              className="px-3 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
               disabled={isLoading}
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
+              className="px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
               disabled={isLoading || !formData.question || !formData.correct_answer}
             >
               {isLoading ? (
@@ -570,16 +566,16 @@ const DeleteQuestionModal: React.FC<DeleteQuestionModalProps> = ({
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-red-400" />
+            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-red-400" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Confirmer la suppression</h3>
+              <h3 className="text-base font-bold text-white">Confirmer la suppression</h3>
               <p className="text-blue-200 text-sm">Cette action est irréversible</p>
             </div>
           </div>
           
-          <p className="text-blue-200 mb-6">
+          <p className="text-blue-200 mb-3">
             Êtes-vous sûr de vouloir supprimer la question <strong className="text-white">"{question.question}"</strong> ?
           </p>
           

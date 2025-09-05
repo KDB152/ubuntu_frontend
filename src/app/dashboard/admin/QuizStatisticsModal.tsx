@@ -165,11 +165,11 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
         {/* Header */}
         <div className="p-6 border-b border-white/20 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Statistiques du Quiz</h2>
+              <h2 className="text-base font-bold text-white">Statistiques du Quiz</h2>
               <p className="text-blue-300 text-sm">{quiz.title}</p>
             </div>
           </div>
@@ -177,31 +177,31 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
             onClick={onClose}
             className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-4">
             {/* Quiz Info */}
             <div className="bg-white/5 rounded-xl p-4">
-              <h3 className="text-lg font-semibold text-white mb-3">Informations du Quiz</h3>
+              <h3 className="text-base font-semibold text-white mb-3">Informations du Quiz</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{quiz.subject}</div>
+                  <div className="text-base font-bold text-white">{quiz.subject}</div>
                   <div className="text-blue-300 text-sm">Matière</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{quiz.level}</div>
+                  <div className="text-base font-bold text-white">{quiz.level}</div>
                   <div className="text-blue-300 text-sm">Niveau</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{quiz.duration}min</div>
+                  <div className="text-base font-bold text-white">{quiz.duration}min</div>
                   <div className="text-blue-300 text-sm">Durée</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{quiz.totalPoints}</div>
+                  <div className="text-base font-bold text-white">{quiz.totalPoints}</div>
                   <div className="text-blue-300 text-sm">Points totaux</div>
                 </div>
               </div>
@@ -215,7 +215,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                     <Users className="w-5 h-5 text-blue-300" />
                     <span className="text-blue-300 text-sm">Tentatives</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">{stats.totalAttempts}</div>
+                  <div className="text-base font-bold text-white">{stats.totalAttempts}</div>
                   <div className="text-blue-300 text-xs">{stats.uniqueStudents} étudiants uniques</div>
                 </div>
 
@@ -224,7 +224,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                     <Star className="w-5 h-5 text-green-300" />
                     <span className="text-green-300 text-sm">Moyenne</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">{stats.averageScore.toFixed(1)}%</div>
+                  <div className="text-base font-bold text-white">{stats.averageScore.toFixed(1)}%</div>
                   <div className="text-green-300 text-xs">
                     {stats.highestScore}% max / {stats.lowestScore}% min
                   </div>
@@ -235,7 +235,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                     <CheckCircle className="w-5 h-5 text-purple-300" />
                     <span className="text-purple-300 text-sm">Taux de réussite</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">{stats.passRate.toFixed(1)}%</div>
+                  <div className="text-base font-bold text-white">{stats.passRate.toFixed(1)}%</div>
                   <div className="text-purple-300 text-xs">{stats.passedAttempts}/{stats.totalAttempts} réussis</div>
                 </div>
 
@@ -244,7 +244,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                     <Clock className="w-5 h-5 text-orange-300" />
                     <span className="text-orange-300 text-sm">Temps moyen</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">{formatTime(stats.averageTime)}</div>
+                  <div className="text-base font-bold text-white">{formatTime(stats.averageTime)}</div>
                   <div className="text-orange-300 text-xs">Par tentative</div>
                 </div>
               </div>
@@ -252,7 +252,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
 
             {/* Filters and Search */}
             <div className="bg-white/5 rounded-xl p-4">
-              <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+              <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-3">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
                   <input
@@ -319,7 +319,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                   <tbody className="divide-y divide-white/10">
                     {loading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center">
+                        <td colSpan={6} className="px-4 py-4 text-center">
                           <div className="flex items-center justify-center space-x-2">
                             <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
                             <span className="text-blue-300">Chargement des tentatives...</span>
@@ -328,9 +328,9 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                       </tr>
                     ) : filteredAndSortedAttempts.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center">
+                        <td colSpan={6} className="px-4 py-4 text-center">
                           <div className="text-center">
-                            <BarChart3 className="w-12 h-12 text-blue-300 mx-auto mb-2" />
+                            <BarChart3 className="w-10 h-10 text-blue-300 mx-auto mb-2" />
                             <p className="text-blue-200">Aucune tentative trouvée</p>
                             <p className="text-blue-300 text-sm">Aucun étudiant n'a encore tenté ce quiz</p>
                           </div>
@@ -343,7 +343,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                           <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
                             <td className="px-4 py-3">
                               <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                                <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
                                   <span className="text-white text-sm font-semibold">
                                     {attempt.student_name.charAt(0).toUpperCase()}
                                   </span>
@@ -358,7 +358,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                               <div className="text-white font-medium">{attempt.score}/{attempt.total_points}</div>
                             </td>
                             <td className="px-4 py-3">
-                              <div className={`text-lg font-bold ${isPassed ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`text-base font-bold ${isPassed ? 'text-green-400' : 'text-red-400'}`}>
                                 {attempt.percentage}%
                               </div>
                             </td>

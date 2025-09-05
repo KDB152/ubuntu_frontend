@@ -436,7 +436,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                 <SubjectIcon className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-lg">{quiz.title}</h3>
+                <h3 className="text-white font-bold text-base">{quiz.title}</h3>
                 <p className="text-white/80 text-sm">{quiz.category}</p>
               </div>
             </div>
@@ -502,7 +502,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             <div className="bg-green-500/20 rounded-lg p-3 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-green-300 text-sm">Votre meilleur score</span>
-                <span className="text-green-300 font-bold text-lg">{quiz.bestScore}%</span>
+                <span className="text-green-300 font-bold text-base">{quiz.bestScore}%</span>
               </div>
               <div className="w-full bg-green-500/20 rounded-full h-2 mt-2">
                 <div 
@@ -537,7 +537,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
 
           {/* Récompenses */}
           <div className="mb-4">
-            <div className="flex items-center space-x-4 text-sm">
+            <div className="flex items-center space-x-3 text-sm">
               <div className="flex items-center space-x-1">
                 <Zap className="w-4 h-4 text-yellow-400" />
                 <span className="text-yellow-400">{quiz.rewards.xp} XP</span>
@@ -605,14 +605,14 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
         }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 flex-1">
-            <div className={`w-12 h-12 bg-gradient-to-r ${getSubjectColor(quiz.subject)} rounded-xl flex items-center justify-center`}>
-              <SubjectIcon className="w-6 h-6 text-white" />
+          <div className="flex items-center space-x-3 flex-1">
+            <div className={`w-10 h-10 bg-gradient-to-r ${getSubjectColor(quiz.subject)} rounded-xl flex items-center justify-center`}>
+              <SubjectIcon className="w-5 h-5 text-white" />
             </div>
             
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
-                <h3 className="text-white font-bold text-lg">{quiz.title}</h3>
+                <h3 className="text-white font-bold text-base">{quiz.title}</h3>
                 {quiz.isNew && (
                   <span className="bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full font-semibold">
                     Nouveau
@@ -623,7 +623,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                 )}
               </div>
               <p className="text-blue-200 text-sm mb-2">{quiz.description}</p>
-              <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-3 text-sm">
                 <span className={`px-2 py-1 rounded-full font-semibold ${getDifficultyColor(quiz.difficulty)}`}>
                   {quiz.difficulty === 'easy' ? 'Facile' : quiz.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
                 </span>
@@ -643,10 +643,10 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {quiz.isCompleted && quiz.bestScore && (
               <div className="text-center">
-                <div className="text-green-400 font-bold text-lg">{quiz.bestScore}%</div>
+                <div className="text-green-400 font-bold text-base">{quiz.bestScore}%</div>
                 <div className="text-green-300 text-xs">Meilleur score</div>
               </div>
             )}
@@ -693,25 +693,25 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
   const upcomingQuizzes = filteredQuizzes.filter(q => !q.isAvailable);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête avec statistiques */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-white text-2xl font-bold mb-2">Mes Quiz</h1>
+            <h1 className="text-white text-base font-bold mb-2">Mes Quiz</h1>
             <p className="text-blue-200">Découvrez et testez vos connaissances</p>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <div className="text-center">
-              <div className="text-white text-2xl font-bold">{availableQuizzes.length}</div>
+              <div className="text-white text-base font-bold">{availableQuizzes.length}</div>
               <div className="text-blue-300 text-sm">Disponibles</div>
             </div>
             <div className="text-center">
-              <div className="text-green-400 text-2xl font-bold">{completedQuizzes.length}</div>
+              <div className="text-green-400 text-base font-bold">{completedQuizzes.length}</div>
               <div className="text-green-300 text-sm">Terminés</div>
             </div>
             <div className="text-center">
-              <div className="text-orange-400 text-2xl font-bold">{upcomingQuizzes.length}</div>
+              <div className="text-orange-400 text-base font-bold">{upcomingQuizzes.length}</div>
               <div className="text-orange-300 text-sm">À venir</div>
             </div>
           </div>
@@ -750,7 +750,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
           </div>
 
           {/* Filtres et vue */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center space-x-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
@@ -786,7 +786,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
 
         {/* Filtres détaillés */}
         {showFilters && (
-          <div className="mt-6 pt-6 border-t border-white/20">
+          <div className="mt-3 pt-6 border-t border-white/20">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-blue-200 text-sm mb-2">Matière</label>
@@ -854,7 +854,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white hover:from-green-600 hover:to-emerald-700 transition-all">
           <div className="flex items-center space-x-3">
-            <Shuffle className="w-6 h-6" />
+            <Shuffle className="w-5 h-5" />
             <div className="text-left">
               <div className="font-semibold">Quiz aléatoire</div>
               <div className="text-green-100 text-sm">Défi surprise</div>
@@ -864,7 +864,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
 
         <button className="bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl p-4 text-white hover:from-purple-600 hover:to-violet-700 transition-all">
           <div className="flex items-center space-x-3">
-            <Timer className="w-6 h-6" />
+            <Timer className="w-5 h-5" />
             <div className="text-left">
               <div className="font-semibold">Mode chrono</div>
               <div className="text-purple-100 text-sm">Contre la montre</div>
@@ -874,7 +874,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
 
         <button className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-4 text-white hover:from-orange-600 hover:to-red-700 transition-all">
           <div className="flex items-center space-x-3">
-            <Trophy className="w-6 h-6" />
+            <Trophy className="w-5 h-5" />
             <div className="text-left">
               <div className="font-semibold">Défi du jour</div>
               <div className="text-orange-100 text-sm">Quiz spécial</div>
@@ -886,11 +886,11 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
 
 
       {/* Liste des quiz */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {filteredQuizzes.length === 0 ? (
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
-            <BookOpen className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-            <h3 className="text-white text-xl font-bold mb-2">Aucun quiz trouvé</h3>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 text-center">
+            <BookOpen className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+            <h3 className="text-white text-base font-bold mb-2">Aucun quiz trouvé</h3>
             <div className="mt-4 text-sm text-blue-300">
             </div>
           </div>

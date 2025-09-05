@@ -53,7 +53,7 @@ export async function GET() {
           child_class: '4ème A',
           subject: 'Problèmes de comportement',
           description: 'Mon fils a des difficultés à se concentrer en classe et semble avoir des problèmes avec certains camarades.',
-          preferred_date: '2024-12-25',
+          preferred_date: '2025-12-25',
           preferred_time: '14:00:00',
           duration: 30,
           meeting_type: 'in_person',
@@ -65,8 +65,8 @@ export async function GET() {
           admin_response_date: null,
           admin_id: null,
           admin_name: null,
-          created_at: '2024-12-20T10:30:00Z',
-          updated_at: '2024-12-20T10:30:00Z'
+          created_at: '2025-12-20T10:30:00Z',
+          updated_at: '2025-12-20T10:30:00Z'
         },
         {
           id: 2,
@@ -78,7 +78,7 @@ export async function GET() {
           child_class: '6ème B',
           subject: 'Suivi scolaire',
           description: 'Je souhaite faire le point sur les progrès de ma fille et discuter de ses résultats récents.',
-          preferred_date: '2024-12-26',
+          preferred_date: '2025-12-26',
           preferred_time: '16:00:00',
           duration: 45,
           meeting_type: 'video_call',
@@ -90,8 +90,8 @@ export async function GET() {
           admin_response_date: null,
           admin_id: null,
           admin_name: null,
-          created_at: '2024-12-20T11:00:00Z',
-          updated_at: '2024-12-20T11:00:00Z'
+          created_at: '2025-12-20T11:00:00Z',
+          updated_at: '2025-12-20T11:00:00Z'
         }
       ];
       return NextResponse.json(mockMeetings);

@@ -52,7 +52,6 @@ const MessagesManagementTab: React.FC = () => {
       <MessagingSystem 
         currentUserId={currentUserId} 
         currentUserRole={currentUserRole}
-        initialAction={searchParams.get('action')}
       />
     </div>
   );

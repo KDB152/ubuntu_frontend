@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         WHERE p.user_id = ?
       `, [parentUserId]);
 
-      finalStudentIds = parentChildren.map((row: any) => row.student_id);
+      finalStudentIds = (parentChildren as any).map((row: any) => row.student_id);
     } else {
       await connection.end();
       return NextResponse.json(
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     `, [...finalStudentIds, ...finalStudentIds]);
 
     // Transformer les données pour le frontend
-    const transformedResults = quizResults.map((result: any) => ({
+    const transformedResults = (quizResults as any).map((result: any) => ({
       id: result.id.toString(),
       quiz_id: result.quiz_id,
       student_id: result.correct_student_id || result.student_id,
@@ -108,12 +108,12 @@ export async function GET(request: NextRequest) {
     const stats = {
       totalQuizzes: transformedResults.length,
       averageScore: transformedResults.length > 0 
-        ? Math.round(transformedResults.reduce((sum, r) => sum + r.percentage, 0) / transformedResults.length)
+        ? Math.round(transformedResults.reduce((sum: number, r: any) => sum + r.percentage, 0) / transformedResults.length)
         : 0,
       bestScore: transformedResults.length > 0 
-        ? Math.max(...transformedResults.map(r => r.percentage))
+        ? Math.max(...transformedResults.map((r: any) => r.percentage))
         : 0,
-      totalTimeSpent: transformedResults.reduce((sum, r) => sum + r.time_spent, 0)
+      totalTimeSpent: transformedResults.reduce((sum: number, r: any) => sum + r.time_spent, 0)
     };
 
     await connection.end();

@@ -425,7 +425,7 @@ const QuizzesManagementTab = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Notification */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg backdrop-blur-xl border ${
@@ -448,12 +448,12 @@ const QuizzesManagementTab = () => {
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center">
-              <Award className="w-8 h-8 text-blue-300 mr-4" />
+            <h1 className="text-base font-bold text-white flex items-center">
+              <Award className="w-5 h-5 text-blue-300 mr-4" />
               Gestion des quiz
             </h1>
             <p className="text-blue-200 mt-2">Créez et gérez vos évaluations interactives</p>
-            <div className="flex items-center space-x-4 mt-3 text-sm text-blue-300">
+            <div className="flex items-center space-x-3 mt-3 text-sm text-blue-300">
               <span>Total: {quizzes.length} quiz</span>
               <span>Publiés: {quizzes.filter(q => q.status === 'Publié').length}</span>
               <span>Tentatives: {attempts.length}</span>
@@ -469,7 +469,7 @@ const QuizzesManagementTab = () => {
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+              className="flex items-center space-x-2 px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
             >
               <Plus className="w-5 h-5" />
               <span>Créer un quiz</span>
@@ -483,7 +483,7 @@ const QuizzesManagementTab = () => {
         <div className="flex">
           <button
             onClick={() => setActiveTab('quizzes')}
-            className={`flex-1 px-6 py-4 text-center font-semibold transition-all ${
+            className={`flex-1 px-3 py-4 text-center font-semibold transition-all ${
               activeTab === 'quizzes'
                 ? 'bg-blue-600 text-white'
                 : 'text-blue-200 hover:bg-white/10 hover:text-white'
@@ -496,7 +496,7 @@ const QuizzesManagementTab = () => {
           </button>
           <button
             onClick={() => setActiveTab('results')}
-            className={`flex-1 px-6 py-4 text-center font-semibold transition-all ${
+            className={`flex-1 px-3 py-4 text-center font-semibold transition-all ${
               activeTab === 'results'
                 ? 'bg-blue-600 text-white'
                 : 'text-blue-200 hover:bg-white/10 hover:text-white'
@@ -514,7 +514,7 @@ const QuizzesManagementTab = () => {
         <>
           {/* Filtres et recherche */}
           <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-3">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
                 <input
@@ -568,7 +568,7 @@ const QuizzesManagementTab = () => {
                 <div className="p-6 border-b border-white/20">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2">
+                      <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2">
                         {quiz.title}
                       </h3>
                       <p className="text-sm text-blue-200 mt-1">{quiz.subject} • {quiz.level}</p>
@@ -596,28 +596,28 @@ const QuizzesManagementTab = () => {
                          <Clock className="w-4 h-4" />
                          <span className="text-xs">Durée</span>
                        </div>
-                       <p className="text-lg font-bold text-white">{quiz.duration}min</p>
+                       <p className="text-base font-bold text-white">{quiz.duration}min</p>
                      </div>
                      <div className="text-center">
                        <div className="flex items-center justify-center space-x-1 text-blue-200 mb-1">
                          <Target className="w-4 h-4" />
                          <span className="text-xs">Points</span>
                        </div>
-                       <p className="text-lg font-bold text-white">{quiz.totalPoints}</p>
+                       <p className="text-base font-bold text-white">{quiz.totalPoints}</p>
                      </div>
                      <div className="text-center">
                        <div className="flex items-center justify-center space-x-1 text-blue-200 mb-1">
                          <Users className="w-4 h-4" />
                          <span className="text-xs">Tentatives</span>
                        </div>
-                       <p className="text-lg font-bold text-white">{quiz.attempts}</p>
+                       <p className="text-base font-bold text-white">{quiz.attempts}</p>
                      </div>
                      <div className="text-center">
                        <div className="flex items-center justify-center space-x-1 text-blue-200 mb-1">
                          <Star className="w-4 h-4" />
                          <span className="text-xs">Moyenne</span>
                        </div>
-                       <p className="text-lg font-bold text-white">{quiz.averageScore.toFixed(1)}/20</p>
+                       <p className="text-base font-bold text-white">{quiz.averageScore.toFixed(1)}/20</p>
                      </div>
                    </div>
 
@@ -632,7 +632,7 @@ const QuizzesManagementTab = () => {
                          {getQuizAttempts(quiz.id).slice(0, 3).map((attempt) => (
                            <div key={attempt.id} className="flex items-center justify-between bg-white/5 rounded-lg p-2">
                              <div className="flex items-center space-x-2">
-                               <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                               <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
                                  <span className="text-white font-bold text-xs">
                                    {attempt.studentName.split(' ').map(n => n[0]).join('')}
                                  </span>
@@ -788,13 +788,13 @@ const QuizzesManagementTab = () => {
           </div>
 
           {filteredQuizzes.length === 0 && (
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-12 text-center">
-              <Award className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-              <p className="text-blue-200 text-xl mb-2">Aucun quiz trouvé</p>
-              <p className="text-blue-300 mb-6">Créez votre premier quiz pour commencer à évaluer vos étudiants</p>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 text-center">
+              <Award className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+              <p className="text-blue-200 text-base mb-2">Aucun quiz trouvé</p>
+              <p className="text-blue-300 mb-3">Créez votre premier quiz pour commencer à évaluer vos étudiants</p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold"
+                className="px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold"
               >
                 Créer un quiz
               </button>
@@ -804,37 +804,37 @@ const QuizzesManagementTab = () => {
       )}
 
       {activeTab === 'results' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {attempts.length === 0 ? (
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-12 text-center">
-              <BarChart3 className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-              <p className="text-blue-200 text-xl mb-2">Aucun résultat disponible</p>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 text-center">
+              <BarChart3 className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+              <p className="text-blue-200 text-base mb-2">Aucun résultat disponible</p>
               <p className="text-blue-300">Les résultats apparaîtront ici une fois que les étudiants auront commencé à passer les quiz</p>
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
               {/* En-tête avec statistiques globales */}
               <div className="p-6 border-b border-white/20 bg-gradient-to-r from-blue-600/20 to-indigo-600/20">
-                <h3 className="text-xl font-bold text-white mb-4">Statistiques Globales</h3>
+                <h3 className="text-base font-bold text-white mb-4">Statistiques Globales</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white/10 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-400">{attempts.length}</div>
+                    <div className="text-base font-bold text-blue-400">{attempts.length}</div>
                     <div className="text-sm text-blue-300">Total Tentatives</div>
                   </div>
                   <div className="bg-white/10 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-400">
+                    <div className="text-base font-bold text-green-400">
                       {attempts.length > 0 ? Math.round(attempts.reduce((sum, a) => sum + a.percentage, 0) / attempts.length) : 0}%
                     </div>
                     <div className="text-sm text-blue-300">Score Moyen</div>
                   </div>
                   <div className="bg-white/10 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-purple-400">
+                    <div className="text-base font-bold text-purple-400">
                       {new Set(attempts.map(a => a.studentId)).size}
                     </div>
                     <div className="text-sm text-blue-300">Étudiants Uniques</div>
                   </div>
                   <div className="bg-white/10 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-400">
+                    <div className="text-base font-bold text-orange-400">
                       {new Set(attempts.map(a => a.quizId)).size}
                     </div>
                     <div className="text-sm text-blue-300">Quiz Tentés</div>
@@ -847,12 +847,12 @@ const QuizzesManagementTab = () => {
                 <table className="w-full">
                   <thead className="bg-white/5">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Étudiant</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Quiz</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Score</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Pourcentage</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Temps</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Date</th>
+                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Étudiant</th>
+                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Quiz</th>
+                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Score</th>
+                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Pourcentage</th>
+                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Temps</th>
+                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -860,9 +860,9 @@ const QuizzesManagementTab = () => {
                       const quiz = quizzes.find(q => q.id === attempt.quizId);
                       return (
                         <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                              <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-xs">
                                   {attempt.studentName.split(' ').map(n => n[0]).join('')}
                                 </span>
@@ -870,18 +870,18 @@ const QuizzesManagementTab = () => {
                               <span className="text-sm font-medium text-white">{attempt.studentName}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-4 whitespace-nowrap">
                             <div>
                               <p className="text-sm font-medium text-white">{quiz?.title || 'Quiz inconnu'}</p>
                               <p className="text-xs text-blue-300">{quiz?.subject} • {quiz?.level}</p>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-4 whitespace-nowrap">
                             <span className="text-sm font-bold text-white">
                               {attempt.score}/{attempt.totalPoints}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-2">
                               <span className={`text-sm font-bold ${getScoreColor(attempt.percentage)}`}>
                                 {attempt.percentage}%
@@ -898,12 +898,12 @@ const QuizzesManagementTab = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-4 whitespace-nowrap">
                             <span className="text-sm text-blue-200">
                               {Math.floor(attempt.timeSpent / 60)}:{(attempt.timeSpent % 60).toString().padStart(2, '0')}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-4 whitespace-nowrap">
                             <span className="text-sm text-blue-200">
                               {new Date(attempt.completedAt).toLocaleDateString('fr-FR')}
                             </span>
@@ -1023,16 +1023,16 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-white/20">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <Plus className="w-6 h-6 text-blue-300 mr-3" />
+          <h2 className="text-base font-bold text-white flex items-center">
+            <Plus className="w-5 h-5 text-blue-300 mr-3" />
             Créer un nouveau quiz
           </h2>
           <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-white mb-2">Titre du quiz *</label>
@@ -1151,7 +1151,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Options du quiz</h3>
+            <h3 className="text-base font-semibold text-white">Options du quiz</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
@@ -1192,18 +1192,18 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
             </div>
           </div>
 
-          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/20">
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-white/20">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+              className="px-3 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
               disabled={isLoading}
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
+              className="px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
               disabled={isLoading || !formData.title}
             >
               {isLoading ? (
@@ -1254,16 +1254,16 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-white/20">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <Edit className="w-6 h-6 text-blue-300 mr-3" />
+          <h2 className="text-base font-bold text-white flex items-center">
+            <Edit className="w-5 h-5 text-blue-300 mr-3" />
             Modifier le quiz
           </h2>
           <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-white mb-2">Titre du quiz *</label>
@@ -1386,7 +1386,7 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Options du quiz</h3>
+            <h3 className="text-base font-semibold text-white">Options du quiz</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
@@ -1427,18 +1427,18 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
             </div>
           </div>
 
-          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/20">
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-white/20">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+              className="px-3 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
               disabled={isLoading}
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
+              className="px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -1473,16 +1473,16 @@ const DeleteQuizModal: React.FC<DeleteQuizModalProps> = ({ quiz, onConfirm, onCl
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-red-400" />
+            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-red-400" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Confirmer la suppression</h3>
+              <h3 className="text-base font-bold text-white">Confirmer la suppression</h3>
               <p className="text-blue-200 text-sm">Cette action est irréversible</p>
             </div>
           </div>
           
-          <p className="text-blue-200 mb-6">
+          <p className="text-blue-200 mb-3">
             Êtes-vous sûr de vouloir supprimer le quiz <strong className="text-white">"{quiz.title}"</strong> ?
             {quiz.attempts > 0 && (
               <span className="block mt-2 text-yellow-300 text-sm">
@@ -1534,32 +1534,32 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-white/20">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <BarChart3 className="w-6 h-6 text-blue-300 mr-3" />
+          <h2 className="text-base font-bold text-white flex items-center">
+            <BarChart3 className="w-5 h-5 text-blue-300 mr-3" />
             Résultats - {quiz.title}
           </h2>
           <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-4">
           {/* Statistiques générales */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-white">{attempts.length}</div>
+              <div className="text-base font-bold text-white">{attempts.length}</div>
               <div className="text-sm text-blue-200">Tentatives</div>
             </div>
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-white">{averageScore.toFixed(1)}%</div>
+              <div className="text-base font-bold text-white">{averageScore.toFixed(1)}%</div>
               <div className="text-sm text-blue-200">Moyenne</div>
             </div>
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-white">{passRate.toFixed(1)}%</div>
+              <div className="text-base font-bold text-white">{passRate.toFixed(1)}%</div>
               <div className="text-sm text-blue-200">Taux de réussite</div>
             </div>
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-white">{quiz.passScore}</div>
+              <div className="text-base font-bold text-white">{quiz.passScore}</div>
               <div className="text-sm text-blue-200">Note de passage</div>
             </div>
           </div>
@@ -1582,7 +1582,7 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
                   <tr key={attempt.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                           <span className="text-white font-bold text-xs">
                             {attempt.studentName.split(' ').map(n => n[0]).join('')}
                           </span>
@@ -1639,8 +1639,8 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
             </table>
 
             {attempts.length === 0 && (
-              <div className="text-center py-8">
-                <BarChart3 className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+              <div className="text-center py-4">
+                <BarChart3 className="w-10 h-10 text-blue-300 mx-auto mb-4" />
                 <p className="text-blue-200">Aucune tentative pour ce quiz</p>
               </div>
             )}

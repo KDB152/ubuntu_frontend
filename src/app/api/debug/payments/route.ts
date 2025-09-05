@@ -47,8 +47,8 @@ export async function GET() {
       payments: payments,
       students: students,
       counts: {
-        paiement: countPayments[0].total,
-        students: countStudents[0].total
+        paiement: (countPayments as any)[0].total,
+        students: (countStudents as any)[0].total
       }
     });
     

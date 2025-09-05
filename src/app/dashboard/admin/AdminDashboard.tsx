@@ -64,7 +64,7 @@ import MessagesManagementTab from './MessagesManagementTab';
 import RendezVousManagementTab from './RendezVousManagementTab';
 import AttendanceTab from './AttendanceTab';
 import PaymentsManagementTab from './PaymentsManagementTab';
-import SettingsManagementTab from './SettingsManagementTab';
+import SettingsTab from './SettingsTab';
 import FileManagementTab from './FileManagementTab';
 import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedList, AnimatedListItem } from '../../../components/ui/animations';
 
@@ -300,7 +300,7 @@ const AdminDashboard = () => {
       case 'files':
         return <FileManagementTab />;
       case 'settings':
-        return <SettingsManagementTab />;
+        return <SettingsTab admin={currentUser} />;
       default:
         return <DashboardOverviewTab />;
     }
@@ -554,18 +554,7 @@ const AdminDashboard = () => {
         <footer className="bg-white/5 backdrop-blur-xl border-t border-white/20 px-6 py-4">
           <div className="flex items-center justify-between text-sm">
             <div className="text-blue-300">
-              © 2024 Chrono-Carto. Tous droits réservés.
-            </div>
-            <div className="flex items-center space-x-4 text-blue-300">
-              <span>Version 2.1.0</span>
-              <span>•</span>
-              <button className="hover:text-white transition-all">
-                Documentation
-              </button>
-              <span>•</span>
-              <button className="hover:text-white transition-all">
-                Support
-              </button>
+              © 2025 Chrono-Carto. Tous droits réservés.
             </div>
           </div>
         </footer>

@@ -125,7 +125,7 @@ export async function PUT(
     );
   } catch (error) {
     console.error('❌ Erreur lors de la mise à jour du rendez-vous:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour du rendez-vous' },
       { status: 500 }

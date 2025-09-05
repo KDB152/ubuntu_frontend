@@ -271,7 +271,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         title: 'Excellent résultat !',
         message: `${getChildName('child-1')} a obtenu 98% au quiz sur la Révolution française`,
         childId: 'child-1',
-        timestamp: '2024-12-20T16:30:00',
+        timestamp: '2025-12-20T16:30:00',
         isRead: false,
         action: {
           label: 'Voir les détails',
@@ -283,7 +283,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         type: 'warning',
         title: 'Rendez-vous programmé',
         message: 'Réunion parents-professeurs le 27 décembre à 17h00',
-        timestamp: '2024-12-20T14:15:00',
+        timestamp: '2025-12-20T14:15:00',
         isRead: false,
         action: {
           label: 'Confirmer',
@@ -296,7 +296,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         title: 'Nouveau quiz disponible',
         message: `Un nouveau quiz sur l'Empire napoléonien est disponible pour ${getChildName('child-2')}`,
         childId: 'child-2',
-        timestamp: '2024-12-20T10:45:00',
+        timestamp: '2025-12-20T10:45:00',
         isRead: true
       },
       {
@@ -305,7 +305,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         title: 'Quiz non terminé',
         message: `${getChildName('child-1')} n'a pas terminé le quiz sur les climats européens (échéance dans 2 jours)`,
         childId: 'child-1',
-        timestamp: '2024-12-19T18:20:00',
+        timestamp: '2025-12-19T18:20:00',
         isRead: false,
         action: {
           label: `Rappeler à ${getChildName('child-1')}`,
@@ -318,7 +318,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         title: 'Badge obtenu !',
         message: `${getChildName('child-2')} a débloqué le badge "Géographe Expert"`,
         childId: 'child-2',
-        timestamp: '2024-12-19T15:30:00',
+        timestamp: '2025-12-19T15:30:00',
         isRead: true
       }
     ];
@@ -328,7 +328,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'event-1',
         title: 'Quiz - Empire napoléonien',
         type: 'quiz',
-        date: '2024-12-23T10:00:00',
+        date: '2025-12-23T10:00:00',
         childId: 'child-1',
         description: 'Quiz sur l\'Empire de Napoléon Bonaparte',
         priority: 'high'
@@ -337,7 +337,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'event-2',
         title: 'Réunion parents-professeurs',
         type: 'meeting',
-        date: '2024-12-27T17:00:00',
+        date: '2025-12-27T17:00:00',
         location: `${getSchoolName()} - Salle 205`,
         description: `Entretien avec les professeurs de ${getChildName('child-1')} et ${getChildName('child-2')}`,
         priority: 'urgent'
@@ -346,7 +346,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         id: 'event-3',
         title: 'Contrôle d\'Histoire',
         type: 'exam',
-        date: '2024-12-30T09:00:00',
+        date: '2025-12-30T09:00:00',
         childId: 'child-2',
         description: 'Évaluation sur la Révolution française',
         priority: 'high'

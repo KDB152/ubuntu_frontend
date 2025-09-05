@@ -31,7 +31,7 @@ export default function PendingApprovalPage() {
 
     // Vérifier le statut de l'email au chargement de la page
     if (emailParam || storedEmail) {
-      checkEmailStatus(emailParam || storedEmail);
+      checkEmailStatus(emailParam || storedEmail || '');
     }
   }, [searchParams, router]);
 

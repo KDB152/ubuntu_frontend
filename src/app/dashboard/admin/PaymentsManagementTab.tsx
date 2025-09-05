@@ -309,10 +309,10 @@ const PaymentsManagementTab: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px]">
         <div className="flex items-center space-x-2">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-          <span className="text-lg text-white">Chargement des paiements...</span>
+          <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+          <span className="text-base text-white">Chargement des paiements...</span>
         </div>
       </div>
     );
@@ -320,10 +320,10 @@ const PaymentsManagementTab: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px]">
                  <div className="text-center">
-           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-           <h3 className="text-lg font-semibold text-red-600 mb-2">Erreur de chargement</h3>
+           <XCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+           <h3 className="text-base font-semibold text-red-600 mb-2">Erreur de chargement</h3>
            <p className="text-gray-600 mb-4">{error}</p>
            <button
              onClick={loadPayments}
@@ -337,13 +337,13 @@ const PaymentsManagementTab: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center">
-              <CreditCard className="w-6 h-6 text-blue-300 mr-3" />
+            <h1 className="text-base font-bold text-white flex items-center">
+              <CreditCard className="w-5 h-5 text-blue-300 mr-3" />
               Gestion des Paiements
             </h1>
             <p className="text-blue-200 mt-1">
@@ -368,9 +368,9 @@ const PaymentsManagementTab: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Total Paiements</p>
-              <p className="text-2xl font-bold text-white">{stats.totalPayments}</p>
+              <p className="text-base font-bold text-white">{stats.totalPayments}</p>
             </div>
-            <CreditCard className="w-8 h-8 text-blue-300" />
+            <CreditCard className="w-5 h-5 text-blue-300" />
           </div>
         </div>
         
@@ -378,9 +378,9 @@ const PaymentsManagementTab: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Montant Total</p>
-              <p className="text-2xl font-bold text-white">{formatAmount(stats.totalAmount)}</p>
+              <p className="text-base font-bold text-white">{formatAmount(stats.totalAmount)}</p>
             </div>
-            <Euro className="w-8 h-8 text-blue-300" />
+            <Euro className="w-5 h-5 text-blue-300" />
           </div>
         </div>
         
@@ -388,9 +388,9 @@ const PaymentsManagementTab: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Payé</p>
-              <p className="text-2xl font-bold text-green-400">{formatAmount(stats.paidAmount)}</p>
+              <p className="text-base font-bold text-green-400">{formatAmount(stats.paidAmount)}</p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
+            <CheckCircle className="w-5 h-5 text-green-400" />
           </div>
         </div>
         
@@ -398,9 +398,9 @@ const PaymentsManagementTab: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Non Payé</p>
-              <p className="text-2xl font-bold text-orange-400">{formatAmount(stats.unpaidAmount)}</p>
+              <p className="text-base font-bold text-orange-400">{formatAmount(stats.unpaidAmount)}</p>
             </div>
-            <Clock className="w-8 h-8 text-orange-400" />
+            <Clock className="w-5 h-5 text-orange-400" />
         </div>
       </div>
 
@@ -409,7 +409,7 @@ const PaymentsManagementTab: React.FC = () => {
 
       {/* Filtres et recherche */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+        <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
             <input
@@ -453,7 +453,7 @@ const PaymentsManagementTab: React.FC = () => {
       {/* Liste des paiements */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
         <div className="p-6 border-b border-white/20">
-          <h2 className="text-xl font-bold text-white flex items-center">
+          <h2 className="text-base font-bold text-white flex items-center">
             <User className="w-5 h-5 text-blue-300 mr-2" />
             Paiements ({filteredPayments.length})
           </h2>
@@ -463,22 +463,22 @@ const PaymentsManagementTab: React.FC = () => {
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
+                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Étudiant
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
+                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Classe
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
+                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Séances
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
+                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Montants
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
+                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Statut
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
+                <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -486,7 +486,7 @@ const PaymentsManagementTab: React.FC = () => {
             <tbody className="divide-y divide-white/10">
               {filteredPayments.map((payment) => (
                 <tr key={payment.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                     <div>
                       <div className="text-sm font-medium text-white">
                         {payment.student_first_name} {payment.student_last_name}
@@ -499,13 +499,13 @@ const PaymentsManagementTab: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       <BookOpen className="w-3 h-3 mr-1" />
                       {payment.class_level}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                     <div className="text-sm text-white">
                       <div className="flex items-center space-x-2">
                         <span className="text-green-400">Payées: {payment.seances_payees}</span>
@@ -516,7 +516,7 @@ const PaymentsManagementTab: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                     <div className="text-sm text-white">
                       <div className="flex items-center space-x-2">
                         <span className="text-green-400">Payé: {formatAmount(payment.montant_paye)}</span>
@@ -527,7 +527,7 @@ const PaymentsManagementTab: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBgColor(payment.statut)}`}>
                        {payment.statut === 'paye' && <CheckCircle className="w-3 h-3 mr-1" />}
                        {payment.statut === 'partiel' && <Clock className="w-3 h-3 mr-1" />}
@@ -535,7 +535,7 @@ const PaymentsManagementTab: React.FC = () => {
                        {payment.statut}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                       <div className="flex items-center space-x-2">
                         <button
                         onClick={() => handleViewDetails(payment)}
@@ -567,8 +567,8 @@ const PaymentsManagementTab: React.FC = () => {
         </div>
 
         {filteredPayments.length === 0 && (
-          <div className="text-center py-8">
-            <CreditCard className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+          <div className="text-center py-4">
+            <CreditCard className="w-10 h-10 text-blue-300 mx-auto mb-4" />
             <p className="text-blue-200">Aucun paiement trouvé</p>
           </div>
         )}
@@ -578,13 +578,13 @@ const PaymentsManagementTab: React.FC = () => {
       {showEditModal && selectedPayment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Modifier les séances</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-bold text-white">Modifier les séances</h3>
               <button
                 onClick={closeModals}
                 className="text-blue-300 hover:text-white transition-colors"
               >
-                <XCircle className="w-6 h-6" />
+                <XCircle className="w-5 h-5" />
               </button>
             </div>
 

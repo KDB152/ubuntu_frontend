@@ -440,17 +440,17 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         {/* En-tête */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className={`w-12 h-12 bg-gradient-to-br ${getSubjectColor(result.subject)} rounded-xl flex items-center justify-center`}>
-              <SubjectIcon className="w-6 h-6 text-white" />
+            <div className={`w-10 h-10 bg-gradient-to-br ${getSubjectColor(result.subject)} rounded-xl flex items-center justify-center`}>
+              <SubjectIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-semibold text-lg">{result.quizTitle}</h3>
+              <h3 className="text-white font-semibold text-base">{result.quizTitle}</h3>
               <p className="text-blue-200 text-sm">{childName} - {formatDate(result.completedAt)}</p>
             </div>
           </div>
           
           <div className="text-right">
-            <div className={`text-2xl font-bold ${getScoreColor(result.percentage)}`}>
+            <div className={`text-base font-bold ${getScoreColor(result.percentage)}`}>
               {result.percentage}%
             </div>
             <div className="flex items-center space-x-1">
@@ -463,15 +463,15 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         {/* Statistiques */}
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
-            <div className="text-white text-lg font-bold">{result.questionsCorrect}/{result.questionsTotal}</div>
+            <div className="text-white text-base font-bold">{result.questionsCorrect}/{result.questionsTotal}</div>
             <div className="text-blue-300 text-xs">Bonnes réponses</div>
           </div>
           <div className="text-center">
-            <div className="text-white text-lg font-bold">{formatDuration(result.timeSpent)}</div>
+            <div className="text-white text-base font-bold">{formatDuration(result.timeSpent)}</div>
             <div className="text-blue-300 text-xs">Temps passé</div>
           </div>
           <div className="text-center">
-            <div className="text-white text-lg font-bold">{result.xpEarned}</div>
+            <div className="text-white text-base font-bold">{result.xpEarned}</div>
             <div className="text-blue-300 text-xs">XP gagnés</div>
           </div>
         </div>
@@ -533,7 +533,7 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-5 h-5 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-blue-200">Chargement des résultats de quiz...</p>
         </div>
       </div>
@@ -543,25 +543,25 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
   // Afficher les résultats dès qu'ils sont chargés, même sans childData
   if (!loading && results.length === 0) {
     return (
-      <div className="text-center py-12">
-        <FileText className="w-16 h-16 text-blue-300 mx-auto mb-4 opacity-50" />
-        <h3 className="text-white text-lg font-semibold mb-2">Aucun quiz trouvé</h3>
+      <div className="text-center py-6">
+        <FileText className="w-10 h-10 text-blue-300 mx-auto mb-4 opacity-50" />
+        <h3 className="text-white text-base font-semibold mb-2">Aucun quiz trouvé</h3>
         <p className="text-blue-200">Vos enfants n'ont pas encore passé de quiz</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* En-tête avec statistiques */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-white text-2xl font-bold mb-2">Résultats des quiz</h1>
+            <h1 className="text-white text-base font-bold mb-2">Résultats des quiz</h1>
             <p className="text-blue-200">Total: {results.length} quiz terminé{results.length > 1 ? 's' : ''}</p>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center space-x-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
@@ -579,21 +579,21 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         {/* Statistiques globales */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className={`text-2xl font-bold ${getScoreColor(stats.averageScore)}`}>
+            <div className={`text-base font-bold ${getScoreColor(stats.averageScore)}`}>
               {stats.averageScore}%
             </div>
             <div className="text-blue-300 text-sm">Score moyen</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">{stats.totalQuizzes}</div>
+            <div className="text-white text-base font-bold">{stats.totalQuizzes}</div>
             <div className="text-blue-300 text-sm">Quiz terminés</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">#{stats.bestRank || 1}</div>
+            <div className="text-white text-base font-bold">#{stats.bestRank || 1}</div>
             <div className="text-blue-300 text-sm">Meilleur rang</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-2xl font-bold">{stats.totalXP}</div>
+            <div className="text-white text-base font-bold">{stats.totalXP}</div>
             <div className="text-blue-300 text-sm">XP total</div>
           </div>
         </div>
@@ -666,9 +666,9 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
       {/* Liste des résultats */}
       <div>
         {sortedResults.length === 0 ? (
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
-            <FileText className="w-16 h-16 text-blue-300 mx-auto mb-4" />
-            <h3 className="text-white text-xl font-bold mb-2">Aucun résultat trouvé</h3>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 text-center">
+            <FileText className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+            <h3 className="text-white text-base font-bold mb-2">Aucun résultat trouvé</h3>
             <p className="text-blue-200">Aucun quiz ne correspond à vos critères de recherche</p>
           </div>
         ) : (
@@ -682,8 +682,8 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
       {showResultModal && selectedResult && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-white text-2xl font-bold">Détails du résultat</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-white text-base font-bold">Détails du résultat</h2>
               <button
                 onClick={() => setShowResultModal(false)}
                 className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
@@ -694,15 +694,15 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Informations principales */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4">
                 {/* En-tête du quiz */}
                 <div className="bg-white/10 rounded-xl p-6">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${getSubjectColor(selectedResult.subject)} rounded-xl flex items-center justify-center`}>
-                      {React.createElement(getSubjectIcon(selectedResult.subject), { className: "w-8 h-8 text-white" })}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className={`w-10 h-10 bg-gradient-to-br ${getSubjectColor(selectedResult.subject)} rounded-xl flex items-center justify-center`}>
+                      {React.createElement(getSubjectIcon(selectedResult.subject), { className: "w-5 h-5 text-white" })}
                     </div>
                     <div>
-                      <h3 className="text-white text-xl font-bold">{selectedResult.quizTitle}</h3>
+                      <h3 className="text-white text-base font-bold">{selectedResult.quizTitle}</h3>
                       <p className="text-blue-200">{getChildName(selectedResult.childId)}</p>
                       <p className="text-blue-300 text-sm">{formatDate(selectedResult.completedAt)}</p>
                     </div>
@@ -710,13 +710,13 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
-                      <div className={`text-3xl font-bold ${getScoreColor(selectedResult.percentage)}`}>
+                      <div className={`text-base font-bold ${getScoreColor(selectedResult.percentage)}`}>
                         {selectedResult.percentage}%
                       </div>
                       <div className="text-blue-300 text-sm">Score obtenu</div>
                     </div>
                     <div className="text-center">
-                      <div className={`text-3xl font-bold ${getRankColor(selectedResult.rank)}`}>
+                      <div className={`text-base font-bold ${getRankColor(selectedResult.rank)}`}>
                         #{selectedResult.rank}
                       </div>
                       <div className="text-blue-300 text-sm">Classement</div>
@@ -787,7 +787,7 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
               </div>
 
               {/* Statistiques détaillées */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Métriques */}
                 <div className="bg-white/10 rounded-xl p-6">
                   <h4 className="text-white font-semibold mb-4">Statistiques</h4>
@@ -882,7 +882,7 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
                       <span>Amélioration</span>
                     </h4>
                     <div className="text-center">
-                      <div className="text-green-300 text-2xl font-bold">
+                      <div className="text-green-300 text-base font-bold">
                         +{selectedResult.percentage - selectedResult.previousScore}%
                       </div>
                       <div className="text-green-200 text-sm">

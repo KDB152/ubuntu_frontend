@@ -51,29 +51,29 @@ const mockReports: ReportItem[] = [
     id: 'rep-1',
     title: 'Résumé hebdomadaire - Lucas',
     description: 'Synthèse des activités et résultats de la semaine',
-    period: 'Semaine 51, 2024',
+    period: 'Semaine 51, 2025',
     type: 'weekly',
     childId: 'child-1',
-    createdAt: '2024-12-21T09:00:00',
+    createdAt: '2025-12-21T09:00:00',
     stats: { averageScore: 86, quizzesCompleted: 3, badgesEarned: 1, improvements: 2 }
   },
   {
     id: 'rep-2',
     title: 'Résumé hebdomadaire - Emma',
     description: 'Synthèse des activités et résultats de la semaine',
-    period: 'Semaine 51, 2024',
+    period: 'Semaine 51, 2025',
     type: 'weekly',
     childId: 'child-2',
-    createdAt: '2024-12-21T09:10:00',
+    createdAt: '2025-12-21T09:10:00',
     stats: { averageScore: 95, quizzesCompleted: 4, badgesEarned: 2, improvements: 1 }
   },
   {
     id: 'rep-3',
     title: 'Rapport mensuel - Famille Dubois',
     description: 'Vue d’ensemble des progrès du mois',
-    period: 'Décembre 2024',
+    period: 'Décembre 2025',
     type: 'monthly',
-    createdAt: '2024-12-31T18:00:00',
+    createdAt: '2025-12-31T18:00:00',
     stats: { averageScore: 91, quizzesCompleted: 10, badgesEarned: 5, improvements: 6 }
   },
 ];
