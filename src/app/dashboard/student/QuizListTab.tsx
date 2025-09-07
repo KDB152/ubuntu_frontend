@@ -158,7 +158,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
         }
         
         // Utiliser l'API de filtrage par groupe au lieu de tous les quizzes
-        const apiUrl = `http://localhost:3001/quizzes/accessible/${studentId}`;
+        const apiUrl = `http://192.168.1.11:3001/quizzes/accessible/${studentId}`;
         console.log('🔍 Debug - API URL:', apiUrl);
         
         let response;
@@ -267,7 +267,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             const originalQuiz = originalQuizzes[i];
             
             try {
-              const attemptsResponse = await fetch(`http://localhost:3001/quizzes/attempts?quiz_id=${quiz.id}&student_id=${studentId}`);
+              const attemptsResponse = await fetch(`http://192.168.1.11:3001/quizzes/attempts?quiz_id=${quiz.id}&student_id=${studentId}`);
               if (attemptsResponse.ok) {
                 const attempts = await attemptsResponse.json();
                 if (attempts && attempts.length > 0) {
@@ -889,7 +889,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
       <div className="space-y-4">
         {filteredQuizzes.length === 0 ? (
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 text-center">
-            <BookOpen className="w-10 h-10 text-blue-300 mx-auto mb-4" />
+            <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-10 h-10 mx-auto mb-4" />
             <h3 className="text-white text-base font-bold mb-2">Aucun quiz trouvé</h3>
             <div className="mt-4 text-sm text-blue-300">
             </div>

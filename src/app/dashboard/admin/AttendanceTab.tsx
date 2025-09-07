@@ -139,7 +139,7 @@ const AttendanceTab: React.FC = () => {
       <AnimatedPage className="space-y-6">
         <AnimatedCard className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
           <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-blue-300 mx-auto mb-4" />
+            <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-16 h-16 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">Sélectionnez une classe</h3>
             <p className="text-blue-200 mb-6">
               Veuillez sélectionner une classe pour afficher la liste des étudiants
@@ -342,7 +342,7 @@ const AttendanceTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <BookOpen className="w-3 h-3 mr-1" />
+                      <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-3 h-3 mr-1" />
                       {student.class_level}
                     </span>
                   </td>

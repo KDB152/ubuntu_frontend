@@ -17,9 +17,7 @@ const PolitiqueConfidentialite = () => {
           
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">Politique de confidentialité</h1>
             <p className="text-blue-200">Protection de vos données personnelles</p>

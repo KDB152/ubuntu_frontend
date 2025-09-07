@@ -49,7 +49,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   setIsLoading(true);
   try {
-    const response = await fetch('http://localhost:3001/auth/forgot-password', {
+    const response = await fetch('http://192.168.1.11:3001/auth/forgot-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: formData.email }),
@@ -116,7 +116,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <MapPin className="w-32 h-32 text-white animate-pulse" />
         </div>
         <div className="absolute top-1/2 left-10 opacity-10">
-          <BookOpen className="w-24 h-24 text-white animate-bounce" style={{ animationDelay: '1s' }} />
+          <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-24 h-24 animate-bounce" style={{ animationDelay: '1s' }} />
         </div>
 
         {/* Lignes de temps */}
@@ -134,9 +134,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             <div className="mb-8">
               <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mr-4 shadow-2xl">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32 mr-6" />
                 <div>
                   <h1 className="text-3xl font-bold text-white">Chrono-Carto</h1>
                   <p className="text-white/60">Plateforme éducative nouvelle génération</p>
@@ -188,9 +186,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                  <BookOpen className="w-10 h-10 text-white" />
-                </div>
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32" />
               </div>
               <h2 className="text-4xl font-bold text-white mb-3">Mot de passe oublié</h2>
               <p className="text-blue-200 text-lg">Nous vous enverrons un lien de réinitialisation</p>

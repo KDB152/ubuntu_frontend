@@ -28,8 +28,6 @@ import {
   Save,
   X,
   Loader2,
-  Bell,
-  BellOff,
   Heart,
   ThumbsUp,
   ThumbsDown,
@@ -228,7 +226,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ children }) => {
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'academic':
-        return <BookOpen className="w-4 h-4" />;
+        return <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-4 h-4" />;
       case 'sports':
         return <Zap className="w-4 h-4" />;
       case 'cultural':

@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
       email: child.email,
       classLevel: child.class_level,
       birthDate: child.birth_date,
-      phoneNumber: child.phone_number,
+      phone_number: child.phone_number,
       address: child.address
     }));
     
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       lastName: parent.last_name,
       fullName: `${parent.first_name} ${parent.last_name}`,
       email: parent.email,
-      phoneNumber: parent.phone_number || parent.user_phone,
+      phone_number: parent.phone_number || parent.user_phone,
       address: parent.address,
       occupation: parent.occupation,
       children: children

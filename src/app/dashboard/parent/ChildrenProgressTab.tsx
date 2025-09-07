@@ -184,7 +184,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
                 completedQuizzes: 4,
                 currentStreak: 2,
                 totalXP: 150,
-                badges: 3,
+                badges: 0,
                 rank: 1
               },
               recentActivity: {
@@ -209,7 +209,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
             
             try {
               // Récupérer les résultats des quiz pour cet enfant
-              const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+              const backendUrl = process.env.BACKEND_URL || 'http://192.168.1.11:3001';
               const attemptsResponse = await fetch(`${backendUrl}/quizzes/attempts?student_id=${child.id}`);
               
               if (attemptsResponse.ok) {
@@ -274,7 +274,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
               completedQuizzes: 4,
               currentStreak: 2,
               totalXP: 150,
-              badges: 3,
+                badges: 0,
               rank: 1
             },
             recentActivity: {
@@ -304,7 +304,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         setLoading(true);
         
         // Utiliser la même API que l'onglet Progrès de l'étudiant
-        const response = await fetch(`http://localhost:3001/quizzes/attempts?student_id=${currentChild.id}`);
+        const response = await fetch(`http://192.168.1.11:3001/quizzes/attempts?student_id=${currentChild.id}`);
         
         if (!response.ok) {
           throw new Error(`Échec de récupération des tentatives: ${response.status}`);
@@ -316,7 +316,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         // Récupérer les détails des quiz pour chaque tentative
         const resultsWithDetails = await Promise.allSettled(
           attempts.map(async (attempt: any) => {
-            const quizResponse = await fetch(`http://localhost:3001/quizzes/${attempt.quiz_id}`);
+            const quizResponse = await fetch(`http://192.168.1.11:3001/quizzes/${attempt.quiz_id}`);
             if (!quizResponse.ok) return null;
             
             const quiz = await quizResponse.json();
@@ -412,32 +412,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
             timeSpent: result.time_spent,
             xpEarned: Math.round(result.percentage / 10) // Calcul simple d'XP
           })),
-          achievements: [
-            {
-              id: '1',
-              title: 'Premier Quiz',
-              description: 'A terminé son premier quiz',
-              icon: '🎯',
-              earnedAt: validResults.length > 0 ? validResults[validResults.length - 1].completed_at : new Date().toISOString(),
-              category: 'participation'
-            },
-            ...(validResults.some(r => r.percentage >= 80) ? [{
-              id: '2',
-              title: 'Excellent Score',
-              description: 'A obtenu un score de 80% ou plus',
-              icon: '⭐',
-              earnedAt: validResults.find(r => r.percentage >= 80)?.completed_at || new Date().toISOString(),
-              category: 'performance'
-            }] : []),
-            ...(validResults.length >= 3 ? [{
-              id: '3',
-              title: 'Persévérant',
-              description: 'A terminé au moins 3 quiz',
-              icon: '🏆',
-              earnedAt: validResults[2]?.completed_at || new Date().toISOString(),
-              category: 'perseverance'
-            }] : [])
-          ]
+          achievements: []
         });
         
         console.log('✅ Progression chargée pour l\'enfant:', {
@@ -640,7 +615,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
 
         {/* Statistiques rapides */}
         <div className="p-6 border-b border-white/20">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-white text-lg font-bold">{child.stats.completedQuizzes}</div>
               <div className="text-blue-300 text-xs">Quiz terminés</div>
@@ -652,10 +627,6 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
             <div className="text-center">
               <div className="text-white text-lg font-bold">{child.stats.currentStreak}</div>
               <div className="text-blue-300 text-xs">Série actuelle</div>
-            </div>
-            <div className="text-center">
-              <div className="text-white text-lg font-bold">{child.stats.badges}</div>
-              <div className="text-blue-300 text-xs">Badges</div>
             </div>
           </div>
         </div>
@@ -844,10 +815,6 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
                       <span className="text-white font-bold">{child.stats.completedQuizzes}</span>
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <span className="text-blue-200 text-sm">Badges</span>
-                      <span className="text-white font-bold">{child.stats.badges}</span>
-                    </div>
                   </div>
                 </div>
               );
@@ -1027,7 +994,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         </div>
 
         {/* Statistiques globales */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white/5 rounded-lg p-4 text-center">
             <div className="text-white text-2xl font-bold">{childData.stats.averageScore}%</div>
             <div className="text-blue-300 text-sm">Score moyen</div>
@@ -1039,10 +1006,6 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
           <div className="bg-white/5 rounded-lg p-4 text-center">
             <div className="text-white text-2xl font-bold">{childData.stats.currentStreak}</div>
             <div className="text-blue-300 text-sm">Série actuelle</div>
-          </div>
-          <div className="bg-white/5 rounded-lg p-4 text-center">
-            <div className="text-white text-2xl font-bold">{childData.stats.badges}</div>
-            <div className="text-blue-300 text-sm">Badges</div>
           </div>
         </div>
       </div>
@@ -1206,66 +1169,6 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
                     </div>
                   )}
 
-                  {/* Badge de performance */}
-                  <div className="pt-6 border-t border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-3 rounded-xl ${
-                          data.averageScore >= 80 ? 'bg-gradient-to-r from-green-400/20 to-emerald-500/20' :
-                          data.averageScore >= 60 ? 'bg-gradient-to-r from-blue-400/20 to-indigo-500/20' :
-                          data.averageScore >= 40 ? 'bg-gradient-to-r from-yellow-400/20 to-orange-500/20' :
-                          'bg-gradient-to-r from-red-400/20 to-pink-500/20'
-                        }`}>
-                          {data.averageScore >= 80 ? <Trophy className="w-6 h-6 text-green-400" /> :
-                           data.averageScore >= 60 ? <Medal className="w-6 h-6 text-blue-400" /> :
-                           data.averageScore >= 40 ? <Star className="w-6 h-6 text-yellow-400" /> :
-                           <Target className="w-6 h-6 text-red-400" />}
-                        </div>
-                <div>
-                          <div className="text-white font-semibold">
-                            {data.averageScore >= 80 ? 'Excellent niveau !' :
-                             data.averageScore >= 60 ? 'Bon niveau' :
-                             data.averageScore >= 40 ? 'En progression' :
-                             'À améliorer'}
-                  </div>
-                          <div className="text-blue-300 text-sm">
-                            Performance globale en {data.subject === 'history' ? 'Histoire' : 'Géographie'}
-                </div>
-              </div>
-            </div>
-
-                      {/* Barre de progression circulaire */}
-                      <div className="relative w-16 h-16">
-                        <svg className="w-16 h-16 transform -rotate-90">
-                          <circle
-                            cx="32"
-                            cy="32"
-                            r="28"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-                          <circle
-                            cx="32"
-                            cy="32"
-                            r="28"
-                            stroke={data.averageScore >= 80 ? '#10B981' :
-                                   data.averageScore >= 60 ? '#3B82F6' :
-                                   data.averageScore >= 40 ? '#F59E0B' : '#EF4444'}
-                            strokeWidth="4"
-                            fill="none"
-                            strokeDasharray={`${2 * Math.PI * 28}`}
-                            strokeDashoffset={`${2 * Math.PI * 28 * (1 - data.averageScore / 100)}`}
-                            strokeLinecap="round"
-                            className="transition-all duration-1000 ease-out"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{data.averageScore}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             ))
@@ -1301,25 +1204,6 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         </div>
       )}
 
-      {/* Badges et achievements */}
-      {childData.achievements.length > 0 && (
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-          <h3 className="text-white text-xl font-bold mb-6">Badges et récompenses</h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {childData.achievements.map((achievement: any) => (
-              <div key={achievement.id} className="bg-white/5 rounded-lg p-4 text-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <Trophy className="w-6 h-6 text-white" />
-                </div>
-                <h4 className="text-white font-semibold text-sm">{achievement.name}</h4>
-                <p className="text-blue-300 text-xs">{achievement.description}</p>
-                <div className="text-green-400 text-xs mt-1">+{achievement.xpReward} XP</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

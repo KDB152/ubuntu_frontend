@@ -149,7 +149,7 @@ const ParentProfileTab: React.FC = () => {
                 
                 try {
                   // Récupérer les résultats des quiz pour cet enfant
-                  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+                  const backendUrl = process.env.BACKEND_URL || 'http://192.168.1.11:3001';
                   const attemptsResponse = await fetch(`${backendUrl}/quizzes/attempts?student_id=${child.id}`);
                   
                   if (attemptsResponse.ok) {
@@ -512,7 +512,7 @@ const ParentProfileTab: React.FC = () => {
               
               <div className="space-y-2">
                 <div className="flex items-center space-x-2 text-blue-200 text-sm">
-                  <BookOpen className="w-4 h-4" />
+                  <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-4 h-4" />
                   <span>Score moyen: {child.averageScore}%</span>
                 </div>
                 <div className="flex items-center space-x-2 text-blue-200 text-sm">

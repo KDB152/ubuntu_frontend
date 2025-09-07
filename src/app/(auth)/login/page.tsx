@@ -69,7 +69,7 @@ const LoginPage = () => {
     setErrorMessage(null); // Clear previous error message
 
     try {
-      const res = await fetch('http://localhost:3001/auth/login', {
+      const res = await fetch('http://192.168.1.11:3001/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,7 +148,7 @@ const LoginPage = () => {
           <MapPin className="w-32 h-32 text-white animate-pulse" />
         </div>
         <div className="absolute top-1/2 left-10 opacity-10">
-          <BookOpen className="w-24 h-24 text-white animate-bounce" style={{ animationDelay: '1s' }} />
+          <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-24 h-24 animate-bounce" style={{ animationDelay: '1s' }} />
         </div>
 
         <div className="absolute inset-0">
@@ -165,9 +165,7 @@ const LoginPage = () => {
           <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             <div className="mb-8">
               <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mr-4 shadow-2xl">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto Logo" className="w-40 h-40 mr-6" />
                 <div>
                   <h1 className="text-3xl font-bold text-white">Chrono-Carto</h1>
                   <p className="text-white/60">Plateforme éducative nouvelle génération</p>
@@ -235,9 +233,7 @@ const LoginPage = () => {
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                  <BookOpen className="w-10 h-10 text-white" />
-                </div>
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto Logo" className="w-40 h-40" />
               </div>
               <h2 className="text-4xl font-bold text-white mb-3">Connexion</h2>
               <p className="text-blue-200 text-lg">Accédez à votre espace d'apprentissage</p>
@@ -344,47 +340,32 @@ const LoginPage = () => {
                 </p>
                 <a 
                   href="/register" 
-                  className="inline-flex items-center px-6 py-3 border-2 border-white/30 text-white rounded-xl font-medium hover:bg-white/10 transition-all duration-300 group"
+                  className="group inline-flex items-center px-6 py-3 text-sm font-medium text-amber-300 bg-white/5 border border-amber-300/30 rounded-xl hover:bg-amber-300/10 hover:border-amber-300/50 transition-all duration-200 backdrop-blur-sm"
                 >
-                  <span>Créer un compte</span>
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  Créer un compte
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
             </form>
 
+            {/* Footer */}
             <div className="mt-8 text-center">
-              <div className="flex items-center justify-center space-x-4 text-xs text-white/60">
-                <div className="flex items-center">
-                  <Shield className="w-4 h-4 mr-1" />
-                  <span>Connexion sécurisée</span>
-                </div>
-                <div className="w-px h-4 bg-white/30"></div>
-                <div className="flex items-center">
-                  <Users className="w-4 h-4 mr-1" />
-                  <span>Données protégées RGPD</span>
-                </div>
-              </div>
+              <p className="text-white/40 text-xs">
+                En vous connectant, vous acceptez nos{' '}
+                <a href="/terms" className="text-amber-300/60 hover:text-amber-300 transition-colors">
+                  conditions d'utilisation
+                </a>{' '}
+                et notre{' '}
+                <a href="/privacy" className="text-amber-300/60 hover:text-amber-300 transition-colors">
+                  politique de confidentialité
+                </a>
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Particules flottantes améliorées */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white/30 rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
-            }}
-          />
-        ))}
-      </div>
-
+      {/* Styles personnalisés pour les animations */}
       <style jsx>{`
         @keyframes fade-in-up {
           from {
@@ -398,7 +379,7 @@ const LoginPage = () => {
         }
         
         .animate-fade-in-up {
-          animation: fade-in-up 1s ease-out;
+          animation: fade-in-up 0.6s ease-out;
         }
       `}</style>
     </div>

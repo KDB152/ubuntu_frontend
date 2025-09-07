@@ -13,7 +13,6 @@ import {
   Key,
   Globe,
   Palette,
-  Bell,
   Shield
 } from 'lucide-react';
 
@@ -288,7 +287,7 @@ export default function SettingsManagementTab() {
             { id: 'general', label: 'Général', icon: Globe },
             { id: 'appearance', label: 'Apparence', icon: Palette },
             { id: 'security', label: 'Sécurité', icon: Shield },
-            { id: 'notifications', label: 'Notifications', icon: Bell }
+            { id: 'notifications', label: 'Notifications', icon: Shield }
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -460,7 +459,7 @@ export default function SettingsManagementTab() {
         {activeTab === 'notifications' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-base font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Bell className="w-5 h-5" />
+              <Shield className="w-5 h-5" />
               Notifications
             </h3>
             

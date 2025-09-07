@@ -3,8 +3,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { getChildName, getChildFullName } from '@/lib/userUtils';
 import {
-  Bell,
-  BellRing,
   Archive,
   Trash2,
   Mail,
@@ -53,7 +51,7 @@ export interface Notification {
 }
 
 // API functions
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
 
 // Fonction pour obtenir l'ID de l'utilisateur parent (pour les tests)
 const getParentUserId = (): number => {
@@ -124,7 +122,7 @@ const notificationIcon = (typeName: string, iconName: string, color: string) => 
     'credit-card': CreditCard,
   };
   
-  const Icon = iconMap[iconName] || Bell;
+  const Icon = iconMap[iconName] || Mail;
   return <Icon className={`w-5 h-5`} style={{ color }} />;
 };
 
@@ -345,7 +343,7 @@ const NotificationsTab: React.FC = () => {
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <div className="text-center py-12">
-            <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-gray-300 text-lg font-semibold mb-2">Aucune notification</h3>
             <p className="text-gray-400">Vous n'avez aucune notification pour le moment.</p>
           </div>

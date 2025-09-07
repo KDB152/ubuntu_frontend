@@ -245,7 +245,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ parent, selectedChild, search
                 <p className="text-blue-200 text-sm">Séances Totales</p>
                 <p className="text-base font-bold text-white">{stats.totalSessions}</p>
               </div>
-              <BookOpen className="w-5 h-5 text-blue-300" />
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-5 h-5" />
             </div>
           </div>
           

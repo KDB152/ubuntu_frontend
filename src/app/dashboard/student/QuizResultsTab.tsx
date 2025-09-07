@@ -77,7 +77,7 @@ const QuizResultsTab: React.FC = () => {
       }
 
       // Récupérer les tentatives de l'étudiant
-      const response = await fetch(`http://localhost:3001/quizzes/attempts?student_id=${studentId}`);
+      const response = await fetch(`http://192.168.1.11:3001/quizzes/attempts?student_id=${studentId}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch quiz attempts: ${response.status}`);
@@ -91,7 +91,7 @@ const QuizResultsTab: React.FC = () => {
         attempts.map(async (attempt: any) => {
           try {
             // Récupérer les détails du quiz
-            const quizResponse = await fetch(`http://localhost:3001/quizzes/${attempt.quiz_id}`);
+            const quizResponse = await fetch(`http://192.168.1.11:3001/quizzes/${attempt.quiz_id}`);
             if (!quizResponse.ok) return null;
             
             const quiz = await quizResponse.json();
@@ -100,14 +100,14 @@ const QuizResultsTab: React.FC = () => {
             if (!quiz.show_results) return null;
 
             // Récupérer les questions du quiz
-            const questionsResponse = await fetch(`http://localhost:3001/quizzes/${attempt.quiz_id}/questions`);
+            const questionsResponse = await fetch(`http://192.168.1.11:3001/quizzes/${attempt.quiz_id}/questions`);
             let questions = [];
             if (questionsResponse.ok) {
               questions = await questionsResponse.json();
             }
 
             // Récupérer les réponses de l'étudiant
-            const answersResponse = await fetch(`http://localhost:3001/quizzes/attempts/${attempt.id}/answers`);
+            const answersResponse = await fetch(`http://192.168.1.11:3001/quizzes/attempts/${attempt.id}/answers`);
             let studentAnswers = {};
             if (answersResponse.ok) {
               studentAnswers = await answersResponse.json();
@@ -212,7 +212,7 @@ const QuizResultsTab: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
           <div className="flex items-center space-x-3">
-            <BookOpen className="w-5 h-5 text-blue-400" />
+            <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-5 h-5" />
             <div>
               <div className="text-white font-semibold">{results.length}</div>
               <div className="text-blue-200 text-sm">Quiz terminés</div>

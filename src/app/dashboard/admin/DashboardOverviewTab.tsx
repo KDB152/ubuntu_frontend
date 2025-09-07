@@ -40,7 +40,6 @@ import {
   Minus,
   Plus,
   Settings,
-  Bell,
   Mail,
   Phone,
   MapPin,
@@ -355,7 +354,7 @@ const DashboardOverviewTab = () => {
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-6 h-6" />
             </div>
             <div className="flex items-center space-x-1">
               {React.createElement(getGrowthIcon(stats.quizzes.growth), {

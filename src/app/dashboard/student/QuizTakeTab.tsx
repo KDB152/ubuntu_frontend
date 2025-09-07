@@ -59,7 +59,6 @@ import {
   Calendar,
   Users,
   MessageSquare,
-  Bell,
   User,
   LogOut
 } from 'lucide-react';
@@ -134,14 +133,14 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
   const loadQuizData = async () => {
     try {
       // Load quiz data from API
-      const quizResponse = await fetch(`http://localhost:3001/quizzes/${quizId}`);
+      const quizResponse = await fetch(`http://192.168.1.11:3001/quizzes/${quizId}`);
       if (!quizResponse.ok) {
         throw new Error('Failed to load quiz');
       }
       const quizData = await quizResponse.json();
 
       // Load questions for this quiz
-      const questionsResponse = await fetch(`http://localhost:3001/quizzes/${quizId}/questions`);
+      const questionsResponse = await fetch(`http://192.168.1.11:3001/quizzes/${quizId}/questions`);
       if (!questionsResponse.ok) {
         throw new Error('Failed to load questions');
       }
@@ -216,7 +215,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
       const studentId = user.studentDetails?.id || user.id;
 
       // Check if student has already attempted this quiz
-      const attemptsResponse = await fetch(`http://localhost:3001/quizzes/attempts?quiz_id=${quizId}&student_id=${studentId}`);
+      const attemptsResponse = await fetch(`http://192.168.1.11:3001/quizzes/attempts?quiz_id=${quizId}&student_id=${studentId}`);
       if (attemptsResponse.ok) {
         const attempts = await attemptsResponse.json();
         if (attempts && attempts.length > 0) {
@@ -491,7 +490,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         answers: answers
       };
 
-      const submitResponse = await fetch('http://localhost:3001/quizzes/attempts', {
+      const submitResponse = await fetch('http://192.168.1.11:3001/quizzes/attempts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -623,7 +622,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
           <div className="text-center mb-4">
             <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-10 h-10 text-white" />
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-10 h-10" />
             </div>
             <h1 className="text-white text-base font-bold mb-2">{quiz.title}</h1>
             <p className="text-blue-200 text-base">{quiz.description}</p>

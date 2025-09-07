@@ -137,26 +137,18 @@ const AdminDashboard = () => {
 
   // Charger les données de l'utilisateur admin
   useEffect(() => {
-    const loadAdminData = async () => {
+    const loadAdminData = () => {
       try {
-        const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-        if (token) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+        const userData = localStorage.getItem('userDetails');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setCurrentUser({
+            id: String(user.id),
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Administrateur',
+            email: user.email || '',
+            role: user.role === 'super_admin' ? 'super_admin' : 'admin',
+            lastLogin: new Date().toISOString()
           });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            setCurrentUser({
-              id: userData.id,
-              name: `${userData.firstName} ${userData.lastName}`,
-              email: userData.email,
-              role: userData.role,
-              lastLogin: userData.lastLogin || new Date().toISOString()
-            });
-          }
         }
       } catch (error) {
         console.error('Erreur lors du chargement des données admin:', error);
@@ -235,20 +227,6 @@ const AdminDashboard = () => {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
-
-  // Gérer le redimensionnement de la fenêtre
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setSidebarCollapsed(true);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const handleTabChange = (tabId: TabType) => {
     setActiveTab(tabId);
@@ -358,45 +336,39 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Menu de navigation */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <AnimatedList className="p-4 space-y-2">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-
-                return (
-                  <AnimatedListItem key={item.id}>
-                    <AnimatedButton
-                      onClick={() => handleTabChange(item.id as TabType)}
-                      className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-all ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-lg'
-                          : 'text-blue-200 hover:bg-blue-800/50 hover:text-white'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
-                      {!sidebarCollapsed && (
+          {/* Navigation */}
+          <AnimatedList className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+            {menuItems.map((item, index) => {
+              const IconComponent = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <AnimatedListItem key={item.id}>
+                  <AnimatedButton
+                    onClick={() => handleTabChange(item.id as TabType)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'text-blue-200 hover:bg-blue-800/50 hover:text-blue-100'
+                    }`}
+                    title={sidebarCollapsed ? item.label : ''}
+                  >
+                    <IconComponent className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300'}`} />
+                    {!sidebarCollapsed && (
+                      <>
                         <div className="flex-1 text-left">
-                          <span className="font-medium">{item.label}</span>
-                          {item.badge && (
-                            <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
+                          <div className="font-semibold">{item.label}</div>
+                          <div className="text-xs opacity-75">{item.description}</div>
                         </div>
-                      )}
-                      {!sidebarCollapsed && isActive && (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </AnimatedButton>
-                  </AnimatedListItem>
-                );
-              })}
-            </AnimatedList>
-          </div>
+                      </>
+                    )}
+                  </AnimatedButton>
+                </AnimatedListItem>
+              );
+            })}
+          </AnimatedList>
 
-          {/* Footer du sidebar */}
+          {/* Profil utilisateur */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700/50">
             <div className="relative">
               <button
@@ -404,51 +376,60 @@ const AdminDashboard = () => {
                 className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-800/50 transition-all"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
-                    {currentUser.name.split(' ').map(n => n[0]).join('')}
-                  </span>
+                  <User className="w-5 h-5 text-white" />
                 </div>
                 {!sidebarCollapsed && (
                   <div className="flex-1 text-left">
-                    <p className="text-blue-100 font-medium">{currentUser.name}</p>
-                    <p className="text-blue-300 text-xs">{currentUser.role}</p>
+                    <div className="text-white font-semibold text-sm">{currentUser.name}</div>
+                    <div className="text-blue-300 text-xs">{currentUser.role}</div>
                   </div>
-                )}
-                {!sidebarCollapsed && (
-                  <ChevronDown className="w-4 h-4 text-blue-300" />
                 )}
               </button>
 
-              {/* Menu utilisateur */}
-              {showUserMenu && !sidebarCollapsed && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-blue-800/90 backdrop-blur-xl rounded-xl border border-blue-700/50 shadow-xl">
-                  <div className="p-2">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700/50 transition-all text-red-300 hover:text-red-200"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Déconnexion</span>
-                    </button>
+                              {/* Menu utilisateur */}
+                {showUserMenu && !sidebarCollapsed && (
+                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-blue-800 backdrop-blur-xl rounded-xl border border-blue-700/50 shadow-xl">
+                    <div className="p-2">
+                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-blue-200 hover:text-blue-100 hover:bg-blue-700/50 rounded-lg transition-all text-left">
+                        <User className="w-4 h-4" />
+                        <span className="text-sm">Mon profil</span>
+                      </button>
+                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-blue-200 hover:text-blue-100 hover:bg-blue-700/50 rounded-lg transition-all text-left">
+                        <Settings className="w-4 h-4" />
+                        <span className="text-sm">Préférences</span>
+                      </button>
+                      <hr className="my-2 border-blue-700/50" />
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-3 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 border border-red-500/40 rounded-lg transition-all text-left font-medium"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Se déconnecter</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Contenu principal */}
-      <div className={`flex-1 transition-all duration-300 ${
+      <div className={`transition-all duration-300 flex flex-col min-h-screen ${
         sidebarCollapsed ? 'ml-20' : 'ml-80'
       }`}>
         {/* Header principal */}
-        <header className="bg-blue-900/80 backdrop-blur-xl border-b border-blue-700/50 shadow-sm">
+        <header className="bg-blue-900/80 backdrop-blur-xl border-b border-blue-700/50 sticky top-0 z-30">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-blue-100">{currentTabInfo.label}</h2>
-                <p className="text-blue-300 text-sm">{currentTabInfo.description}</p>
+              <div className="flex items-center space-x-4">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <currentTabInfo.icon className="w-6 h-6 text-blue-300" />
+                    <h1 className="text-2xl font-bold text-white">{currentTabInfo.label}</h1>
+                  </div>
+                  <p className="text-blue-200 text-sm">{currentTabInfo.description}</p>
+                </div>
               </div>
 
               <div className="flex items-center space-x-4">
@@ -460,7 +441,7 @@ const AdminDashboard = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Rechercher..."
-                    className="pl-10 pr-4 py-2 w-64 border border-blue-700/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-md bg-blue-800/50 text-blue-100 placeholder-blue-300"
+                    className="pl-10 pr-4 py-2 w-64 border border-blue-700/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-blue-800/50 backdrop-blur-md text-blue-100 placeholder-blue-300"
                   />
                 </div>
 
@@ -474,12 +455,76 @@ const AdminDashboard = () => {
                     {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                   </button>
                   
+
+                    {/* Menu des notifications */}
+                    {showNotifications && (
+                      <div className="absolute right-0 top-full mt-2 w-80 backdrop-blur-xl rounded-xl border shadow-xl z-50 bg-blue-800/80 border-blue-700/50">
+                        <div className="p-4 border-b border-blue-700/50">
+                          <h3 className="font-semibold text-blue-100">Notifications</h3>
+                        </div>
+                        <div className="max-h-96 overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <div className="p-4 text-center text-blue-200">
+                              Aucune notification
+                            </div>
+                          ) : (
+                            notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                className={`p-4 border-b transition-all cursor-pointer ${
+                                  !notification.isRead ? 'bg-blue-500/10' : ''
+                                } border-white/10 hover:bg-white/5`}
+                                onClick={() => markNotificationAsRead(notification.id)}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                                    !notification.isRead ? 'bg-blue-500' : 'bg-transparent'
+                                  }`} />
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-sm text-white">
+                                      {notification.title}
+                                    </h4>
+                                    <p className="text-xs mt-1 text-blue-200">
+                                      {notification.message}
+                                    </p>
+                                    <p className="text-xs mt-1 text-blue-300">
+                                      {new Date(notification.createdAt).toLocaleString('fr-FR')}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification.id);
+                                    }}
+                                    className="text-red-300 hover:text-red-200"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <button 
                     onClick={handleRefresh}
                     className="p-2 text-blue-200 hover:text-blue-100 hover:bg-blue-800/50 rounded-lg transition-all"
                     title="Actualiser"
                   >
                     <RefreshCw className="w-5 h-5" />
+                  </button>
+                  
+                  {/* Bouton de déconnexion dans le header */}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-lg transition-all"
+                    title="Se déconnecter"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="text-sm font-medium">Déconnexion</span>
                   </button>
                 </div>
               </div>
@@ -488,9 +533,18 @@ const AdminDashboard = () => {
         </header>
 
         {/* Contenu de l'onglet */}
-        <main className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+        <main className="flex-1 p-6 overflow-y-auto">
           {renderTabContent()}
         </main>
+
+        {/* Footer */}
+        <footer className="bg-white/5 backdrop-blur-xl border-t border-white/20 px-6 py-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="text-blue-300">
+              © 2025 Chrono-Carto. Tous droits réservés.
+            </div>
+          </div>
+        </footer>
       </div>
 
       {/* Styles pour la scrollbar personnalisée */}

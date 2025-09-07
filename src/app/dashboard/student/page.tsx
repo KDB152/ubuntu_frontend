@@ -14,7 +14,6 @@ import {
   Award,
   Calendar,
   Library,
-  Bell,
   Search,
   Menu,
   X,
@@ -98,7 +97,6 @@ const StudentDashboard = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
 
@@ -111,17 +109,14 @@ const StudentDashboard = () => {
     quizzes,
     messages,
     conversations,
-    notifications,
     loading,
     error,
     loadProgress,
     loadQuizzes,
     loadConversations,
     loadMessages,
-    loadNotifications,
     sendMessage,
     createConversation,
-    markNotificationAsRead,
     submitQuizAttempt,
     logout,
     clearError,
@@ -131,7 +126,7 @@ const StudentDashboard = () => {
   const { stats: realStats } = useRealStats();
 
   useEffect(() => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('userDetails') : null;
       if (!raw) return;
@@ -157,13 +152,12 @@ const StudentDashboard = () => {
           loadProgress(user.id);
           loadQuizzes();
           loadConversations(user.id);
-          loadNotifications(user.id);
         })
         .catch(() => setCurrentStudent(base));
     } catch {
       // ignore
     }
-  }, [loadProgress, loadQuizzes, loadConversations, loadNotifications]);
+  }, [loadProgress, loadQuizzes, loadConversations]);
 
   const menuItems = [
     {
@@ -295,7 +289,6 @@ const StudentDashboard = () => {
       loadProgress(userDetails.id);
       loadQuizzes();
       loadConversations(userDetails.id);
-      loadNotifications(userDetails.id);
     }
   };
 
@@ -351,7 +344,6 @@ const StudentDashboard = () => {
   };
 
   const currentTabInfo = getCurrentTabInfo();
-  const unreadNotifications = notifications.filter((n: any) => !n.isRead).length;
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -363,37 +355,23 @@ const StudentDashboard = () => {
       <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
         sidebarCollapsed ? 'w-20' : 'w-80'
       }`}>
-        <div className={`h-full backdrop-blur-xl border-r transition-colors duration-300 ${
-          darkMode 
-            ? 'bg-white/10 border-white/20' 
-            : 'bg-white/80 border-gray-200'
-        }`}>
+        <div className="h-full backdrop-blur-xl border-r border-blue-700/50 transition-colors duration-300 flex flex-col bg-blue-900/80">
           {/* Header du sidebar */}
-          <div className={`p-4 border-b transition-colors duration-300 ${
-            darkMode ? 'border-white/20' : 'border-gray-200'
-          }`}>
+          <div className="p-4 border-b border-blue-700/50 transition-colors duration-300">
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
                 <div>
-                  <h1 className={`text-xl font-bold transition-colors duration-300 ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <h1 className="text-xl font-bold text-blue-100 transition-colors duration-300">
                     Chrono-Carto
                   </h1>
-                  <p className={`text-sm transition-colors duration-300 ${
-                    darkMode ? 'text-blue-200' : 'text-blue-600'
-                  }`}>
+                  <p className="text-sm text-blue-300 transition-colors duration-300">
                     Espace Étudiant
                   </p>
                 </div>
               )}
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className={`p-2 rounded-lg transition-all ${
-                  darkMode 
-                    ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                className="p-2 rounded-lg transition-all text-blue-200 hover:text-blue-100 hover:bg-blue-800/50"
               >
                 {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
               </button>
@@ -403,7 +381,7 @@ const StudentDashboard = () => {
 
 
           {/* Navigation */}
-          <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+          <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
             {menuItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = activeTab === item.id;
@@ -415,20 +393,18 @@ const StudentDashboard = () => {
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
                     isActive
                       ? `bg-gradient-to-r ${item.color} text-white shadow-lg`
-                      : darkMode
-                      ? 'text-blue-200 hover:bg-white/10 hover:text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      : 'text-blue-200 hover:bg-blue-800/50 hover:text-blue-100'
                   }`}
                   title={sidebarCollapsed ? item.label : ''}
                 >
                   <IconComponent className={`w-5 h-5 ${
-                    isActive ? 'text-white' : darkMode ? 'text-blue-300' : 'text-gray-500'
+                    isActive ? 'text-white' : 'text-blue-300'
                   }`} />
                   {!sidebarCollapsed && (
                     <>
                       <div className="flex-1 text-left">
                         <div className="font-semibold">{item.label}</div>
-                        <div className="text-xs opacity-75">{item.description}</div>
+                        <div className="text-xs text-blue-400 opacity-75">{item.description}</div>
                       </div>
 
                     </>
@@ -474,17 +450,8 @@ const StudentDashboard = () => {
 
                 {/* Menu utilisateur */}
                 {showUserMenu && !sidebarCollapsed && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 rounded-xl border border-white/20 shadow-xl">
+                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-blue-800 rounded-xl border border-blue-700/50 shadow-xl">
                     <div className="p-2">
-                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-200 hover:text-white hover:bg-slate-700 rounded-lg transition-all text-left">
-                        <User className="w-4 h-4" />
-                        <span className="text-sm">Mon profil</span>
-                      </button>
-                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-200 hover:text-white hover:bg-slate-700 rounded-lg transition-all text-left">
-                        <Settings className="w-4 h-4" />
-                        <span className="text-sm">Paramètres</span>
-                      </button>
-                      <hr className="my-2 border-white/20" />
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center space-x-3 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 border border-red-500/40 rounded-lg transition-all text-left font-medium"
@@ -506,32 +473,22 @@ const StudentDashboard = () => {
       </div>
 
       {/* Contenu principal - Ajustement automatique */}
-      <div className={`transition-all duration-300 ${
+      <div className={`transition-all duration-300 flex flex-col min-h-screen ${
         sidebarCollapsed ? 'ml-20' : 'ml-80'
       }`}>
         {/* Header principal */}
-        <header className={`backdrop-blur-xl border-b sticky top-0 z-30 transition-colors duration-300 ${
-          darkMode 
-            ? 'bg-white/10 border-white/20' 
-            : 'bg-white/80 border-gray-200'
-        }`}>
+        <header className="backdrop-blur-xl border-b border-blue-700/50 sticky top-0 z-30 transition-colors duration-300 bg-blue-900/80">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <currentTabInfo.icon className={`w-6 h-6 transition-colors duration-300 ${
-                      darkMode ? 'text-blue-300' : 'text-blue-600'
-                    }`} />
-                    <h1 className={`text-2xl font-bold transition-colors duration-300 ${
-                      darkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <currentTabInfo.icon className="w-6 h-6 text-blue-300 transition-colors duration-300" />
+                    <h1 className="text-2xl font-bold text-blue-100 transition-colors duration-300">
                       {currentTabInfo.label}
                     </h1>
                   </div>
-                  <p className={`text-sm transition-colors duration-300 ${
-                    darkMode ? 'text-blue-200' : 'text-blue-600'
-                  }`}>
+                  <p className="text-sm text-blue-300 transition-colors duration-300">
                     {currentTabInfo.description}
                   </p>
                 </div>
@@ -548,11 +505,7 @@ const StudentDashboard = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Rechercher..."
-                    className={`pl-10 pr-4 py-2 w-64 border rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-md ${
-                      darkMode 
-                        ? 'border-white/20 bg-white/10 text-white placeholder-blue-300' 
-                        : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'
-                    }`}
+                    className="pl-10 pr-4 py-2 w-64 border border-blue-700/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-md bg-blue-800/50 text-blue-100 placeholder-blue-300"
                   />
                 </div>
 
@@ -560,104 +513,16 @@ const StudentDashboard = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={toggleFullscreen}
-                    className={`p-2 rounded-lg transition-all ${
-                      darkMode 
-                        ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className="p-2 rounded-lg transition-all text-blue-200 hover:text-blue-100 hover:bg-blue-800/50"
                     title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
                   >
                     {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                   </button>
                   
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowNotifications(!showNotifications)}
-                      className={`p-2 rounded-lg transition-all relative ${
-                        darkMode 
-                          ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Bell className="w-5 h-5" />
-                      {unreadNotifications > 0 && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Menu des notifications */}
-                    {showNotifications && (
-                      <div className={`absolute right-0 top-full mt-2 w-80 backdrop-blur-xl rounded-xl border shadow-xl z-50 transition-colors duration-300 ${
-                        darkMode 
-                          ? 'bg-white/10 border-white/20' 
-                          : 'bg-white/90 border-gray-200'
-                      }`}>
-                        <div className={`p-4 border-b transition-colors duration-300 ${
-                          darkMode ? 'border-white/20' : 'border-gray-200'
-                        }`}>
-                          <h3 className={`font-semibold transition-colors duration-300 ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            Notifications
-                          </h3>
-                        </div>
-                        <div className="max-h-96 overflow-y-auto">
-                          {notifications.length === 0 ? (
-                            <div className={`p-4 text-center ${
-                              darkMode ? 'text-blue-200' : 'text-gray-600'
-                            }`}>
-                              Aucune notification
-                            </div>
-                          ) : (
-                                                         notifications.map((notification: any) => (
-                              <div
-                                key={notification.id}
-                                className={`p-4 border-b transition-all cursor-pointer ${
-                                  darkMode 
-                                    ? 'border-white/10 hover:bg-white/5' 
-                                    : 'border-gray-100 hover:bg-gray-50'
-                                } ${!notification.isRead ? (darkMode ? 'bg-blue-500/10' : 'bg-blue-50') : ''}`}
-                                onClick={() => markNotificationAsRead(notification.id)}
-                              >
-                                <div className="flex items-start space-x-3">
-                                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                                    !notification.isRead ? 'bg-blue-500' : 'bg-transparent'
-                                  }`} />
-                                  <div className="flex-1">
-                                    <h4 className={`font-medium text-sm transition-colors duration-300 ${
-                                      darkMode ? 'text-white' : 'text-gray-900'
-                                    }`}>
-                                      {notification.title}
-                                    </h4>
-                                    <p className={`text-xs mt-1 transition-colors duration-300 ${
-                                      darkMode ? 'text-blue-200' : 'text-gray-600'
-                                    }`}>
-                                      {notification.message}
-                                    </p>
-                                    <p className={`text-xs mt-1 transition-colors duration-300 ${
-                                      darkMode ? 'text-blue-300' : 'text-gray-400'
-                                    }`}>
-                                      {new Date(notification.createdAt).toLocaleString('fr-FR')}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                   
                   <button 
                     onClick={handleRefresh}
-                    className={`p-2 rounded-lg transition-all ${
-                      darkMode 
-                        ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className="p-2 rounded-lg transition-all text-blue-200 hover:text-blue-100 hover:bg-blue-800/50"
                     title="Actualiser"
                   >
                     <RefreshCw className="w-5 h-5" />
@@ -671,25 +536,37 @@ const StudentDashboard = () => {
         </header>
 
         {/* Contenu de l'onglet */}
-        <main className="p-6">
+        <main className="flex-1 p-6 overflow-y-auto">
           {renderTabContent()}
         </main>
 
         {/* Footer */}
-        <footer className={`backdrop-blur-xl border-t px-6 py-4 transition-colors duration-300 ${
-          darkMode 
-            ? 'bg-white/5 border-white/20' 
-            : 'bg-white/80 border-gray-200'
-        }`}>
+        <footer className="backdrop-blur-xl border-t border-blue-700/50 px-6 py-4 transition-colors duration-300 bg-blue-900/50">
           <div className="flex items-center justify-between text-sm">
-            <div className={`transition-colors duration-300 ${
-              darkMode ? 'text-blue-300' : 'text-gray-600'
-            }`}>
+            <div className="text-blue-300 transition-colors duration-300">
               © 2025 Chrono-Carto. Plateforme éducative.
             </div>
           </div>
         </footer>
       </div>
+
+      {/* Styles pour la scrollbar personnalisée */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(45deg, #2563eb, #7c3aed);
+        }
+      `}</style>
     </div>
   );
 };

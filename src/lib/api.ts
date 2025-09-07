@@ -1,5 +1,5 @@
 // API service for connecting to backend endpoints
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chrono-carto-api.loca.lt';
 
 // Generic API request function
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
@@ -77,52 +77,55 @@ export const authAPI = {
 export const adminAPI = {
   // Students management
   getStudents: (params?: { page?: number; limit?: number }) =>
-    apiRequest(`/admin/students?${new URLSearchParams(params as any)}`),
+    apiRequest(`/students?${new URLSearchParams(params as any)}`),
 
   createStudent: (studentData: any) =>
-    apiRequest('/admin/students', {
+    apiRequest('/students', {
       method: 'POST',
       body: JSON.stringify(studentData),
     }),
 
   updateStudent: (id: number, studentData: any) =>
-    apiRequest(`/admin/students/${id}`, {
+    apiRequest(`/students/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(studentData),
     }),
 
   deleteStudent: (id: number) =>
-    apiRequest(`/admin/students/${id}`, {
+    apiRequest(`/students/${id}`, {
       method: 'DELETE',
     }),
 
   // Parents management
   getParents: (params?: { page?: number; limit?: number }) =>
-    apiRequest(`/admin/parents?${new URLSearchParams(params as any)}`),
+    apiRequest(`/parents?${new URLSearchParams(params as any)}`),
 
   createParent: (parentData: any) =>
-    apiRequest('/admin/parents', {
+    apiRequest('/parents', {
       method: 'POST',
       body: JSON.stringify(parentData),
     }),
 
   updateParent: (id: number, parentData: any) =>
-    apiRequest(`/admin/parents/${id}`, {
+    apiRequest(`/parents/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(parentData),
     }),
 
   deleteParent: (id: number) =>
-    apiRequest(`/admin/parents/${id}`, {
+    apiRequest(`/parents/${id}`, {
       method: 'DELETE',
     }),
 
   // User approval
   approveUser: (id: number, approve: boolean) =>
-    apiRequest(`/admin/users/${id}/approve`, {
+    apiRequest(`/users/${id}/approve`, {
       method: 'PATCH',
       body: JSON.stringify({ approve }),
     }),
+
+  // Get user by ID
+  getUser: (id: number) => apiRequest(`/users/${id}`),
 };
 
 // Quizzes API
@@ -267,7 +270,7 @@ export const usersAPI = {
 
   updateUser: (id: number, userData: any) =>
     apiRequest(`/users/${id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify(userData),
     }),
 
@@ -455,7 +458,7 @@ export const messagingAPI = {
   createOrGetConversation: (participant1Id: number, participant2Id: number) =>
     apiRequest('/messaging/conversations/create-or-get', {
       method: 'POST',
-      body: JSON.stringify({ participant1Id, participant2Id }),
+      body: JSON.stringify({ recipientId: participant2Id }),
     }),
 
   deleteConversation: (conversationId: number) =>
@@ -478,6 +481,25 @@ export const messagingAPI = {
       body: JSON.stringify(messageData),
     }),
 
+  // Admin functions - Message management
+  updateMessage: (messageId: number, content: string) =>
+    apiRequest(`/messaging/messages/${messageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    }),
+
+  deleteMessage: (messageId: number) =>
+    apiRequest(`/messaging/messages/${messageId}`, {
+      method: 'DELETE',
+    }),
+
+  // Admin functions - Conversation management
+  updateConversation: (conversationId: number, title: string) =>
+    apiRequest(`/messaging/conversations/${conversationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    }),
+
   uploadFile: (formData: FormData) => {
     const token = localStorage.getItem('token');
     return fetch(`${API_BASE_URL}/messaging/upload`, {
@@ -495,7 +517,7 @@ export const messagingAPI = {
   },
 
   downloadFile: (messageId: number) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     return fetch(`${API_BASE_URL}/messaging/download/${messageId}`, {
       method: 'GET',
       headers: {
@@ -509,17 +531,19 @@ export const messagingAPI = {
       method: 'PATCH',
     }),
 
-  deleteMessage: (messageId: number) =>
-    apiRequest(`/messaging/messages/${messageId}`, {
-      method: 'DELETE',
-    }),
+  // Groups
+  getUserGroups: () =>
+    apiRequest('/messaging/groups'),
+
+  getGroupConversation: (groupId: number) =>
+    apiRequest(`/messaging/groups/${groupId}/conversation`),
 
   // Contacts and Users
   getContacts: (userId: number) =>
     apiRequest(`/messaging/users/${userId}/contacts`),
 
-  getAvailableRecipients: (userId: number) =>
-    apiRequest(`/messaging/users/${userId}/available-recipients`),
+  getAvailableRecipients: () =>
+    apiRequest('/messaging/recipients'),
 
   // Search
   searchMessages: (conversationId: number, query: string) =>

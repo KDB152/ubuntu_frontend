@@ -11,7 +11,6 @@ import {
   Calendar,
   Users,
   CreditCard,
-  Bell,
   Settings,
   Search,
   RefreshCw,
@@ -32,7 +31,6 @@ import MessagesTab from './MessagesTab';
 import CalendarTab from './CalendarTab';
 import MeetingsTab from './MeetingsTab';
 import PaymentsTab from './PaymentsTab';
-import NotificationsTab from './NotificationsTab';
 import SettingsTab from './SettingsTab';
 import ParentProfileTab from './ParentProfileTab';
 
@@ -106,7 +104,6 @@ const ParentDashboard: React.FC = () => {
     selectedChild,
     messages,
     conversations,
-    notifications,
     loading,
     error,
     setSelectedChild,
@@ -116,7 +113,6 @@ const ParentDashboard: React.FC = () => {
     loadNotifications,
     sendMessage,
     createConversation,
-    markNotificationAsRead,
     logout,
     clearError,
   } = useParentDashboard();
@@ -232,13 +228,6 @@ const ParentDashboard: React.FC = () => {
       component: PaymentsTab
     },
     {
-      id: 'notifications',
-      label: 'Notifications',
-      icon: Bell,
-      component: NotificationsTab,
-
-    },
-    {
       id: 'profile',
       label: 'Mon Profil',
       icon: User,
@@ -293,19 +282,19 @@ const ParentDashboard: React.FC = () => {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
         sidebarOpen ? 'w-80' : 'w-20'
-      } bg-white/10 backdrop-blur-md border-r border-white/20 flex flex-col`}>
+      } bg-blue-900/80 backdrop-blur-md border-r border-blue-700/50 flex flex-col`}>
         {/* Header de la sidebar */}
-        <div className="p-6 border-b border-white/20">
+        <div className="p-6 border-b border-blue-700/50">
           <div className="flex items-center justify-between">
             {sidebarOpen && (
               <div>
-                <h1 className="text-white text-base font-bold">Espace Parent</h1>
-                <p className="text-blue-200 text-sm">Chrono-Carto</p>
+                <h1 className="text-blue-100 text-base font-bold">Espace Parent</h1>
+                <p className="text-blue-300 text-sm">Chrono-Carto</p>
               </div>
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
+              className="p-2 rounded-lg bg-blue-800/50 text-blue-200 hover:bg-blue-700/50 transition-all"
             >
               {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -314,11 +303,11 @@ const ParentDashboard: React.FC = () => {
 
         {/* Sélecteur d'enfant */}
         {sidebarOpen && parent && parent.children.length > 1 && (
-          <div className="p-4 border-b border-white/20">
+          <div className="p-4 border-b border-blue-700/50">
             <div className="relative">
               <button
                 onClick={() => setChildSelectorOpen(!childSelectorOpen)}
-                className="w-full flex items-center justify-between p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-all"
+                className="w-full flex items-center justify-between p-3 bg-blue-800/50 rounded-xl text-blue-200 hover:bg-blue-700/50 transition-all"
               >
                 <div className="flex items-center space-x-3">
                   {selectedChildData?.avatar ? (
@@ -349,8 +338,8 @@ const ParentDashboard: React.FC = () => {
                         setSelectedChild(child.id);
                         setChildSelectorOpen(false);
                       }}
-                      className={`w-full flex items-center space-x-3 p-3 text-left hover:bg-white/10 transition-all first:rounded-t-xl last:rounded-b-xl ${
-                        selectedChild === child.id ? 'bg-blue-500/20 text-blue-300' : 'text-white'
+                      className={`w-full flex items-center space-x-3 p-3 text-left hover:bg-blue-800/50 transition-all first:rounded-t-xl last:rounded-b-xl ${
+                        selectedChild === child.id ? 'bg-blue-500/20 text-blue-300' : 'text-blue-200'
                       }`}
                     >
                       {child.avatar ? (
@@ -377,7 +366,7 @@ const ParentDashboard: React.FC = () => {
         )}
 
         {/* Menu de navigation */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
           <nav className="space-y-2">
             {menuItems.map((item) => {
               const IconComponent = item.icon;
@@ -390,7 +379,7 @@ const ParentDashboard: React.FC = () => {
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                      : 'text-blue-200 hover:bg-blue-800/50 hover:text-blue-100'
                   }`}
                 >
                   <IconComponent className="w-5 h-5" />
@@ -410,11 +399,11 @@ const ParentDashboard: React.FC = () => {
 
         {/* Profil utilisateur */}
         {sidebarOpen && (
-          <div className="p-4 border-t border-white/20">
+          <div className="p-4 border-t border-blue-700/50">
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-white/10 transition-all"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-800/50 transition-all"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
@@ -427,21 +416,8 @@ const ParentDashboard: React.FC = () => {
 
               {/* Menu utilisateur */}
               {userMenuOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 rounded-xl border border-white/20 shadow-xl">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-blue-800 rounded-xl border border-blue-700/50 shadow-xl">
                   <div className="p-2">
-                    <button className="w-full flex items-center space-x-3 p-2 text-white hover:bg-white/10 rounded-lg transition-all">
-                      <User className="w-4 h-4" />
-                      <span>Mon profil</span>
-                    </button>
-                    <button className="w-full flex items-center space-x-3 p-2 text-white hover:bg-white/10 rounded-lg transition-all">
-                      <Settings className="w-4 h-4" />
-                      <span>Paramètres</span>
-                    </button>
-                    <button className="w-full flex items-center space-x-3 p-2 text-white hover:bg-white/10 rounded-lg transition-all">
-                      <HelpCircle className="w-4 h-4" />
-                      <span>Aide</span>
-                    </button>
-                    <hr className="my-2 border-white/20" />
                     <button 
                       onClick={handleLogout}
                       className="w-full flex items-center space-x-3 p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
@@ -460,15 +436,15 @@ const ParentDashboard: React.FC = () => {
       {/* Contenu principal */}
       <div className={`transition-all duration-300 ${
         sidebarOpen ? 'ml-80' : 'ml-20'
-      } flex flex-col overflow-hidden`}>
+      } flex flex-col min-h-screen`}>
         {/* Header */}
-        <div className="bg-white/10 backdrop-blur-md border-b border-white/20 p-6">
+        <div className="bg-blue-900/80 backdrop-blur-md border-b border-blue-700/50 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-white text-base font-bold mb-1">
+              <h1 className="text-blue-100 text-base font-bold mb-1">
                 {getGreeting()}
               </h1>
-              <p className="text-blue-200">
+              <p className="text-blue-300">
                 {currentMenuItem?.label} 
                 {selectedChildData && ` - ${selectedChildData.firstName}`}
               </p>
@@ -483,30 +459,16 @@ const ParentDashboard: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Rechercher..."
-                  className="pl-10 pr-4 py-2 w-64 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                  className="pl-10 pr-4 py-2 w-64 bg-blue-800/50 border border-blue-700/50 rounded-xl text-blue-100 placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
                 />
               </div>
 
-              {/* Notifications */}
-              <button
-                onClick={() => setActiveTab('notifications')}
-                className="relative p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-all"
-              >
-                <Bell className="w-5 h-5" />
-                {parent && parent.notifications.unread > 0 && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">
-                      {parent.notifications.unread > 9 ? '9+' : parent.notifications.unread}
-                    </span>
-                  </div>
-                )}
-              </button>
 
               {/* Actions rapides */}
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={handleRefresh}
-                  className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-all"
+                  className="p-3 bg-blue-800/50 rounded-xl text-blue-200 hover:bg-blue-700/50 transition-all"
                   title="Actualiser"
                 >
                   <RefreshCw className="w-5 h-5" />
@@ -533,7 +495,7 @@ const ParentDashboard: React.FC = () => {
         </div>
 
         {/* Contenu de l'onglet */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           <CurrentComponent 
             selectedChild={selectedChildData}
             parent={parent || undefined}
@@ -546,6 +508,24 @@ const ParentDashboard: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Styles pour la scrollbar personnalisée */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(45deg, #2563eb, #7c3aed);
+        }
+      `}</style>
     </div>
   );
 };

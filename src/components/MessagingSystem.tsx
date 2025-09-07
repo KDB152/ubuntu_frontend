@@ -30,13 +30,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Upload
+  Upload,
+  Save,
+  Edit
 } from 'lucide-react';
 
 interface User {
   id: number;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
 }
@@ -88,6 +90,12 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // États pour la gestion admin
+  const [editingMessage, setEditingMessage] = useState<number | null>(null);
+  const [editingMessageContent, setEditingMessageContent] = useState('');
+  const [editingConversation, setEditingConversation] = useState<number | null>(null);
+  const [editingConversationTitle, setEditingConversationTitle] = useState('');
 
   // Emojis corrigés et bien organisés
   const popularEmojis = [
@@ -153,8 +161,8 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
               // If not in available users, create a basic user object
               otherUser = {
                 id: otherUserId,
-                first_name: `Utilisateur ${otherUserId}`,
-                last_name: '',
+                firstName: `Utilisateur ${otherUserId}`,
+                lastName: '',
                 email: '',
                 role: 'user'
               };
@@ -162,8 +170,8 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
               // Map camelCase to snake_case for consistency
               otherUser = {
                 ...otherUser,
-                first_name: otherUser.firstName || otherUser.first_name || `Utilisateur ${otherUserId}`,
-                last_name: otherUser.lastName || otherUser.last_name || ''
+                firstName: otherUser.firstName || `Utilisateur ${otherUserId}`,
+                lastName: otherUser.lastName || ''
               };
             }
 
@@ -183,9 +191,9 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
             return {
               ...conversation,
               participant1: conversation.participant1_id === currentUserId ? 
-                { id: currentUserId, first_name: 'Vous', last_name: '', email: '', role: currentUserRole } : otherUser,
+                { id: currentUserId, firstName: 'Vous', lastName: '', email: '', role: currentUserRole } : otherUser,
               participant2: conversation.participant2_id === currentUserId ? 
-                { id: currentUserId, first_name: 'Vous', last_name: '', email: '', role: currentUserRole } : otherUser,
+                { id: currentUserId, firstName: 'Vous', lastName: '', email: '', role: currentUserRole } : otherUser,
               lastMessage
             };
           } catch (error) {
@@ -213,8 +221,8 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
       // Map camelCase to snake_case for consistency
       const mappedUsers = data.map((user: any) => ({
         ...user,
-        first_name: user.firstName || user.first_name || 'Utilisateur',
-        last_name: user.lastName || user.last_name || ''
+        firstName: user.firstName || 'Utilisateur',
+        lastName: user.lastName || ''
       }));
       
       setAvailableUsers(mappedUsers);
@@ -312,24 +320,65 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
   // Download a file
   const downloadFile = async (messageId: number, fileName: string) => {
     try {
-      const response = await messagingAPI.downloadFile(messageId);
+      setIsLoading(true);
+      console.log(`📥 Téléchargement du fichier: ${fileName} (messageId: ${messageId})`);
       
-      if (!response.ok) {
-        throw new Error('Erreur lors du téléchargement');
+      // Vérifier le token
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Token d\'authentification manquant');
       }
       
+      console.log(`🔑 Token trouvé: ${token.substring(0, 20)}...`);
+      
+      const response = await messagingAPI.downloadFile(messageId);
+      console.log(`📡 Réponse reçue:`, response);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur de téléchargement:', response.status, response.statusText, errorText);
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
+      }
+      
+      // Vérifier le type de contenu
+      const contentType = response.headers.get('content-type');
+      const contentLength = response.headers.get('content-length');
+      console.log(`📄 Type de contenu: ${contentType}`);
+      console.log(`📦 Taille du fichier: ${contentLength} bytes`);
+      
       const blob = await response.blob();
+      console.log(`📦 Blob créé: ${blob.size} bytes, type: ${blob.type}`);
+      
+      if (blob.size === 0) {
+        throw new Error('Le fichier téléchargé est vide');
+      }
+      
+      // Créer l'URL et télécharger
       const url = window.URL.createObjectURL(blob);
+      console.log(`🔗 URL créée: ${url}`);
+      
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
+      a.style.display = 'none';
       document.body.appendChild(a);
+      
+      console.log(`🖱️ Déclenchement du téléchargement...`);
       a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      
+      // Nettoyer
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        console.log(`🧹 Nettoyage effectué`);
+      }, 100);
+      
+      console.log(`✅ Fichier téléchargé avec succès: ${fileName}`);
     } catch (error) {
-      console.error('Error downloading file:', error);
-      setError('Erreur lors du téléchargement du fichier');
+      console.error('❌ Erreur lors du téléchargement:', error);
+      setError(`Erreur lors du téléchargement du fichier: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -340,14 +389,19 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
       setError(null);
       
       console.log('Starting conversation with user:', user);
-      const conversation = await messagingAPI.createOrGetConversation(currentUserId, user.id);
-      console.log('Conversation created/retrieved:', conversation);
+      const response = await messagingAPI.createOrGetConversation(currentUserId, user.id);
+      console.log('Conversation created/retrieved:', response);
+      console.log('Response structure:', JSON.stringify(response, null, 2));
+      
+      const conversation = response.conversation;
+      console.log('Extracted conversation:', conversation);
+      console.log('Conversation ID:', conversation?.id);
       
       // Add user info to conversation
       const conversationWithUsers = {
         ...conversation,
         participant1: conversation.participant1_id === currentUserId ? 
-          { id: currentUserId, first_name: 'Vous', last_name: '', email: '', role: currentUserRole } : user,
+          { id: currentUserId, firstName: 'Vous', lastName: '', email: '', role: currentUserRole } : user,
         participant2: conversation.participant2_id === currentUserId ? 
           { id: currentUserId, first_name: 'Vous', last_name: '', email: '', role: currentUserRole } : user
       };
@@ -411,43 +465,21 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Delete conversation
-  const handleDeleteConversation = async (conversationId: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.')) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await messagingAPI.deleteConversation(conversationId);
-      
-      // Remove conversation from list
-      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
-      
-      // Clear current conversation if it's the one being deleted
-      if (currentConversation?.id === conversationId) {
-        setCurrentConversation(null);
-        setMessages([]);
-      }
-      
-      setError(null);
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      setError('Erreur lors de la suppression de la conversation');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Get conversation title
   const getConversationTitle = (conversation: Conversation) => {
-    if (conversation.title) return conversation.title;
+    if (conversation.title) {
+      // Supprimer les préfixes "Groupe" et "Conversation avec"
+      return conversation.title
+        .replace(/^Groupe\s+/i, '')
+        .replace(/^Conversation avec\s+/i, '');
+    }
     
     const otherUserId = conversation.participant1_id === currentUserId ? 
       conversation.participant2_id : conversation.participant1_id;
     
     const otherUser = availableUsers.find(user => user.id === otherUserId);
-    return otherUser ? `${otherUser.first_name} ${otherUser.last_name}` : 'Conversation';
+    return otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Conversation';
   };
 
   // Get other participant in current conversation
@@ -456,6 +488,109 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
     
     return currentConversation.participant1_id === currentUserId ? 
       currentConversation.participant2 : currentConversation.participant1;
+  };
+
+  // Fonctions pour la gestion des messages (tous les utilisateurs peuvent modifier/supprimer leurs propres messages)
+  const handleEditMessage = (messageId: number, currentContent: string) => {
+    setEditingMessage(messageId);
+    setEditingMessageContent(currentContent);
+  };
+
+  const handleSaveMessage = async (messageId: number) => {
+    try {
+      setIsLoading(true);
+      await messagingAPI.updateMessage(messageId, editingMessageContent);
+      
+      // Mettre à jour le message dans l'état local
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: editingMessageContent, updated_at: new Date().toISOString() }
+          : msg
+      ));
+      
+      setEditingMessage(null);
+      setEditingMessageContent('');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du message:', error);
+      setError('Erreur lors de la mise à jour du message');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) return;
+    
+    try {
+      setIsLoading(true);
+      await messagingAPI.deleteMessage(messageId);
+      
+      // Supprimer le message de l'état local
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    } catch (error) {
+      console.error('Erreur lors de la suppression du message:', error);
+      setError('Erreur lors de la suppression du message');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditConversation = (conversationId: number, currentTitle: string) => {
+    if (currentUserRole !== 'admin') return;
+    setEditingConversation(conversationId);
+    setEditingConversationTitle(currentTitle);
+  };
+
+  const handleSaveConversation = async (conversationId: number) => {
+    if (currentUserRole !== 'admin') return;
+    
+    try {
+      setIsLoading(true);
+      await messagingAPI.updateConversation(conversationId, editingConversationTitle);
+      
+      // Mettre à jour la conversation dans l'état local
+      setConversations(prev => prev.map(conv => 
+        conv.id === conversationId 
+          ? { ...conv, title: editingConversationTitle, updated_at: new Date().toISOString() }
+          : conv
+      ));
+      
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(prev => prev ? { ...prev, title: editingConversationTitle } : null);
+      }
+      
+      setEditingConversation(null);
+      setEditingConversationTitle('');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la conversation:', error);
+      setError('Erreur lors de la mise à jour de la conversation');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: number) => {
+    if (currentUserRole !== 'admin') return;
+    
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette conversation ? Tous les messages seront supprimés.')) return;
+    
+    try {
+      setIsLoading(true);
+      await messagingAPI.deleteConversation(conversationId);
+      
+      // Supprimer la conversation de l'état local
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+      
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(null);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la conversation:', error);
+      setError('Erreur lors de la suppression de la conversation');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle Enter key to send message
@@ -641,9 +776,6 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                           )}
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-xs text-gray-400">
-                            {conversation.updated_at && new Date(conversation.updated_at).toLocaleDateString()}
-                          </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -656,9 +788,11 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                           </button>
                         </div>
                       </div>
-                      <p className="text-gray-300 text-sm truncate mt-1">
-                        {conversation.lastMessage?.content || 'Aucun message'}
-                      </p>
+                      {conversation.lastMessage?.content && (
+                        <p className="text-gray-300 text-sm truncate mt-1">
+                          {conversation.lastMessage.content}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-blue-400 font-medium">
                           {conversation.type === 'direct' ? 'Conversation privée' : 'Groupe'}
@@ -695,25 +829,72 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                     <ChevronLeft className="w-5 h-5 text-white" />
                   </button>
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                    <User className="w-5 h-5 text-white" />
+                    {currentConversation.type === 'group' ? (
+                      <Users className="w-5 h-5 text-white" />
+                    ) : (
+                      <User className="w-5 h-5 text-white" />
+                    )}
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold text-lg">
-                      {getOtherParticipant()?.first_name} {getOtherParticipant()?.last_name}
-                    </h3>
+                    {editingConversation === currentConversation.id ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editingConversationTitle}
+                          onChange={(e) => setEditingConversationTitle(e.target.value)}
+                          className="bg-white/20 border border-white/30 rounded-lg px-2 py-1 text-white placeholder-gray-300"
+                          placeholder="Nom de la conversation"
+                        />
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleSaveConversation(currentConversation.id)}
+                            className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-all"
+                            disabled={isLoading}
+                          >
+                            <Save className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingConversation(null);
+                              setEditingConversationTitle('');
+                            }}
+                            className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition-all"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-white font-semibold text-lg">
+                          {getConversationTitle(currentConversation)}
+                        </h3>
+                        {currentUserRole === 'admin' && (
+                          <button
+                            onClick={() => handleEditConversation(currentConversation.id, currentConversation.title || '')}
+                            className="p-1 hover:bg-white/20 rounded transition-all"
+                            title="Modifier le nom de la conversation"
+                          >
+                            <Edit className="w-4 h-4 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <p className="text-blue-300 text-sm capitalize">
-                      {getOtherParticipant()?.role}
+                      {currentConversation.type === 'group' ? 'Groupe' : getOtherParticipant()?.role}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => handleDeleteConversation(currentConversation.id)}
-                    className="p-2 hover:bg-red-500/20 rounded-xl transition-all duration-300 text-red-400 hover:text-red-300 hover:scale-105"
-                    title="Supprimer la conversation"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {currentUserRole === 'admin' && (
+                    <button 
+                      onClick={() => handleDeleteConversation(currentConversation.id)}
+                      className="p-2 hover:bg-red-500/20 rounded-xl transition-all duration-300 text-red-400 hover:text-red-300 hover:scale-105"
+                      title="Supprimer la conversation"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -739,25 +920,109 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                     className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg transition-all duration-300 hover:scale-[1.02] ${
+                      className={`group max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg transition-all duration-300 hover:scale-[1.02] ${
                         message.sender_id === currentUserId
                           ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
                           : 'bg-white/10 text-white border border-white/10'
                       }`}
                     >
-                      {message.message_type === 'file' && message.file_path ? (
-                        <div className="flex items-center space-x-2">
-                          <Paperclip className="w-4 h-4" />
-                          <button
-                            onClick={() => downloadFile(message.id, message.content || 'fichier')}
-                            className="text-sm underline hover:no-underline transition-all duration-300 flex items-center space-x-1"
-                          >
-                            <span>{message.content || 'Fichier joint'}</span>
-                            <Download className="w-3 h-3" />
-                          </button>
+                      {/* Afficher le nom de l'expéditeur pour les messages des autres utilisateurs */}
+                      {console.log('Message debug:', { 
+                        messageId: message.id, 
+                        senderId: message.sender_id, 
+                        currentUserId, 
+                        sender: message.sender,
+                        isNotCurrentUser: message.sender_id !== currentUserId,
+                        hasSender: !!message.sender
+                      })}
+                      {message.sender_id !== currentUserId && message.sender && (
+                        <p className="text-xs text-gray-300 mb-1 font-medium">
+                          {message.sender.firstName} {message.sender.lastName}
+                        </p>
+                      )}
+                      {editingMessage === message.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingMessageContent}
+                            onChange={(e) => setEditingMessageContent(e.target.value)}
+                            className="w-full p-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-gray-300 resize-none"
+                            rows={3}
+                          />
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleSaveMessage(message.id)}
+                              className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center space-x-1"
+                              disabled={isLoading}
+                            >
+                              <Save className="w-4 h-4" />
+                              <span>Sauvegarder</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingMessage(null);
+                                setEditingMessageContent('');
+                              }}
+                              className="px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all flex items-center space-x-1"
+                            >
+                              <X className="w-4 h-4" />
+                              <span>Annuler</span>
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <div>
+                          {message.message_type === 'file' && message.file_path ? (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 max-w-xs">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex-shrink-0">
+                                  <Paperclip className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {message.content || 'Fichier joint'}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Cliquez pour télécharger
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => downloadFile(message.id, message.content || 'fichier')}
+                                  className="flex-shrink-0 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Télécharger le fichier"
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Download className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm leading-relaxed">{message.content}</p>
+                          )}
+                          
+                          {/* Boutons d'édition/suppression pour les messages de l'utilisateur connecté */}
+                          {message.sender_id === currentUserId && (
+                            <div className="flex space-x-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleEditMessage(message.id, message.content)}
+                                className="p-1 hover:bg-white/20 rounded transition-all"
+                                title="Modifier le message"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="p-1 hover:bg-red-500/20 rounded transition-all text-red-400"
+                                title="Supprimer le message"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                       <div className={`flex items-center justify-between mt-2 text-xs ${
                         message.sender_id === currentUserId ? 'text-blue-100' : 'text-gray-400'
@@ -979,7 +1244,7 @@ const NewConversationView: React.FC<NewConversationViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredUsers = availableUsers.filter(user =>
-    `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase().includes(searchQuery.toLowerCase())
+    `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -1032,7 +1297,7 @@ const NewConversationView: React.FC<NewConversationViewProps> = ({
                 </div>
                 <div className="flex-1">
                   <h4 className="text-white font-semibold text-lg">
-                    {user.first_name} {user.last_name}
+                    {user.firstName} {user.lastName}
                   </h4>
                   <p className="text-gray-300 text-sm">{user.email}</p>
                   <p className="text-blue-400 text-xs font-medium capitalize mt-1 bg-blue-500/20 px-2 py-1 rounded-lg inline-block">

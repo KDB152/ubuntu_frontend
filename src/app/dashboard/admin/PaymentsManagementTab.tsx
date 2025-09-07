@@ -15,7 +15,6 @@ import {
   Clock,
   Euro,
   Download,
-  Eye,
   Loader2,
   Edit
 } from 'lucide-react';
@@ -72,7 +71,6 @@ const PaymentsManagementTab: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [editingSessions, setEditingSessions] = useState({
     seances_payees: 0,
     seances_non_payees: 0
@@ -120,6 +118,13 @@ const PaymentsManagementTab: React.FC = () => {
           });
         }
         
+        // Test de calcul immédiat
+        const testTotal = data.reduce((sum: number, p: any) => {
+          const value = parseFloat(p.montant_total);
+          return sum + (isNaN(value) ? 0 : value);
+        }, 0);
+        console.log('🧮 Test calcul total immédiat:', testTotal);
+        
         setPayments(data);
       
     } catch (err) {
@@ -145,13 +150,24 @@ const PaymentsManagementTab: React.FC = () => {
 
   // Fonction pour calculer un total de manière sécurisée
   const calculateTotal = (payments: Payment[], field: keyof Payment): number => {
-    return payments.reduce((sum, p) => {
+    console.log('🧮 Calcul total pour field:', field, 'avec', payments.length, 'paiements');
+    
+    const result = payments.reduce((sum, p) => {
       const value = p[field];
-      if (typeof value === 'number' && !isNaN(value)) {
-        return sum + value;
+      console.log('  - Valeur:', value, 'Type:', typeof value);
+      
+      // Convertir en nombre
+      const numValue = parseFloat(String(value));
+      console.log('  - Valeur convertie:', numValue);
+      
+      if (!isNaN(numValue)) {
+        return sum + numValue;
       }
       return sum;
     }, 0);
+    
+    console.log('🧮 Résultat final:', result);
+    return result;
   };
 
   // Statistiques - Calculer les totaux à partir du tableau filtré affiché
@@ -172,6 +188,16 @@ const PaymentsManagementTab: React.FC = () => {
     filteredPaymentsLength: filteredPayments.length,
     paymentsLength: payments.length
   });
+
+  // Log détaillé des paiements pour déboguer
+  console.log('🔍 Paiements filtrés:', filteredPayments.map(p => ({
+    id: p.id,
+    montant_total: p.montant_total,
+    montant_paye: p.montant_paye,
+    montant_restant: p.montant_restant,
+    type_montant_total: typeof p.montant_total,
+    type_montant_paye: typeof p.montant_paye
+  })));
 
   // Obtenir la couleur de fond selon le statut
   const getStatusBgColor = (statut: string) => {
@@ -201,11 +227,6 @@ const PaymentsManagementTab: React.FC = () => {
     }).format(amount) + ' dt';
   };
 
-  // Fonction pour voir les détails d'un paiement
-  const handleViewDetails = (payment: Payment) => {
-    setSelectedPayment(payment);
-    setShowDetailsModal(true);
-  };
 
   // Fonction pour éditer un paiement
   const handleEdit = (payment: Payment) => {
@@ -220,15 +241,26 @@ const PaymentsManagementTab: React.FC = () => {
   // Fonction pour marquer comme payé
   const handleMarkAsPaid = async (payment: Payment) => {
     try {
+      // Calculer les nouvelles valeurs
+      const newSeancesPayees = payment.seances_payees + payment.seances_non_payees;
+      const newSeancesNonPayees = 0;
+      const newMontantTotal = newSeancesPayees * 40; // Calculate total based on paid sessions (40dt per session)
+      const newMontantPaye = newMontantTotal; // All sessions are now paid
+      const newMontantRestant = 0;
+      
       const response = await fetch(`/api/admin/payments/${payment.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           statut: 'paye',
-          montant_paye: payment.montant_total,
-          montant_restant: 0
+          seances_payees: newSeancesPayees,
+          seances_non_payees: newSeancesNonPayees,
+          seances_total: newSeancesPayees,
+          montant_total: newMontantTotal, // Update total amount
+          montant_paye: newMontantPaye,
+          montant_restant: newMontantRestant
         })
       });
 
@@ -240,7 +272,7 @@ const PaymentsManagementTab: React.FC = () => {
       await loadPayments();
       
       // Afficher un message de succès
-      alert('Paiement marqué comme payé avec succès !');
+      alert(`Paiement marqué comme payé avec succès ! ${payment.seances_non_payees} séances non payées ont été transférées vers les séances payées.`);
       
     } catch (err) {
       console.error('Erreur lors du marquage comme payé:', err);
@@ -256,14 +288,13 @@ const PaymentsManagementTab: React.FC = () => {
       setIsUpdating(true);
       
       const response = await fetch(`/api/admin/payments/${selectedPayment.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           seances_payees: editingSessions.seances_payees,
-          seances_non_payees: editingSessions.seances_non_payees,
-          seances_total: editingSessions.seances_payees + editingSessions.seances_non_payees
+          seances_non_payees: editingSessions.seances_non_payees
         })
       });
 
@@ -292,7 +323,6 @@ const PaymentsManagementTab: React.FC = () => {
   // Fermer les modales
   const closeModals = () => {
     setShowEditModal(false);
-    setShowDetailsModal(false);
     setSelectedPayment(null);
   };
 
@@ -501,7 +531,7 @@ const PaymentsManagementTab: React.FC = () => {
                   </td>
                   <td className="px-3 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <BookOpen className="w-3 h-3 mr-1" />
+                      <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-3 h-3 mr-1" />
                       {payment.class_level}
                     </span>
                   </td>
@@ -537,13 +567,6 @@ const PaymentsManagementTab: React.FC = () => {
                   </td>
                   <td className="px-3 py-4">
                       <div className="flex items-center space-x-2">
-                        <button
-                        onClick={() => handleViewDetails(payment)}
-                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-3 h-3" />
-                        </button>
                         <button
                         onClick={() => handleMarkAsPaid(payment)}
                         className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"

@@ -48,15 +48,13 @@ interface Student {
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
+  phone_number: string;
   classLevel: string;
   birthDate: string;
-  averageScore: number;
   role: string;
   isActive: boolean;
   isApproved: boolean;
   createdAt: string;
-  notes?: string;
 }
 
 interface Parent {
@@ -64,14 +62,13 @@ interface Parent {
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
+  phone_number: string;
   address: string;
   occupation: string;
   role: string;
   isActive: boolean;
   isApproved: boolean;
   createdAt: string;
-  notes?: string;
 }
 
 interface UsersManagementTabProps {
@@ -242,28 +239,196 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
     }
   };
 
-  const handleEditUser = async (updatedUser: Student | Parent) => {
+  // Fonction pour charger les données de relation
+  const loadUserRelationData = async (user: Student | Parent) => {
+    try {
     if (activeTab === 'students') {
-      await handleUpdateStudent(updatedUser.id, {
-        firstName: (updatedUser as Student).firstName,
-        lastName: (updatedUser as Student).lastName,
-        email: (updatedUser as Student).email,
-        phone: (updatedUser as Student).phoneNumber,
-        class: (updatedUser as Student).classLevel,
-        level: (updatedUser as Student).classLevel,
-        averageScore: (updatedUser as Student).averageScore,
-        completedCourses: 0,
-        totalCourses: 0,
-      });
+        // Pour un étudiant, charger les données du parent
+        const parentData = await fetchParentDataForStudent(user.id);
+        return {
+          ...user,
+          parentFirstName: parentData?.firstName || '',
+          parentLastName: parentData?.lastName || '',
+          parentEmail: parentData?.email || '',
+        };
     } else {
-      await handleUpdateParent(updatedUser.id, {
-        firstName: (updatedUser as Parent).firstName,
-        lastName: (updatedUser as Parent).lastName,
-        email: (updatedUser as Parent).email,
-        phone: (updatedUser as Parent).phoneNumber,
-        address: (updatedUser as Parent).address || '',
-        occupation: (updatedUser as Parent).occupation || '',
+        // Pour un parent, charger les données de l'enfant
+        const childData = await fetchChildDataForParent(user.id);
+        return {
+          ...user,
+          childFirstName: childData?.firstName || '',
+          childLastName: childData?.lastName || '',
+          childEmail: childData?.email || '',
+          childClass: childData?.classLevel || '',
+        };
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de relation:', error);
+      return user;
+    }
+  };
+
+  // Fonction pour récupérer les données du parent d'un étudiant
+  const fetchParentDataForStudent = async (studentId: number) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/students/${studentId}/parent`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || localStorage.getItem('token')}`,
+        },
       });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données du parent:', error);
+    }
+    return null;
+  };
+
+  // Fonction pour récupérer les données de l'enfant d'un parent
+  const fetchChildDataForParent = async (parentId: number) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/parents/${parentId}/child`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || localStorage.getItem('token')}`,
+        },
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données de l\'enfant:', error);
+    }
+    return null;
+  };
+
+  const handleEditUser = async (updatedUser: Student | Parent) => {
+    try {
+      setIsLoading(true);
+      
+      // Préparer les données pour l'API backend
+      const userData = {
+        // Champs User de base
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        phone_number: (updatedUser as any).phone_number || (updatedUser as any).phone,
+        isActive: updatedUser.isActive,
+        isApproved: updatedUser.isApproved,
+        role: activeTab === 'students' ? 'student' : 'parent',
+        
+        // Champs spécifiques aux étudiants (table students)
+        ...(activeTab === 'students' && {
+          classLevel: (updatedUser as any).classLevel || (updatedUser as any).class,
+          birthDate: (updatedUser as any).birthDate ? (updatedUser as any).birthDate.split('T')[0] : (updatedUser as any).birth_date,
+        }),
+        
+        // Champs spécifiques aux parents (table parents)
+        ...(activeTab === 'parents' && {
+          address: (updatedUser as any).address,
+          occupation: (updatedUser as any).occupation,
+        }),
+        
+      };
+
+      // Appeler l'API backend
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      
+      // D'abord, récupérer le bon ID utilisateur via l'email
+      let userId = updatedUser.id;
+      try {
+        const usersResponse = await fetch(`${backendUrl}/users/debug/all`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (usersResponse.ok) {
+          const allUsers = await usersResponse.json();
+          const userByEmail = allUsers.find((u: any) => u.email === updatedUser.email);
+          if (userByEmail) {
+            userId = userByEmail.id;
+            console.log('🔍 Found correct user ID:', userId, 'for email:', updatedUser.email);
+    } else {
+            // L'utilisateur n'existe pas dans la base de données
+            const availableUsers = allUsers.map((u: any) => `ID: ${u.id} - ${u.email} (${u.firstName} ${u.lastName})`).join('\n');
+            throw new Error(`L'utilisateur avec l'email "${updatedUser.email}" n'existe pas dans la base de données.\n\nUtilisateurs disponibles:\n${availableUsers}`);
+          }
+        }
+      } catch (error) {
+        if (error.message.includes('n\'existe pas dans la base de données')) {
+          throw error; // Re-lancer l'erreur si c'est notre erreur personnalisée
+        }
+        console.warn('🔍 Could not fetch user ID by email, using original ID:', userId);
+      }
+      
+      console.log('🔍 Updating user:', userId, 'with data:', userData);
+      console.log('🔍 Using token:', token ? 'Token present' : 'No token');
+      console.log('🔍 Backend URL:', backendUrl);
+      console.log('🔍 Full URL:', `${backendUrl}/users/${userId}`);
+      
+      const response = await fetch(`${backendUrl}/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔍 Error response:', errorText);
+        
+        // Essayer de parser l'erreur JSON
+        let errorMessage = `Erreur ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          errorMessage = errorText || `Erreur ${response.status}`;
+        }
+        
+        throw new Error(`Erreur lors de la mise à jour de l'utilisateur: ${errorMessage}`);
+      }
+
+      // L'endpoint PUT /users/:id retourne déjà les données mises à jour
+      // Pas besoin de faire un appel supplémentaire
+
+      // Recharger les données pour s'assurer que l'affichage est à jour
+      if (activeTab === 'students') {
+        await loadStudents();
+      } else {
+        await loadParents();
+      }
+
+      showNotification('success', 'Utilisateur mis à jour avec succès');
+      setShowEditModal(false);
+      setUserToEdit(null);
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      
+      // Afficher un message d'erreur plus détaillé
+      let errorMessage = 'Erreur lors de la mise à jour de l\'utilisateur';
+      if (error instanceof Error) {
+        if (error.message.includes('n\'existe pas dans la base de données')) {
+          errorMessage = 'Utilisateur introuvable dans la base de données';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Erreur serveur - Vérifiez que l\'utilisateur existe';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      showNotification('error', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -278,7 +443,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           first_name: (newUser as any).firstName,
           last_name: (newUser as any).lastName,
         email: (newUser as any).email,
-        phone: (newUser as any).phoneNumber,
+          phone: (newUser as any).phone_number, // ✅ Correct mapping
           password: 'changeme123', // Mot de passe temporaire
           studentBirthDate: (newUser as any).birthDate || '2000-01-01',
           studentClass: (newUser as any).classLevel,
@@ -286,11 +451,14 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           parentFirstName: (newUser as any).parentFirstName || 'Parent',
           parentLastName: (newUser as any).parentLastName || 'Temporaire',
           parentEmail: (newUser as any).parentEmail || `parent.${(newUser as any).email}`,
-          parentPhone: (newUser as any).parentPhone || (newUser as any).phoneNumber,
+          parentPhone: (newUser as any).parentPhone || (newUser as any).phone_number,
           parentPassword: 'changeme123'
         };
         
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        console.log('🔍 Creating student with data:', registrationData);
+        console.log('🔍 Phone field value:', (newUser as any).phone_number);
+        
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
         const response = await fetch(`${API_BASE}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -309,19 +477,19 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           first_name: (newUser as any).firstName,
           last_name: (newUser as any).lastName,
         email: (newUser as any).email,
-        phone: (newUser as any).phoneNumber,
+        phone: (newUser as any).phone_number,
           password: 'changeme123', // Mot de passe temporaire
           // Informations de l'enfant
           childFirstName: (newUser as any).childFirstName || 'Enfant',
           childLastName: (newUser as any).childLastName || 'Temporaire',
           childEmail: (newUser as any).childEmail || `enfant.${(newUser as any).email}`,
-          childPhone: (newUser as any).childPhone || (newUser as any).phoneNumber,
+          childPhone: (newUser as any).childPhone || (newUser as any).phone_number,
           childBirthDate: (newUser as any).childBirthDate || '2010-01-01',
           childClass: (newUser as any).childClass || 'Terminale groupe 1',
           childPassword: 'changeme123'
         };
         
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
         const response = await fetch(`${API_BASE}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -584,7 +752,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
                     <div className="text-sm text-blue-200">
                       <div className="flex items-center space-x-1">
                         <Phone className="w-3 h-3" />
-                        <span>{user.phoneNumber}</span>
+                         <span>{user.phone_number}</span>
                       </div>
                       <div className="flex items-center space-x-1 mt-1">
                         <Mail className="w-3 h-3" />
@@ -643,12 +811,23 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
                       
                       {/* Bouton de modification */}
                       <button
-                        onClick={() => {
+                        onClick={async () => {
+                          setIsLoading(true);
+                          try {
+                            const userWithRelationData = await loadUserRelationData(user);
+                            setUserToEdit(userWithRelationData);
+                            setShowEditModal(true);
+                          } catch (error) {
+                            console.error('Erreur lors du chargement des données:', error);
                           setUserToEdit(user);
                           setShowEditModal(true);
+                          } finally {
+                            setIsLoading(false);
+                          }
                         }}
                         className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
                         title="Modifier"
+                        disabled={isLoading}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -738,15 +917,13 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
     firstName: '',
     lastName: '',
     email: '',
-    phoneNumber: '',
+     phone_number: '',
     ...(userType === 'students' ? {
       classLevel: 'Terminale S',
-      averageScore: 0,
-      notes: ''
+      averageScore: 0
     } : {
       address: '',
-      occupation: '',
-      notes: ''
+      occupation: ''
     })
   });
 
@@ -804,8 +981,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
               <label className="block text-sm font-semibold text-white mb-2">Téléphone *</label>
               <input
                 type="tel"
-                value={(formData as any).phone}
-                onChange={(e) => setFormData((prev: any) => ({ ...prev, phone: e.target.value }))}
+                value={(formData as any).phone_number}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, phone_number: e.target.value }))}
                 required
                 className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
               />
@@ -927,8 +1104,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.parentFirstName || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, parentFirstName: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Prénom du parent"
-                        required
+                        placeholder="Prénom du parent (optionnel)"
                   />
                 </div>
                   </div>
@@ -941,8 +1117,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.parentLastName || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, parentLastName: e.target.value }))}
                         className="w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Nom du parent"
-                        required
+                        placeholder="Nom du parent (optionnel)"
                       />
                     </div>
                   </div>
@@ -960,8 +1135,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.parentEmail || ''}
                     onChange={(e) => setFormData((prev: any) => ({ ...prev, parentEmail: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="parent@email.com"
-                        required
+                        placeholder="parent@email.com (optionnel)"
                   />
                 </div>
                   </div>
@@ -977,8 +1151,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.parentPhone || ''}
                     onChange={(e) => setFormData((prev: any) => ({ ...prev, parentPhone: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Téléphone du parent"
-                        required
+                        placeholder="Téléphone du parent (optionnel)"
                       />
                     </div>
                   </div>
@@ -996,8 +1169,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                       value={formData.parentPassword || ''}
                       onChange={(e) => setFormData((prev: any) => ({ ...prev, parentPassword: e.target.value }))}
                       className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                      placeholder="Mot de passe du parent"
-                      required
+                      placeholder="Mot de passe du parent (optionnel)"
                     />
                   </div>
                 </div>
@@ -1013,8 +1185,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                       value={formData.parentConfirmPassword || ''}
                       onChange={(e) => setFormData((prev: any) => ({ ...prev, parentConfirmPassword: e.target.value }))}
                       className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                      placeholder="Confirmez le mot de passe du parent"
-                      required
+                      placeholder="Confirmez le mot de passe du parent (optionnel)"
                     />
                   </div>
                 </div>
@@ -1087,8 +1258,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childFirstName || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childFirstName: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Prénom de l'enfant"
-                        required
+                        placeholder="Prénom de l'enfant (optionnel)"
                       />
                     </div>
                   </div>
@@ -1101,8 +1271,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childLastName || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childLastName: e.target.value }))}
                         className="w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Nom de l'enfant"
-                        required
+                        placeholder="Nom de l'enfant (optionnel)"
                       />
                     </div>
                   </div>
@@ -1121,8 +1290,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childEmail || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childEmail: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="enfant@email.com"
-                        required
+                        placeholder="enfant@email.com (optionnel)"
                       />
                     </div>
                   </div>
@@ -1138,8 +1306,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childPhone || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childPhone: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Numéro de téléphone de l'enfant"
-                        required
+                        placeholder="Numéro de téléphone de l'enfant (optionnel)"
                       />
                     </div>
                   </div>
@@ -1158,7 +1325,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childBirthDate || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childBirthDate: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        required
                       />
                     </div>
                   </div>
@@ -1173,9 +1339,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childClass || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childClass: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none border-white/20"
-                        required
                       >
-                        <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant</option>
+                        <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant (optionnel)</option>
                         {classes.map((classe) => (
                           <option 
                             key={classe} 
@@ -1207,8 +1372,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                       value={formData.childPassword || ''}
                       onChange={(e) => setFormData((prev: any) => ({ ...prev, childPassword: e.target.value }))}
                       className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                      placeholder="Mot de passe de l'enfant"
-                      required
+                      placeholder="Mot de passe de l'enfant (optionnel)"
                     />
                   </div>
                 </div>
@@ -1224,8 +1388,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                       value={formData.childConfirmPassword || ''}
                       onChange={(e) => setFormData((prev: any) => ({ ...prev, childConfirmPassword: e.target.value }))}
                       className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                      placeholder="Confirmez le mot de passe de l'enfant"
-                      required
+                      placeholder="Confirmez le mot de passe de l'enfant (optionnel)"
                     />
                   </div>
                 </div>
@@ -1233,15 +1396,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
             </>
           )}
 
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">Notes</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData((prev: any) => ({ ...prev, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-            />
-          </div>
 
           <div className="flex items-center justify-end space-x-3 pt-6 border-t border-white/20">
             <button
@@ -1296,7 +1450,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-white/20">
           <h2 className="text-base font-bold text-white flex items-center">
             <Edit className="w-5 h-5 text-blue-300 mr-3" />
@@ -1307,7 +1461,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Informations de base */}
+          <div className="bg-white/5 rounded-xl p-6">
+            <h3 className="text-white font-semibold mb-4 flex items-center">
+              <User className="w-5 h-5 text-blue-300 mr-2" />
+              Informations de base
+            </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-white mb-2">Prénom *</label>
@@ -1343,145 +1503,132 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
               <label className="block text-sm font-semibold text-white mb-2">Téléphone *</label>
               <input
                 type="tel"
-                value={(formData as any).phone}
-                onChange={(e) => setFormData((prev: any) => ({ ...prev, phone: e.target.value }))}
+                  value={(formData as any).phone_number || (formData as any).phone || ''}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, phone_number: e.target.value }))}
                 required
                 className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
               />
+              </div>
             </div>
           </div>
 
           {userType === 'students' && (
             <>
+              {/* Informations académiques */}
+              <div className="bg-white/5 rounded-xl p-6">
+                <h3 className="text-white font-semibold mb-4 flex items-center">
+                  <BookOpen className="w-5 h-5 text-blue-300 mr-2" />
+                  Informations académiques
+                </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-white mb-2">Classe</label>
                   <select
-                    value={(formData as any).class}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, class: e.target.value }))}
+                      value={(formData as any).classLevel || (formData as any).class || ''}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, classLevel: e.target.value }))}
                     className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
                   >
+                      <option value="">Sélectionner une classe</option>
                     {classes.map(cls => (
                       <option key={cls} value={cls}>{cls}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Niveau</label>
-                  <select
-                    value={(formData as any).level}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, level: e.target.value }))}
+                  <label className="block text-sm font-semibold text-white mb-2">Date de naissance</label>
+                  <input
+                    type="date"
+                    value={(formData as any).birthDate || (formData as any).birth_date || ''}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, birthDate: e.target.value }))}
                     className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                  >
-                    {levels.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
+                  />
+                </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Nom du parent</label>
-                  <input
-                    type="text"
-                    value={(formData as any).parentName || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, parentName: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Email du parent</label>
-                  <input
-                    type="email"
-                    value={(formData as any).parentEmail || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, parentEmail: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Téléphone du parent</label>
-                  <input
-                    type="tel"
-                    value={(formData as any).parentPhone || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, parentPhone: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Moyenne générale</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    step="0.1"
-                    value={(formData as Student).averageScore}
-                    onChange={(e) => setFormData(prev => ({ ...prev, averageScore: parseFloat(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Cours terminés</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={(formData as any).completedCourses}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, completedCourses: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Total cours</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={(formData as any).totalCourses}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, totalCourses: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-              </div>
             </>
           )}
 
+          {userType === 'parents' && (
+            <>
+              {/* Informations personnelles du parent */}
+              <div className="bg-white/5 rounded-xl p-6">
+                <h3 className="text-white font-semibold mb-4 flex items-center">
+                  <User className="w-5 h-5 text-blue-300 mr-2" />
+                  Informations personnelles
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-semibold text-white mb-2">Adresse</label>
+                  <input
+                      type="text"
+                      value={(formData as any).address || ''}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                      placeholder="Adresse du parent"
+                  />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-white mb-2">Profession</label>
+                  <input
+                      type="text"
+                      value={(formData as any).occupation || ''}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, occupation: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                      placeholder="Profession du parent"
+                  />
+                </div>
+                </div>
+              </div>
+
+            </>
+          )}
+
+          {/* Statut et approbation */}
+          <div className="bg-white/5 rounded-xl p-6">
+            <h3 className="text-white font-semibold mb-4 flex items-center">
+              <Shield className="w-5 h-5 text-blue-300 mr-2" />
+              Statut et approbation
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-white mb-2">Statut</label>
             <select
-              value={(formData as any).status}
-              onChange={(e) => setFormData((prev: any) => ({ ...prev, status: e.target.value as any }))}
+                  value={(formData as any).isActive ? 'Actif' : 'Inactif'}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, isActive: e.target.value === 'Actif' }))}
               className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
             >
               <option value="Actif">Actif</option>
               <option value="Inactif">Inactif</option>
-              {userType === 'students' && <option value="Suspendu">Suspendu</option>}
             </select>
           </div>
-
           <div>
-            <label className="block text-sm font-semibold text-white mb-2">Notes</label>
-            <textarea
-              value={formData.notes || ''}
-              onChange={(e) => setFormData((prev: any) => ({ ...prev, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-            />
+                <label className="block text-sm font-semibold text-white mb-2">Statut d'approbation</label>
+                <select
+                  value={(formData as any).isApproved ? 'Approuvé' : 'En attente'}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, isApproved: e.target.value === 'Approuvé' }))}
+                  className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
+                >
+                  <option value="En attente">En attente</option>
+                  <option value="Approuvé">Approuvé</option>
+                </select>
+              </div>
+            </div>
           </div>
+
 
           <div className="flex items-center justify-end space-x-3 pt-6 border-t border-white/20">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
+              className="px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all"
               disabled={isLoading}
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-3 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center space-x-2"
               disabled={isLoading}
             >
               {isLoading ? (

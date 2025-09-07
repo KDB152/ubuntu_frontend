@@ -44,7 +44,7 @@ interface ParentProfile {
   lastName: string;
   fullName: string;
   email: string;
-  phoneNumber: string;
+  phone_number: string;
   address: string;
   occupation: string;
   children: Child[];
@@ -58,7 +58,7 @@ interface Child {
   email: string;
   classLevel: string;
   birthDate: string;
-  phoneNumber: string;
+  phone_number: string;
   address: string;
 }
 
@@ -114,7 +114,7 @@ const MeetingsTab: React.FC = () => {
         lastName: profile.full_name.split(' ').slice(1).join(' ') || '',
         fullName: profile.full_name,
         email: profile.email,
-        phoneNumber: profile.phone,
+        phone_number: profile.phone,
         address: '',
         occupation: '',
         children: profile.children.map((child: any) => ({
@@ -125,7 +125,7 @@ const MeetingsTab: React.FC = () => {
           email: child.email,
           classLevel: child.class_level,
           birthDate: '',
-          phoneNumber: child.phone,
+          phone_number: child.phone,
           address: ''
         }))
       };
@@ -138,15 +138,15 @@ const MeetingsTab: React.FC = () => {
         parentId: transformedProfile.id.toString(),
         parentName: transformedProfile.fullName,
         parentEmail: transformedProfile.email,
-        parentPhone: transformedProfile.phoneNumber,
+        parentPhone: transformedProfile.phone_number,
         childId: transformedProfile.children.length > 0 ? transformedProfile.children[0].id.toString() : '',
         childName: transformedProfile.children.length > 0 ? transformedProfile.children[0].fullName : '',
         childClass: transformedProfile.children.length > 0 ? transformedProfile.children[0].classLevel : '',
       }));
       
       console.log('✅ Profil parent chargé avec succès:', transformedProfile);
-      console.log('📱 Téléphone parent:', transformedProfile.phoneNumber);
-      console.log('👶 Enfants:', transformedProfile.children.map(c => `${c.fullName} (${c.classLevel}) - Tél: ${c.phoneNumber}`));
+      console.log('📱 Téléphone parent:', transformedProfile.phone_number);
+      console.log('👶 Enfants:', transformedProfile.children.map(c => `${c.fullName} (${c.classLevel}) - Tél: ${c.phone_number}`));
     } catch (error) {
       console.error('❌ Erreur lors du chargement du profil parent:', error);
     }
@@ -304,7 +304,7 @@ const MeetingsTab: React.FC = () => {
           parentId: parentProfile.id.toString(),
           parentName: parentProfile.fullName,
           parentEmail: parentProfile.email,
-          parentPhone: parentProfile.phoneNumber,
+          parentPhone: parentProfile.phone_number,
           childId: parentProfile.children.length > 0 ? parentProfile.children[0].id.toString() : '',
           childName: parentProfile.children.length > 0 ? parentProfile.children[0].fullName : '',
           childClass: parentProfile.children.length > 0 ? parentProfile.children[0].classLevel : '',
@@ -419,7 +419,7 @@ const MeetingsTab: React.FC = () => {
                     <h3 className="text-white font-semibold text-base">Rendez-vous avec l'administration</h3>
                     <div className="text-blue-200 text-sm flex flex-wrap gap-3 mt-1">
                       <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" /> {formatDateTime(m.timing)}</span>
-                      <span className="inline-flex items-center gap-1"><BookOpen className="w-4 h-4" /> {m.childName} ({m.childClass})</span>
+                      <span className="inline-flex items-center gap-1"><img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-4 h-4" /> {m.childName} ({m.childClass})</span>
                     </div>
                   </div>
                 </div>

@@ -15,7 +15,6 @@ import {
   X,
   Camera,
   Shield,
-  Bell,
   Plus
 } from 'lucide-react';
 

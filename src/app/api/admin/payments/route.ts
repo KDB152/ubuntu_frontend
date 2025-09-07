@@ -1,28 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
 
-// Configuration de la base de données MySQL
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'chrono_carto',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
-
-// Fonction pour créer une connexion à la base de données
-async function getConnection() {
-  try {
-    const connection = await mysql.createConnection(dbConfig);
-    return connection;
-  } catch (error) {
-    console.error('Erreur de connexion MySQL:', error);
-    throw error;
-  }
-}
+// URL de l'API backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,100 +10,36 @@ export async function GET(request: NextRequest) {
     const statusFilter = searchParams.get('status');
     const searchQuery = searchParams.get('search');
 
-    const connection = await getConnection();
-    
-    // Requête de base pour récupérer les paiements avec montant_total calculé automatiquement
-    let query = `
-      SELECT 
-        p.id,
-        p.student_id,
-        p.parent_id,
-        COALESCE(p.seances_total, 0) as seances_total,
-        COALESCE(p.seances_non_payees, 0) as seances_non_payees,
-        COALESCE(p.seances_payees, 0) as seances_payees,
-        (COALESCE(p.montant_paye, 0) + COALESCE(p.montant_restant, 0)) as montant_total,
-        COALESCE(p.montant_paye, 0) as montant_paye,
-        COALESCE(p.montant_restant, 0) as montant_restant,
-        COALESCE(p.prix_seance, 40) as prix_seance,
-        COALESCE(p.statut, 'en_attente') as statut,
-        p.date_derniere_presence,
-        p.date_dernier_paiement,
-        u.first_name as student_first_name,
-        u.last_name as student_last_name,
-        COALESCE(s.class_level, 'Non spécifié') as class_level,
-        parent_user.first_name as parent_first_name,
-        parent_user.last_name as parent_last_name,
-        COALESCE(p.date_creation, CURRENT_TIMESTAMP) as date_creation
-      FROM paiement p
-      JOIN students s ON p.student_id = s.id
-      JOIN users u ON s.user_id = u.id
-      LEFT JOIN parents par ON p.parent_id = par.id
-      LEFT JOIN users parent_user ON par.user_id = parent_user.id
-      WHERE 1=1
-    `;
-    
-    const params: any[] = [];
-    
-         // Filtre par classe
-     if (classFilter && classFilter !== 'Total') {
-       query += ` AND s.class_level = ?`;
-       params.push(classFilter);
-     }
-    
-    // Filtre par statut
+    // Construire l'URL de l'API backend
+    const backendUrl = new URL(`${API_BASE_URL}/admin/payments`);
+    if (classFilter && classFilter !== 'Total') {
+      backendUrl.searchParams.append('classLevel', classFilter);
+    }
     if (statusFilter && statusFilter !== 'Tous') {
-      query += ` AND p.statut = ?`;
-      params.push(statusFilter);
+      backendUrl.searchParams.append('status', statusFilter);
     }
-    
-    // Filtre par recherche
     if (searchQuery) {
-             query += ` AND (
-         u.first_name LIKE ? OR 
-         u.last_name LIKE ? OR 
-         s.class_level LIKE ? OR
-         parent_user.first_name LIKE ? OR
-         parent_user.last_name LIKE ?
-       )`;
-      const searchTerm = `%${searchQuery}%`;
-      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      backendUrl.searchParams.append('search', searchQuery);
     }
-    
-    query += ` ORDER BY p.id DESC`;
-    
-         const [rows] = await connection.execute(query, params);
-     await connection.end();
-     
-     console.log(`✅ Paiements récupérés: ${(rows as any[]).length} paiements`);
-     
-     // Convertir les montants de chaînes en nombres
-     const processedRows = (rows as any[]).map(row => ({
-       ...row,
-       montant_total: parseFloat(row.montant_total) || 0,
-       montant_paye: parseFloat(row.montant_paye) || 0,
-       montant_restant: parseFloat(row.montant_restant) || 0,
-       seances_total: parseInt(row.seances_total) || 0,
-       seances_payees: parseInt(row.seances_payees) || 0,
-       seances_non_payees: parseInt(row.seances_non_payees) || 0,
-       prix_seance: parseFloat(row.prix_seance) || 40
-     }));
-     
-     // Log des données pour déboguer
-     if (processedRows.length > 0) {
-       console.log('Exemple de données reçues:', {
-         student: `${processedRows[0].student_first_name} ${processedRows[0].student_last_name}`,
-         parent: `${processedRows[0].parent_first_name} ${processedRows[0].parent_last_name}`,
-         parent_id: processedRows[0].parent_id,
-         student_id: processedRows[0].student_id,
-         montants: {
-           total: processedRows[0].montant_total,
-           paye: processedRows[0].montant_paye,
-           restant: processedRows[0].montant_restant
-         }
-       });
-     }
-     
-     return NextResponse.json(processedRows);
+
+    console.log('🔄 Appel API backend:', backendUrl.toString());
+
+    // Appeler l'API backend
+    const response = await fetch(backendUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur API backend: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Données reçues du backend:', data);
+
+    return NextResponse.json(data.payments || data);
     
   } catch (error) {
     console.error('Erreur lors de la récupération des paiements:', error);

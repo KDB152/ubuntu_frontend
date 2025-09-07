@@ -13,7 +13,6 @@ import {
   Clock,
   Award,
   Shield,
-  Bell,
   Database,
   Zap,
   Globe,
@@ -167,7 +166,7 @@ const AdminPage = () => {
 
   // Interface d'administration complète
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex flex-col">
       {/* Message de bienvenue pour la première visite */}
       <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-b border-white/20 backdrop-blur-xl flex-shrink-0">
         <div className="max-w-7xl mx-auto px-3 py-4">
@@ -187,7 +186,7 @@ const AdminPage = () => {
                 <span>{stats.totalUsers} utilisateurs</span>
               </div>
               <div className="flex items-center space-x-2">
-                <BookOpen className="w-4 h-4" />
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-4 h-4" />
                 <span>{stats.totalQuizzes} quiz</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -200,7 +199,7 @@ const AdminPage = () => {
       </div>
 
       {/* Composant AdminDashboard complet */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         <AdminDashboard />
       </div>
     </div>

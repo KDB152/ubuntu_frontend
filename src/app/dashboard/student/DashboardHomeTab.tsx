@@ -27,7 +27,6 @@ import {
   Flag,
   Sparkles,
   Gift,
-  Bell,
   ArrowRight,
   Plus,
   Eye,
@@ -37,7 +36,6 @@ import {
   ThumbsUp,
   MessageCircle,
   Send,
-  Lightbulb,
   Coffee,
   Sun,
   Moon,
@@ -55,17 +53,6 @@ interface QuickAction {
   badge?: string;
 }
 
-interface RecentActivity {
-  id: string;
-  type: 'quiz' | 'achievement' | 'message' | 'resource';
-  title: string;
-  description: string;
-  timestamp: string;
-  score?: number;
-  icon: any;
-  color: string;
-}
-
 interface UpcomingTask {
   id: string;
   title: string;
@@ -74,16 +61,6 @@ interface UpcomingTask {
   priority: 'low' | 'medium' | 'high';
   type: 'quiz' | 'assignment' | 'exam';
   completed: boolean;
-}
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  author: string;
-  timestamp: string;
-  priority: 'normal' | 'important' | 'urgent';
-  category: 'general' | 'academic' | 'event';
 }
 
 interface DashboardHomeTabProps {
@@ -104,9 +81,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
   const { stats: realStats } = useRealStats();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState('');
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [weeklyStats, setWeeklyStats] = useState({
     quizzesCompleted: 0,
     averageScore: 0,
@@ -192,13 +167,6 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
     }
   };
 
-  const getAnnouncementIcon = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return AlertCircle;
-      case 'important': return Bell;
-      default: return Lightbulb;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -214,20 +182,6 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
               <p className="text-blue-100 text-lg">
                 Prêt à continuer votre apprentissage aujourd'hui ?
               </p>
-              <div className="flex items-center space-x-6 mt-4">
-                <div className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5 text-yellow-300" />
-                  <span className="text-yellow-300 font-semibold">{weeklyStats.streak} jours de suite</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Trophy className="w-5 h-5 text-orange-300" />
-                  <span className="text-orange-300 font-semibold">Niveau 12</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-pink-300" />
-                  <span className="text-pink-300 font-semibold">2450 XP</span>
-                </div>
-              </div>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold">
@@ -249,7 +203,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
         
         {/* Éléments décoratifs */}
         <div className="absolute top-4 right-4 opacity-20">
-          <BookOpen className="w-32 h-32" />
+          <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32" />
         </div>
         <div className="absolute bottom-4 left-4 opacity-10">
           <Sparkles className="w-24 h-24" />
@@ -362,82 +316,10 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
             </div>
           </div>
 
-          {/* Activité récente */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-            <h2 className="text-white text-xl font-bold mb-4 flex items-center">
-              <Activity className="w-6 h-6 mr-2 text-green-400" />
-              Activité récente
-            </h2>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => {
-                const IconComponent = activity.icon;
-                return (
-                  <div key={activity.id} className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className={`w-10 h-10 bg-gradient-to-r ${activity.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                      <IconComponent className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold">{activity.title}</h3>
-                      <p className="text-blue-200 text-sm mt-1">{activity.description}</p>
-                      <p className="text-blue-300 text-xs mt-2">
-                        {new Date(activity.timestamp).toLocaleString('fr-FR')}
-                      </p>
-                    </div>
-                    {activity.score && (
-                      <div className="text-right">
-                        <div className="text-green-400 font-bold text-lg">{activity.score}%</div>
-                        <div className="text-green-300 text-xs">Score</div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Sidebar droite */}
         <div className="space-y-6">
-          {/* Annonces */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-            <h2 className="text-white text-xl font-bold mb-4 flex items-center">
-              <Bell className="w-6 h-6 mr-2 text-blue-400" />
-              Annonces
-            </h2>
-            <div className="space-y-4">
-              {announcements.map((announcement) => {
-                const IconComponent = getAnnouncementIcon(announcement.priority);
-                return (
-                  <div key={announcement.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
-                    <div className="flex items-start space-x-3">
-                      <IconComponent className={`w-5 h-5 mt-0.5 ${
-                        announcement.priority === 'urgent' ? 'text-red-400' :
-                        announcement.priority === 'important' ? 'text-yellow-400' :
-                        'text-blue-400'
-                      }`} />
-                      <div className="flex-1">
-                        <h3 className="text-white font-semibold text-sm mb-1">
-                          {announcement.title}
-                        </h3>
-                        <p className="text-blue-200 text-xs mb-2">
-                          {announcement.content}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-blue-300 text-xs">
-                            {announcement.author}
-                          </span>
-                          <span className="text-blue-300 text-xs">
-                            {new Date(announcement.timestamp).toLocaleDateString('fr-FR')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Motivation du jour */}
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 text-white">
             <div className="flex items-center mb-3">

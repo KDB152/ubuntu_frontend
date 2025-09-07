@@ -24,7 +24,6 @@ import {
   FileText,
   Send,
   Archive,
-  Bell,
   Clock3,
   CalendarDays,
   Users,

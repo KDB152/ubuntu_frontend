@@ -177,7 +177,7 @@ export async function GET(
       email: student.email,
       classLevel: student.class_level,
       birthDate: student.birth_date,
-      phoneNumber: student.phone_number,
+      phone_number: student.phone_number,
       address: student.address,
       
       // Statistiques globales

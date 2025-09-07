@@ -12,7 +12,6 @@ import {
   Plus,
   TrendingUp,
   Calendar,
-  Bell
 } from 'lucide-react';
 
 export function AdminDashboard() {
@@ -81,15 +80,6 @@ export function AdminDashboard() {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
-            <Bell className="h-4 w-4 mr-2" />
-            Notifications
-            {stats.pendingApprovals > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {stats.pendingApprovals}
-              </Badge>
-            )}
-          </Button>
           <Button size="sm">
             <Settings className="h-4 w-4 mr-2" />
             Paramètres

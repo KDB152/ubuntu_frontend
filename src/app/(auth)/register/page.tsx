@@ -137,67 +137,35 @@ const RegisterPage: React.FC = () => {
       } else if (!AVAILABLE_CLASSES.includes(formData.studentClass)) {
         newErrors.studentClass = 'Veuillez sélectionner une classe valide';
       }
-      if (!formData.parentFirstName) {
-        newErrors.parentFirstName = 'Le prénom du parent est requis';
-      }
-      if (!formData.parentLastName) {
-        newErrors.parentLastName = 'Le nom du parent est requis';
-      }
-      if (!formData.parentEmail) {
-        newErrors.parentEmail = 'L\'email du parent est requis';
-      } else if (!validateEmail(formData.parentEmail)) {
+      // Validation optionnelle des données parent
+      if (formData.parentEmail && !validateEmail(formData.parentEmail)) {
         newErrors.parentEmail = 'Veuillez entrer une adresse email valide pour le parent';
       }
-      if (!formData.parentPhone) {
-        newErrors.parentPhone = 'Le téléphone du parent est requis';
-      }
-      if (!formData.parentPassword) {
-        newErrors.parentPassword = 'Le mot de passe du parent est requis';
-      } else if (formData.parentPassword.length < 8) {
+      if (formData.parentPassword && formData.parentPassword.length < 8) {
         newErrors.parentPassword = 'Le mot de passe du parent doit contenir au moins 8 caractères';
       }
-      if (!formData.parentConfirmPassword) {
-        newErrors.parentConfirmPassword = 'Veuillez confirmer le mot de passe du parent';
-      } else if (formData.parentPassword !== formData.parentConfirmPassword) {
+      if (formData.parentPassword && formData.parentConfirmPassword && formData.parentPassword !== formData.parentConfirmPassword) {
         newErrors.parentConfirmPassword = 'Les mots de passe du parent ne correspondent pas';
       }
     }
 
     // Validation spécifique aux parents
     if (formData.userType === 'parent') {
-      if (!formData.childFirstName) {
-        newErrors.childFirstName = 'Le prénom de l\'enfant est requis';
-      }
-      if (!formData.childLastName) {
-        newErrors.childLastName = 'Le nom de l\'enfant est requis';
-      }
-      if (!formData.childBirthDate) {
-        newErrors.childBirthDate = 'La date de naissance de l\'enfant est requise';
-      }
-      if (!formData.childClass) {
-        newErrors.childClass = 'La classe de l\'enfant est requise';
-      } else if (!AVAILABLE_CLASSES.includes(formData.childClass)) {
-        newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
-      }
-      if (!formData.childPassword) {
-        newErrors.childPassword = 'Le mot de passe de l\'enfant est requis';
-      } else if (formData.childPassword.length < 8) {
-        newErrors.childPassword = 'Le mot de passe de l\'enfant doit contenir au moins 8 caractères';
-      }
-      if (!formData.childConfirmPassword) {
-        newErrors.childConfirmPassword = 'Veuillez confirmer le mot de passe de l\'enfant';
-      } else if (formData.childPassword !== formData.childConfirmPassword) {
-        newErrors.childConfirmPassword = 'Les mots de passe de l\'enfant ne correspondent pas';
-      }
-      if (!formData.childEmail) {
-        newErrors.childEmail = 'L\'email de l\'enfant est requis';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.childEmail)) {
+      // Validation optionnelle des données enfant
+      if (formData.childEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.childEmail)) {
         newErrors.childEmail = 'Veuillez entrer un email valide pour l\'enfant';
       }
-      if (!formData.childPhone) {
-        newErrors.childPhone = 'Le téléphone de l\'enfant est requis';
-      } else if (!/^[0-9+\-\s()]+$/.test(formData.childPhone)) {
+      if (formData.childPhone && !/^[0-9+\-\s()]+$/.test(formData.childPhone)) {
         newErrors.childPhone = 'Veuillez entrer un numéro de téléphone valide pour l\'enfant';
+      }
+      if (formData.childPassword && formData.childPassword.length < 8) {
+        newErrors.childPassword = 'Le mot de passe de l\'enfant doit contenir au moins 8 caractères';
+      }
+      if (formData.childPassword && formData.childConfirmPassword && formData.childPassword !== formData.childConfirmPassword) {
+        newErrors.childConfirmPassword = 'Les mots de passe de l\'enfant ne correspondent pas';
+      }
+      if (formData.childClass && !AVAILABLE_CLASSES.includes(formData.childClass)) {
+        newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
       }
     }
 
@@ -249,7 +217,7 @@ const RegisterPage: React.FC = () => {
         parentPassword: formData.userType === 'student' ? formData.parentPassword : undefined,
       };
 
-      const response = await fetch('http://localhost:3001/auth/register', {
+      const response = await fetch('http://192.168.1.11:3001/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),
@@ -362,9 +330,7 @@ const RegisterPage: React.FC = () => {
             <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
               <div className="mb-8">
                 <div className="flex items-center mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mr-4 shadow-2xl">
-                    <BookOpen className="w-8 h-8 text-white" />
-                  </div>
+                  <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32 mr-6" />
                   <div>
                     <h1 className="text-3xl font-bold text-white">Chrono-Carto</h1>
                     <p className="text-white/60">Plateforme éducative nouvelle génération</p>
@@ -432,9 +398,7 @@ const RegisterPage: React.FC = () => {
             <div className="w-full max-w-2xl">
               <div className="text-center mb-8">
                 <div className="flex justify-center mb-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                    <BookOpen className="w-10 h-10 text-white" />
-                  </div>
+                  <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32" />
                 </div>
                 <h2 className="text-4xl font-bold text-white mb-3">Inscription</h2>
                 <p className="text-blue-200 text-lg">Créez votre compte d'apprentissage</p>
@@ -833,8 +797,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childFirstName ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Prénom de l'enfant"
-                            required
+                            placeholder="Prénom de l'enfant (optionnel)"
                           />
                         </div>
                         {errors.childFirstName && (
@@ -853,8 +816,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childLastName ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Nom de l'enfant"
-                            required
+                            placeholder="Nom de l'enfant (optionnel)"
                           />
                         </div>
                         {errors.childLastName && (
@@ -879,8 +841,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childEmail ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="enfant@email.com"
-                            required
+                            placeholder="enfant@email.com (optionnel)"
                           />
                         </div>
                         {errors.childEmail && (
@@ -902,8 +863,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childPhone ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Numéro de téléphone de l'enfant"
-                            required
+                            placeholder="Numéro de téléphone de l'enfant (optionnel)"
                           />
                         </div>
                         {errors.childPhone && (
@@ -928,7 +888,6 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childBirthDate ? 'border-red-400' : 'border-white/20'
                             }`}
-                            required
                           />
                         </div>
                         {errors.childBirthDate && (
@@ -949,9 +908,8 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
                               errors.childClass ? 'border-red-400' : 'border-white/20'
                             }`}
-                            required
                           >
-                            <option value="" className="bg-slate-800 text-white">La classe de votre enfant</option>
+                            <option value="" className="bg-slate-800 text-white">La classe de votre enfant (optionnel)</option>
                             {AVAILABLE_CLASSES.map((classe) => (
                               <option 
                                 key={classe} 
@@ -989,8 +947,7 @@ const RegisterPage: React.FC = () => {
                           className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                             errors.childPassword ? 'border-red-400' : 'border-white/20'
                           }`}
-                          placeholder="Mot de passe de l'enfant"
-                          required
+                          placeholder="Mot de passe de l'enfant (optionnel)"
                         />
                         <button
                           type="button"
@@ -1023,8 +980,7 @@ const RegisterPage: React.FC = () => {
                           className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                             errors.childConfirmPassword ? 'border-red-400' : 'border-white/20'
                           }`}
-                          placeholder="Confirmez le mot de passe de l'enfant"
-                          required
+                          placeholder="Confirmez le mot de passe de l'enfant (optionnel)"
                         />
                         <button
                           type="button"
@@ -1068,8 +1024,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.parentFirstName ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Prénom du parent"
-                            required
+                            placeholder="Prénom du parent (optionnel)"
                           />
                         </div>
                         {errors.parentFirstName && (
@@ -1088,8 +1043,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.parentLastName ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Nom du parent"
-                            required
+                            placeholder="Nom du parent (optionnel)"
                           />
                         </div>
                         {errors.parentLastName && (
@@ -1113,8 +1067,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.parentEmail ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="parent@email.com"
-                            required
+                            placeholder="parent@email.com (optionnel)"
                           />
                         </div>
                         {errors.parentEmail && (
@@ -1136,8 +1089,7 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.parentPhone ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Téléphone du parent"
-                            required
+                            placeholder="Téléphone du parent (optionnel)"
                           />
                         </div>
                         {errors.parentPhone && (
@@ -1161,8 +1113,7 @@ const RegisterPage: React.FC = () => {
                           className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                             errors.parentPassword ? 'border-red-400' : 'border-white/20'
                           }`}
-                          placeholder="Mot de passe du parent"
-                          required
+                          placeholder="Mot de passe du parent (optionnel)"
                         />
                         <button
                           type="button"
@@ -1195,8 +1146,7 @@ const RegisterPage: React.FC = () => {
                           className={`w-full pl-12 pr-12 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                             errors.parentConfirmPassword ? 'border-red-400' : 'border-white/20'
                           }`}
-                          placeholder="Confirmez le mot de passe du parent"
-                          required
+                          placeholder="Confirmez le mot de passe du parent (optionnel)"
                         />
                         <button
                           type="button"

@@ -10,7 +10,6 @@ import {
   CheckCircle, 
   AlertCircle,
   User,
-  Bell,
   Settings,
   LogOut,
   Menu,
@@ -119,7 +118,7 @@ const StudentDashboard: React.FC = () => {
           {/* Navigation */}
           <nav className="p-4 space-y-2">
             <AnimatedButton className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg">
-              <BookOpen className="w-5 h-5" />
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-5 h-5" />
               {!sidebarCollapsed && <span>Tableau de bord</span>}
             </AnimatedButton>
             
@@ -161,15 +160,6 @@ const StudentDashboard: React.FC = () => {
               {showUserMenu && !sidebarCollapsed && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-white/90 backdrop-blur-xl rounded-xl border border-gray-200 shadow-xl">
                   <div className="p-2">
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all text-left">
-                      <User className="w-4 h-4" />
-                      <span className="text-sm">Mon profil</span>
-                    </button>
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all text-left">
-                      <Settings className="w-4 h-4" />
-                      <span className="text-sm">Préférences</span>
-                    </button>
-                    <hr className="my-2 border-gray-200" />
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center space-x-3 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all text-left"
@@ -195,12 +185,6 @@ const StudentDashboard: React.FC = () => {
               <p className="text-gray-600">Bienvenue, {studentData.name}</p>
             </div>
             <div className="flex items-center space-x-3">
-              <AnimatedButton className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </AnimatedButton>
               <AnimatedButton className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all">
                 <Settings className="w-5 h-5" />
               </AnimatedButton>
@@ -226,7 +210,7 @@ const StudentDashboard: React.FC = () => {
                   <p className="text-gray-600 text-sm">Total Séances</p>
                   <p className="text-base font-bold text-gray-900">{studentData.total_sessions}</p>
                 </div>
-                <BookOpen className="w-10 h-10 text-blue-600" />
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-10 h-10" />
               </div>
             </AnimatedStats>
 

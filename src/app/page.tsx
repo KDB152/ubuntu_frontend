@@ -6,7 +6,6 @@ import { BookOpen, Users, Award, ArrowRight, Play, CheckCircle, Globe, Clock, Ma
 
 const HomePage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [activeFeature, setActiveFeature] = useState(0);
@@ -19,36 +18,6 @@ const HomePage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const testimonials = [
-    {
-      name: "Sophie L.",
-      grade: "Terminale",
-      text: "Grâce à Chrono-Carto, j'ai enfin compris les enjeux géopolitiques contemporains. Les cartes interactives sont fantastiques !",
-      rating: 5,
-      avatar: "SL"
-    },
-    {
-      name: "Thomas M.",
-      grade: "1ère",
-      text: "Les quiz m'ont aidé à réviser efficacement. J'ai progressé de 3 points de moyenne en histoire !",
-      rating: 5,
-      avatar: "TM"
-    },
-    {
-      name: "Marie D.",
-      grade: "Terminale",
-      text: "La préparation au Grand Oral avec les vidéos explicatives m'a donné confiance pour mon examen.",
-      rating: 5,
-      avatar: "MD"
-    },
-    {
-      name: "Lucas B.",
-      grade: "Seconde",
-      text: "L'IA pédagogique m'aide vraiment à comprendre mes erreurs. Je progresse beaucoup plus vite maintenant !",
-      rating: 5,
-      avatar: "LB"
-    }
-  ];
 
   const quotes = [
     { text: "L'histoire est le témoin du passé, la lumière de la vérité", author: "Cicéron" },
@@ -117,9 +86,6 @@ const HomePage = () => {
   ];
 
   useEffect(() => {
-    const testimonialInterval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
 
     const quoteInterval = setInterval(() => {
       setCurrentQuote((prev) => (prev + 1) % quotes.length);
@@ -130,11 +96,10 @@ const HomePage = () => {
     }, 3000);
 
     return () => {
-      clearInterval(testimonialInterval);
       clearInterval(quoteInterval);
       clearInterval(featureInterval);
     };
-  }, [testimonials.length, quotes.length, features.length]);
+  }, [quotes.length, features.length]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
@@ -188,9 +153,7 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mr-3 shadow-lg">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-16 h-16 mr-6" />
               <h1 className="text-2xl font-bold text-white">
                 Chrono-Carto
               </h1>
@@ -202,9 +165,6 @@ const HomePage = () => {
               </a>
               <a href="#subjects" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
                 Matières
-              </a>
-              <a href="#testimonials" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
-                Témoignages
               </a>
               <Link href="/login" className="text-white/80 hover:text-white font-medium transition-colors duration-200">
                 Connexion
@@ -233,9 +193,6 @@ const HomePage = () => {
               </a>
               <a href="#subjects" className="block text-white/80 hover:text-amber-300 font-medium">
                 Matières
-              </a>
-              <a href="#testimonials" className="block text-white/80 hover:text-amber-300 font-medium">
-                Témoignages
               </a>
               <Link href="/login" className="block w-full text-left text-white/80 hover:text-white font-medium">
                 Connexion
@@ -463,9 +420,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
               <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mr-3">
-                  <BookOpen className="w-6 h-6 text-white" />
-                </div>
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32 mr-6" />
                 <span className="text-2xl font-bold text-white">Chrono-Carto</span>
               </div>
               <p className="text-white/60 mb-6 max-w-md">

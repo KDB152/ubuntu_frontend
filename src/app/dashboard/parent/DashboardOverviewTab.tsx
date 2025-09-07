@@ -11,10 +11,8 @@ import {
   Calendar,
   BookOpen,
   Star,
-  AlertCircle,
   CheckCircle,
   Info,
-  Bell,
   MessageSquare,
   Users,
   FileText,
@@ -33,8 +31,6 @@ import {
   Rocket,
   Mountain,
   Compass,
-  Map,
-  Globe,
   History,
   Eye,
   EyeOff,
@@ -70,7 +66,6 @@ import {
   UserCheck,
   Users2,
   Baby,
-  Child,
   User,
   UserPlus,
   UserMinus,
@@ -91,8 +86,7 @@ import {
   Coins,
   DollarSign,
   Euro,
-  Pound,
-  Yen,
+  // Yen, // Icône non disponible
   Bitcoin,
   BanknoteIcon,
   Receipt,
@@ -102,7 +96,7 @@ import {
   LineChart,
   AreaChart,
   ScatterChart,
-  RadarChart,
+  // RadarChart, // Icône non disponible
   Gauge,
   Speedometer,
   Timer,
@@ -209,30 +203,6 @@ interface Parent {
   };
 }
 
-interface Alert {
-  id: string;
-  type: 'success' | 'warning' | 'error' | 'info';
-  title: string;
-  message: string;
-  childId?: string;
-  timestamp: string;
-  isRead: boolean;
-  action?: {
-    label: string;
-    url: string;
-  };
-}
-
-interface UpcomingEvent {
-  id: string;
-  title: string;
-  type: 'quiz' | 'exam' | 'meeting' | 'event' | 'deadline';
-  date: string;
-  childId?: string;
-  location?: string;
-  description?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-}
 
 interface DashboardOverviewTabProps {
   selectedChild?: Child;
@@ -255,164 +225,12 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
   onNavigateToReports,
   onNavigateToSettings
 }) => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
-  const [showAllAlerts, setShowAllAlerts] = useState(false);
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
 
-  useEffect(() => {
-    // Données simulées des alertes
-    const mockAlerts: Alert[] = [
-      {
-        id: 'alert-1',
-        type: 'success',
-        title: 'Excellent résultat !',
-        message: `${getChildName('child-1')} a obtenu 98% au quiz sur la Révolution française`,
-        childId: 'child-1',
-        timestamp: '2025-12-20T16:30:00',
-        isRead: false,
-        action: {
-          label: 'Voir les détails',
-          url: '/results/quiz-123'
-        }
-      },
-      {
-        id: 'alert-2',
-        type: 'warning',
-        title: 'Rendez-vous programmé',
-        message: 'Réunion parents-professeurs le 27 décembre à 17h00',
-        timestamp: '2025-12-20T14:15:00',
-        isRead: false,
-        action: {
-          label: 'Confirmer',
-          url: '/meetings/confirm-456'
-        }
-      },
-      {
-        id: 'alert-3',
-        type: 'info',
-        title: 'Nouveau quiz disponible',
-        message: `Un nouveau quiz sur l'Empire napoléonien est disponible pour ${getChildName('child-2')}`,
-        childId: 'child-2',
-        timestamp: '2025-12-20T10:45:00',
-        isRead: true
-      },
-      {
-        id: 'alert-4',
-        type: 'error',
-        title: 'Quiz non terminé',
-        message: `${getChildName('child-1')} n'a pas terminé le quiz sur les climats européens (échéance dans 2 jours)`,
-        childId: 'child-1',
-        timestamp: '2025-12-19T18:20:00',
-        isRead: false,
-        action: {
-          label: `Rappeler à ${getChildName('child-1')}`,
-          url: '/messages/send-reminder'
-        }
-      },
-      {
-        id: 'alert-5',
-        type: 'success',
-        title: 'Badge obtenu !',
-        message: `${getChildName('child-2')} a débloqué le badge "Géographe Expert"`,
-        childId: 'child-2',
-        timestamp: '2025-12-19T15:30:00',
-        isRead: true
-      }
-    ];
 
-    const mockEvents: UpcomingEvent[] = [
-      {
-        id: 'event-1',
-        title: 'Quiz - Empire napoléonien',
-        type: 'quiz',
-        date: '2025-12-23T10:00:00',
-        childId: 'child-1',
-        description: 'Quiz sur l\'Empire de Napoléon Bonaparte',
-        priority: 'high'
-      },
-      {
-        id: 'event-2',
-        title: 'Réunion parents-professeurs',
-        type: 'meeting',
-        date: '2025-12-27T17:00:00',
-        location: `${getSchoolName()} - Salle 205`,
-        description: `Entretien avec les professeurs de ${getChildName('child-1')} et ${getChildName('child-2')}`,
-        priority: 'urgent'
-      },
-      {
-        id: 'event-3',
-        title: 'Contrôle d\'Histoire',
-        type: 'exam',
-        date: '2025-12-30T09:00:00',
-        childId: 'child-2',
-        description: 'Évaluation sur la Révolution française',
-        priority: 'high'
-      },
-      {
-        id: 'event-4',
-        title: 'Sortie pédagogique - Musée d\'Histoire',
-        type: 'event',
-        date: '2025-01-08T14:00:00',
-        location: 'Musée d\'Histoire de la ville',
-        description: 'Visite guidée sur l\'époque médiévale',
-        priority: 'medium'
-      },
-      {
-        id: 'event-5',
-        title: 'Remise des bulletins',
-        type: 'deadline',
-        date: '2025-01-15T18:00:00',
-        description: 'Distribution des bulletins du premier trimestre',
-        priority: 'medium'
-      }
-    ];
 
-    setAlerts(mockAlerts);
-    setUpcomingEvents(mockEvents);
-  }, []);
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'success': return CheckCircle;
-      case 'warning': return AlertCircle;
-      case 'error': return X;
-      case 'info': return Info;
-      default: return Bell;
-    }
-  };
 
-  const getAlertColor = (type: string) => {
-    switch (type) {
-      case 'success': return 'from-green-500 to-emerald-600';
-      case 'warning': return 'from-yellow-500 to-orange-600';
-      case 'error': return 'from-red-500 to-pink-600';
-      case 'info': return 'from-blue-500 to-indigo-600';
-      default: return 'from-gray-500 to-slate-600';
-    }
-  };
-
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'quiz': return Target;
-      case 'exam': return Award;
-      case 'meeting': return Users;
-      case 'event': return Calendar;
-      case 'deadline': return Clock;
-      default: return Calendar;
-    }
-  };
-
-  const getEventColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'from-red-500 to-pink-600';
-      case 'high': return 'from-orange-500 to-red-600';
-      case 'medium': return 'from-blue-500 to-indigo-600';
-      case 'low': return 'from-gray-500 to-slate-600';
-      default: return 'from-blue-500 to-indigo-600';
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -494,8 +312,6 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
   };
 
   const overallStats = calculateOverallStats();
-  const unreadAlerts = alerts.filter(alert => !alert.isRead);
-  const urgentEvents = upcomingEvents.filter(event => event.priority === 'urgent' || event.priority === 'high');
 
   return (
     <div className="space-y-6">
@@ -577,10 +393,6 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
               <div className="text-blue-300 text-sm">XP total</div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-yellow-400" />
-            <span className="text-yellow-400 text-sm">+250 XP cette semaine</span>
-          </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
@@ -600,183 +412,6 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
         </div>
       </div>
 
-      {/* Alertes et événements */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Alertes importantes */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-          <div className="p-6 border-b border-white/20">
-            <div className="flex items-center justify-between">
-              <h2 className="text-white text-xl font-bold">Alertes importantes</h2>
-              <div className="flex items-center space-x-2">
-                <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full font-semibold">
-                  {unreadAlerts.length} non lues
-                </span>
-                <button
-                  onClick={() => setShowAllAlerts(!showAllAlerts)}
-                  className="text-blue-400 hover:text-white transition-all"
-                >
-                  {showAllAlerts ? 'Voir moins' : 'Voir tout'}
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="max-h-96 overflow-y-auto">
-            {(showAllAlerts ? alerts : alerts.slice(0, 3)).map((alert) => {
-              const IconComponent = getAlertIcon(alert.type);
-              const childName = getChildName(alert.childId);
-              
-              return (
-                <div
-                  key={alert.id}
-                  className={`p-4 border-b border-white/10 last:border-b-0 transition-all hover:bg-white/5 ${
-                    !alert.isRead ? 'bg-white/5' : ''
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${getAlertColor(alert.type)} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                      <IconComponent className="w-5 h-5 text-white" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-1">
-                        <h3 className={`font-semibold ${!alert.isRead ? 'text-white' : 'text-blue-200'}`}>
-                          {alert.title}
-                        </h3>
-                        <span className="text-blue-400 text-xs ml-2 flex-shrink-0">
-                          {formatRelativeTime(alert.timestamp)}
-                        </span>
-                      </div>
-                      
-                      <p className={`text-sm mb-2 ${!alert.isRead ? 'text-blue-200' : 'text-blue-300'}`}>
-                        {alert.message}
-                      </p>
-                      
-                      <div className="flex items-center justify-between">
-                        {childName && (
-                          <span className="text-blue-400 text-xs bg-blue-500/20 px-2 py-1 rounded">
-                            {childName}
-                          </span>
-                        )}
-                        
-                        {alert.action && (
-                          <button 
-                            onClick={() => {
-                              if (alert.action?.url.includes('messages')) {
-                                onNavigateToMessages?.();
-                              } else if (alert.action?.url.includes('meetings')) {
-                                onNavigateToCalendar?.();
-                              }
-                            }}
-                            className="text-blue-400 hover:text-white text-xs font-semibold transition-all"
-                          >
-                            {alert.action.label} →
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Événements à venir */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-          <div className="p-6 border-b border-white/20">
-            <div className="flex items-center justify-between">
-              <h2 className="text-white text-xl font-bold">Événements à venir</h2>
-              <div className="flex items-center space-x-2">
-                <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-1 rounded-full font-semibold">
-                  {urgentEvents.length} urgents
-                </span>
-                <button
-                  onClick={() => setShowAllEvents(!showAllEvents)}
-                  className="text-blue-400 hover:text-white transition-all"
-                >
-                  {showAllEvents ? 'Voir moins' : 'Voir tout'}
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="max-h-96 overflow-y-auto">
-            {(showAllEvents ? upcomingEvents : upcomingEvents.slice(0, 3)).map((event) => {
-              const IconComponent = getEventIcon(event.type);
-              const childName = getChildName(event.childId);
-              
-              return (
-                <div
-                  key={event.id}
-                  className="p-4 border-b border-white/10 last:border-b-0 transition-all hover:bg-white/5"
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${getEventColor(event.priority)} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                      <IconComponent className="w-5 h-5 text-white" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-1">
-                        <h3 className="text-white font-semibold">
-                          {event.title}
-                        </h3>
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                          event.priority === 'urgent' ? 'bg-red-500/20 text-red-400' :
-                          event.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                          event.priority === 'medium' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {event.priority}
-                        </span>
-                      </div>
-                      
-                      <p className="text-blue-200 text-sm mb-2">
-                        {formatDate(event.date)}
-                      </p>
-                      
-                      {event.description && (
-                        <p className="text-blue-300 text-sm mb-2">
-                          {event.description}
-                        </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {childName && (
-                            <span className="text-blue-400 text-xs bg-blue-500/20 px-2 py-1 rounded">
-                              {childName}
-                            </span>
-                          )}
-                          {event.location && (
-                            <span className="text-blue-400 text-xs flex items-center space-x-1">
-                              <MapPin className="w-3 h-3" />
-                              <span>{event.location}</span>
-                            </span>
-                          )}
-                        </div>
-                        
-                        <button 
-                          onClick={() => {
-                            if (event.type === 'quiz' || event.type === 'exam') {
-                              onNavigateToReports?.();
-                            } else if (event.type === 'meeting') {
-                              onNavigateToCalendar?.();
-                            }
-                          }}
-                          className="text-blue-400 hover:text-white text-xs font-semibold transition-all"
-                        >
-                          Voir détails →
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
       {/* Résumé des enfants */}
       {parent && parent.children.length > 1 && (

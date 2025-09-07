@@ -25,13 +25,13 @@ interface User {
 interface Student extends User {
   classLevel: string;
   birthDate: string;
-  phoneNumber: string;
+  phone_number: string;
   progressPercentage: number;
   averageScore: number;
 }
 
 interface Parent extends User {
-  phoneNumber: string;
+  phone_number: string;
   address: string;
   occupation: string;
 }

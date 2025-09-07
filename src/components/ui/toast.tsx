@@ -42,6 +42,10 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
     const newToast = { ...toast, id };
@@ -53,11 +57,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     setTimeout(() => {
       removeToast(id);
     }, duration);
-  }, []);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
+  }, [removeToast]);
 
   const clearToasts = useCallback(() => {
     setToasts([]);
@@ -66,18 +66,21 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast, clearToasts }}>
       {children}
-      <ToastContainer />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </ToastContext.Provider>
   );
 };
 
-const ToastContainer: React.FC = () => {
-  const { toasts } = useToast();
+interface ToastContainerProps {
+  toasts: Toast[];
+  removeToast: (id: string) => void;
+}
 
+const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) => {
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
       {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} />
+        <ToastItem key={toast.id} toast={toast} removeToast={removeToast} />
       ))}
     </div>
   );
@@ -85,10 +88,10 @@ const ToastContainer: React.FC = () => {
 
 interface ToastItemProps {
   toast: Toast;
+  removeToast: (id: string) => void;
 }
 
-const ToastItem: React.FC<ToastItemProps> = ({ toast }) => {
-  const { removeToast } = useToast();
+const ToastItem: React.FC<ToastItemProps> = ({ toast, removeToast }) => {
 
   const icons = {
     success: CheckCircle,
@@ -157,23 +160,23 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast }) => {
   );
 };
 
-// Helper functions for easier usage
-export const toast = {
-  success: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'success', title, message, ...options });
-  },
-  error: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'error', title, message, ...options });
-  },
-  warning: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'warning', title, message, ...options });
-  },
-  info: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast();
-    addToast({ type: 'info', title, message, ...options });
-  },
+// Helper functions for easier usage - these should be used within components that have access to useToast
+export const createToastHelpers = () => {
+  const { addToast } = useToast();
+  
+  return {
+    success: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'success', title, message, ...options });
+    },
+    error: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'error', title, message, ...options });
+    },
+    warning: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'warning', title, message, ...options });
+    },
+    info: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'info', title, message, ...options });
+    },
+  };
 };
 

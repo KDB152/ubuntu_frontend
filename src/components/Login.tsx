@@ -74,9 +74,7 @@ const LoginPage = () => {
           <div className="max-w-md">
             {/* Logo et titre */}
             <div className="flex items-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                <BookOpen className="w-8 h-8 text-white" />
-              </div>
+              <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32 mr-6" />
               <div className="ml-4">
                 <h1 className="text-3xl font-bold text-white">Chrono-Carto</h1>
                 <p className="text-blue-200">Plateforme Éducative</p>
@@ -126,9 +124,7 @@ const LoginPage = () => {
             {/* En-tête du formulaire */}
             <div className="text-center mb-8">
               <div className="lg:hidden flex justify-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                  <BookOpen className="w-10 h-10 text-white" />
-                </div>
+                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-32 h-32" />
               </div>
               <h2 className="text-4xl font-bold text-white mb-2">Connexion</h2>
               <p className="text-blue-200 text-lg">

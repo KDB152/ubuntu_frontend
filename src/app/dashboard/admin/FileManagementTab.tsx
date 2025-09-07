@@ -31,7 +31,11 @@ import {
   Shield,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Folder,
+  FolderPlus,
+  Home,
+  ChevronRight
 } from 'lucide-react';
 
 // Types pour TypeScript - Interface pour les fichiers de la base de données
@@ -80,6 +84,32 @@ interface FileUpload {
   error?: string;
 }
 
+// Types pour les dossiers
+interface FolderFromDB {
+  id: number;
+  name: string;
+  description: string;
+  parentId: number | null;
+  createdBy: number;
+  isGlobal: boolean;
+  targetClasses: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  creator: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  parent?: FolderFromDB;
+  children?: FolderFromDB[];
+}
+
+interface BreadcrumbItem {
+  id: number | null;
+  name: string;
+}
+
 const FileManagementTabImproved = () => {
   // États existants
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -89,14 +119,31 @@ const FileManagementTabImproved = () => {
   const [courseTitle, setCourseTitle] = useState('');
   const [courseSubject, setCourseSubject] = useState('Histoire');
   const [courseDescription, setCourseDescription] = useState('');
-  const [courseLevel, setCourseLevel] = useState('Terminale');
-  const [courseClass, setCourseClass] = useState<string[]>(['Terminale groupe 1']);
-  const [courseTags, setCourseTags] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterSubject, setFilterSubject] = useState('Tous');
-  const [filterType, setFilterType] = useState('Tous');
-  const [filterStatus, setFilterStatus] = useState('Tous');
+
+  // États pour la gestion des dossiers
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: null, name: 'Racine' }]);
+  const [folders, setFolders] = useState<FolderFromDB[]>([]);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<FolderFromDB | null>(null);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderDescription, setNewFolderDescription] = useState('');
+  const [newFolderTargetClasses, setNewFolderTargetClasses] = useState<string[]>([]);
+  const [isInFolder, setIsInFolder] = useState(false); // Nouveau : indique si on est dans un dossier
+  const [showActionChoice, setShowActionChoice] = useState(false); // Nouveau : affiche le choix d'action
+
+  // Classes disponibles pour la sélection
+  const availableClasses = [
+    'Terminale groupe 1',
+    'Terminale groupe 2', 
+    'Terminale groupe 3',
+    'Terminale groupe 4',
+    '1ère groupe 1',
+    '1ère groupe 2',
+    '1ère groupe 3'
+  ];
 
   // Nouveaux états pour les fonctionnalités améliorées
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -109,137 +156,276 @@ const FileManagementTabImproved = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Charger les fichiers existants au démarrage
-  useEffect(() => {
-    const loadFiles = async () => {
-      try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        
-        // Vérifier l'authentification
-        const token = getAuthToken();
-        
-        if (!token) {
-          showNotification('error', 'Token d\'authentification manquant. Veuillez vous reconnecter.');
-          return;
-        }
-        
-        // Charger les fichiers depuis la nouvelle API
-        const response = await fetch(`${API_BASE}/files`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            showNotification('error', 'Session expirée. Veuillez vous reconnecter.');
-            // Rediriger vers la page de connexion
-            window.location.href = '/login';
-            return;
-          }
-          throw new Error(`Erreur de connexion à l'API: ${response.status}`);
-        }
-        
-        const filesFromDB: FileFromDB[] = await response.json();
-        
-        // Mapper les données de la base vers l'interface d'affichage
-        // Filtrer seulement les fichiers actifs
-        const activeFiles = (filesFromDB || []).filter(f => f.isActive === true);
-        const mapped: Course[] = activeFiles.map((f: FileFromDB) => {
-          // Déterminer le type d'affichage
-          const displayType = getDisplayFileType(f.fileName, f.fileType);
-          
-          // Nettoyer et normaliser les classes cibles
-          let cleanTargetClasses: string[] = [];
-          
-          // Essayer d'abord targetClasses (nouveau format)
-          if (f.targetClasses) {
-            try {
-              // Si c'est déjà un tableau, l'utiliser directement
-              if (Array.isArray(f.targetClasses)) {
-                cleanTargetClasses = f.targetClasses.filter(cls => typeof cls === 'string');
-              } else {
-                // Si c'est une chaîne JSON, la parser
-                const parsed = JSON.parse(f.targetClasses);
-                if (Array.isArray(parsed)) {
-                  cleanTargetClasses = parsed.filter(cls => typeof cls === 'string');
-                } else {
-                  cleanTargetClasses = [parsed];
-                }
-              }
-            } catch (error) {
-              console.warn(`Erreur parsing targetClasses pour fichier ${f.id}:`, error);
-            }
-          }
-          
-          // Fallback sur targetClass (ancien format)
-          if (cleanTargetClasses.length === 0 && f.targetClass) {
-            try {
-              // Si c'est déjà une chaîne, l'utiliser directement
-              if (typeof f.targetClass === 'string' && !f.targetClass.startsWith('[')) {
-                cleanTargetClasses = [f.targetClass];
-              } else {
-                // Si c'est du JSON, le parser
-                const parsed = JSON.parse(f.targetClass);
-                if (Array.isArray(parsed)) {
-                  cleanTargetClasses = parsed.filter(cls => typeof cls === 'string');
-                } else {
-                  cleanTargetClasses = [parsed];
-                }
-              }
-            } catch (e) {
-              cleanTargetClasses = [f.targetClass];
-            }
-          }
-          
-          // Déterminer la matière basée sur les classes cibles nettoyées
-          let subject = 'Général';
-          if (cleanTargetClasses.length > 0) {
-            const firstClass = cleanTargetClasses[0];
-            if (firstClass.includes('Histoire')) subject = 'Histoire';
-            else if (firstClass.includes('Géographie')) subject = 'Géographie';
-            else if (firstClass.includes('EMC')) subject = 'EMC';
-          }
-          
-          // Déterminer le niveau basé sur les classes cibles nettoyées
-          let level = 'Tous niveaux';
-          if (cleanTargetClasses.length > 0) {
-            const firstClass = cleanTargetClasses[0];
-            if (firstClass.includes('Terminale')) level = 'Terminale';
-            else if (firstClass.includes('1ère') || firstClass.includes('Première')) level = 'Première';
-            else if (firstClass.includes('Seconde')) level = 'Seconde';
-          }
-          
-          return {
-            id: String(f.id),
-            name: f.fileName,
-            title: f.title,
-            type: displayType,
-            subject: subject,
-            level: level,
-            size: formatFileSize(f.fileSize),
-            uploadDate: f.createdAt ? new Date(f.createdAt).toISOString().split('T')[0] : '',
-            views: f.downloadCount || 0,
-            status: f.isActive ? 'Publié' : 'Brouillon',
-            description: f.description || '',
-            tags: [],
-            fileName: f.fileName,
-            fileUrl: f.filePath,
-            targetClasses: cleanTargetClasses
-          };
-        });
-        setUploadedFiles(mapped);
-        
-        if (mapped.length > 0) {
-          showNotification('success', `${mapped.length} fichier(s) chargé(s) avec succès`);
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des fichiers:', error);
-        showNotification('error', `Erreur lors du chargement des fichiers: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+
+  // Fonctions pour la gestion des dossiers
+  const loadFolders = async () => {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const token = getAuthToken();
+      
+      if (!token) {
+        showNotification('error', 'Token d\'authentification manquant');
+        return;
       }
-    };
+
+      // Utiliser la nouvelle API pour les dossiers globaux
+      const endpoint = `${API_BASE}/new-structure/dossiers`;
+      
+      const response = await fetch(endpoint, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      const dossiers = await response.json();
+      setFolders(dossiers || []);
+      setUploadedFiles([]);
+    } catch (error) {
+      console.error('Erreur lors du chargement des dossiers:', error);
+      showNotification('error', `Erreur lors du chargement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
+  };
+
+  const loadFolderContents = async (folderId: number) => {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const token = getAuthToken();
+      
+      if (!token) {
+        showNotification('error', 'Token d\'authentification manquant');
+        return;
+      }
+
+      // Récupérer les sous-dossiers du dossier global
+      const sousDossiersResponse = await fetch(`${API_BASE}/new-structure/dossiers/${folderId}/sous-dossiers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!sousDossiersResponse.ok) {
+        throw new Error(`Erreur ${sousDossiersResponse.status}: ${sousDossiersResponse.statusText}`);
+      }
+
+      const sousDossiers = await sousDossiersResponse.json();
+      
+      // Dans un dossier global : afficher seulement les sous-dossiers
+      setFolders(sousDossiers || []);
+      setUploadedFiles([]); // Pas de fichiers dans les dossiers globaux
+    } catch (error) {
+      console.error('Erreur lors du chargement du contenu du dossier:', error);
+      showNotification('error', 'Erreur lors du chargement du contenu du dossier');
+    }
+  };
+
+  const loadSousDossierFiles = async (sousDossierId: number) => {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const token = getAuthToken();
+      
+      if (!token) {
+        showNotification('error', 'Token d\'authentification manquant');
+        return;
+      }
+
+      // Récupérer les fichiers du sous-dossier
+      const fichiersResponse = await fetch(`${API_BASE}/new-structure/sous-dossiers/${sousDossierId}/fichiers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!fichiersResponse.ok) {
+        throw new Error(`Erreur ${fichiersResponse.status}: ${fichiersResponse.statusText}`);
+      }
+
+      const fichiers = await fichiersResponse.json();
+      
+      // Dans un sous-dossier : afficher seulement les fichiers
+      setFolders([]); // Pas de sous-dossiers dans les sous-dossiers
+      const folderFiles = (fichiers || []).map((f: any) => ({
+        id: String(f.id),
+        name: f.file_name,
+        title: f.title,
+        type: getDisplayFileType(f.file_name, f.file_type),
+        subject: 'Général',
+        level: 'Tous niveaux',
+        size: formatFileSize(f.file_size),
+        uploadDate: f.created_at ? new Date(f.created_at).toISOString().split('T')[0] : '',
+        views: f.download_count || 0,
+        status: 'Publié',
+        description: f.description || '',
+        tags: [],
+        fileName: f.file_name,
+        fileUrl: f.file_path,
+        targetClasses: []
+      }));
+      setUploadedFiles(folderFiles);
+    } catch (error) {
+      console.error('Erreur lors du chargement des fichiers du sous-dossier:', error);
+      showNotification('error', 'Erreur lors du chargement des fichiers');
+    }
+  };
+
+  const navigateToFolder = (folder: FolderFromDB) => {
+    setCurrentFolderId(folder.id);
+    setIsInFolder(true);
+    setShowActionChoice(true);
+    setBreadcrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
     
-    loadFiles();
+    // Si on est à la racine, on entre dans un dossier global (sous-dossiers)
+    if (!currentFolderId) {
+      loadFolderContents(folder.id);
+    } else {
+      // Si on est dans un dossier global, on entre dans un sous-dossier (fichiers)
+      loadSousDossierFiles(folder.id);
+    }
+  };
+
+  const navigateToBreadcrumb = (index: number) => {
+    const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
+    setBreadcrumbs(newBreadcrumbs);
+    setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+    
+    // Si on revient à la racine, réinitialiser l'état
+    if (index === 0) {
+      setIsInFolder(false);
+      setShowActionChoice(false);
+      loadFolders(); // Recharger les dossiers globaux
+    } else if (index === 1) {
+      // Si on revient au dossier global, charger les sous-dossiers
+      const folderId = newBreadcrumbs[newBreadcrumbs.length - 1].id;
+      if (folderId) {
+        setIsInFolder(true);
+        setShowActionChoice(true);
+        loadFolderContents(folderId);
+      }
+    } else {
+      // Si on revient à un sous-dossier, charger les fichiers
+      const folderId = newBreadcrumbs[newBreadcrumbs.length - 1].id;
+      if (folderId) {
+        setIsInFolder(true);
+        setShowActionChoice(true);
+        loadSousDossierFiles(folderId);
+      }
+    }
+  };
+
+  const createFolder = async () => {
+    if (!newFolderName.trim()) {
+      showNotification('error', 'Le nom du dossier est requis');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const token = getAuthToken();
+      
+      let response;
+      
+      if (!currentFolderId) {
+        // Créer un dossier global
+        response = await fetch(`${API_BASE}/new-structure/dossiers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: newFolderName,
+            description: newFolderDescription,
+            target_class: JSON.stringify(newFolderTargetClasses)
+          })
+        });
+      } else {
+        // Créer un sous-dossier
+        response = await fetch(`${API_BASE}/new-structure/sous-dossiers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: newFolderName,
+            description: newFolderDescription,
+            dossier_id: currentFolderId
+          })
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      showNotification('success', 'Dossier créé avec succès');
+      setNewFolderName('');
+      setNewFolderDescription('');
+      setNewFolderTargetClasses([]);
+      setShowCreateFolderModal(false);
+      
+      // Recharger selon le contexte
+      if (isInFolder && currentFolderId) {
+        loadFolderContents(currentFolderId); // Recharger le contenu du dossier
+      } else {
+        loadFolders(); // Recharger les dossiers globaux
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création du dossier:', error);
+      showNotification('error', `Erreur lors de la création: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const deleteFolder = async (folder: FolderFromDB) => {
+    setIsUploading(true);
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const token = getAuthToken();
+      
+      let response;
+      
+      if (!currentFolderId) {
+        // Supprimer un dossier global
+        response = await fetch(`${API_BASE}/new-structure/dossiers/${folder.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } else {
+        // Supprimer un sous-dossier
+        response = await fetch(`${API_BASE}/new-structure/sous-dossiers/${folder.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      showNotification('success', 'Dossier supprimé avec succès');
+      setShowDeleteFolderModal(false);
+      setFolderToDelete(null);
+      
+      // Recharger selon le contexte
+      if (isInFolder && currentFolderId) {
+        loadFolderContents(currentFolderId);
+      } else {
+        loadFolders();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression du dossier:', error);
+      showNotification('error', `Erreur lors de la suppression: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Charger les dossiers au démarrage
+  useEffect(() => {
+    loadFolders();
+    
+    // Note: loadFiles supprimé car nous utilisons maintenant la navigation hiérarchique
+    // Les fichiers sont chargés via loadSousDossierFiles() quand on entre dans un sous-dossier
   }, []);
 
   // Types de fichiers acceptés - tous les types maintenant acceptés
@@ -356,17 +542,17 @@ const FileManagementTabImproved = () => {
       formData.append('file', file);
       formData.append('title', courseTitle);
       formData.append('description', courseDescription);
-      formData.append('targetClass', JSON.stringify(courseClass));
+      formData.append('sous_dossier_id', currentFolderId?.toString() || '');
 
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       const token = getAuthToken();
       
       if (!token) {
         throw new Error('Token d\'authentification manquant');
       }
 
-      // Upload du fichier
-      const response = await fetch(`${API_BASE}/files/upload`, {
+      // Upload du fichier vers la nouvelle API
+      const response = await fetch(`${API_BASE}/new-structure/fichiers/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -435,7 +621,7 @@ const FileManagementTabImproved = () => {
       }
       
       // Créer côté backend puis rafraîchir la liste
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       
       // Vérifier l'authentification
       const token = getAuthToken();
@@ -445,68 +631,28 @@ const FileManagementTabImproved = () => {
         return;
       }
       
-      try {
-        // Les fichiers ont déjà été créés lors de l'upload, pas besoin de les recréer
-        console.log('✅ Fichiers uploadés avec succès');
-        
-        // Reload list
-        const res = await fetch(`${API_BASE}/files`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!res.ok) {
-          throw new Error('Erreur lors du rechargement de la liste');
+      // Les fichiers ont déjà été créés lors de l'upload, pas besoin de les recréer
+      console.log('✅ Fichiers uploadés avec succès');
+      
+      // Recharger les fichiers du sous-dossier actuel (sans bloquer en cas d'erreur)
+      if (currentFolderId && breadcrumbs.length === 3) {
+        try {
+          await loadSousDossierFiles(currentFolderId);
+        } catch (error) {
+          console.warn('Erreur lors du rechargement des fichiers:', error);
+          // Ne pas bloquer la fermeture du modal pour cette erreur
         }
-        
-        const json = await res.json();
-        const mapped: Course[] = (json || []).map((f: any) => {
-          // Parser les classes cibles
-          let cleanTargetClasses: string[] = [];
-          if (f.targetClasses && Array.isArray(f.targetClasses)) {
-            cleanTargetClasses = f.targetClasses;
-          } else if (f.targetClass) {
-            try {
-              const parsed = JSON.parse(f.targetClass);
-              cleanTargetClasses = Array.isArray(parsed) ? parsed : [parsed];
-            } catch (e) {
-              cleanTargetClasses = [f.targetClass];
-            }
-          }
-          
-          return {
-            id: String(f.id),
-            name: f.fileName,
-            title: f.title,
-            type: f.fileType?.includes('pdf') ? 'PDF' : f.fileType?.includes('video') ? 'Vidéo' : 'Document',
-            subject: courseSubject,
-            level: courseLevel,
-            size: formatFileSize(f.fileSize),
-            uploadDate: f.createdAt?.slice(0,10) || '',
-            views: f.downloadCount || 0,
-            status: 'Publié',
-            description: f.description,
-            tags: [],
-            fileName: f.fileName,
-            fileUrl: f.filePath,
-            targetClasses: cleanTargetClasses,
-          };
-        });
-        setUploadedFiles(mapped);
-      } catch (error) {
-        console.error('Erreur lors de la création des cours:', error);
-        throw error;
       }
       
       // Reset du formulaire
       setCourseTitle('');
       setCourseDescription('');
-      setCourseTags('');
-      setCourseClass(['Terminale groupe 1']);
+      // setCourseTags(''); // Supprimé car non utilisé dans la nouvelle structure
+      // setCourseClass(['Terminale groupe 1']); // Supprimé car non utilisé dans la nouvelle structure
       setCurrentFiles([]);
       setShowUploadModal(false);
       
-      showNotification('success', `${currentFiles.length} cours ajouté(s) avec succès !`);
+      showNotification('success', `${currentFiles.length} fichier(s) ajouté(s) avec succès !`);
     } catch (error) {
       showNotification('error', 'Erreur lors de l\'upload');
     } finally {
@@ -518,12 +664,12 @@ const FileManagementTabImproved = () => {
   const handleDelete = async (course: Course) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       const token = getAuthToken();
       
       console.log(`🗑️ Tentative de suppression du fichier ID: ${course.id}`);
       
-      const response = await fetch(`${API_BASE}/files/${course.id}`, { 
+      const response = await fetch(`${API_BASE}/new-structure/fichiers/${course.id}`, { 
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
@@ -541,8 +687,10 @@ const FileManagementTabImproved = () => {
       const result = await response.json();
       console.log('✅ Suppression réussie:', result);
       
-      // Mettre à jour l'état local
-      setUploadedFiles(prev => prev.filter(f => f.id !== course.id));
+      // Recharger les fichiers du sous-dossier actuel
+      if (currentFolderId && breadcrumbs.length === 3) {
+        await loadSousDossierFiles(currentFolderId);
+      }
       
       showNotification('success', 'Fichier supprimé avec succès');
       setShowDeleteModal(false);
@@ -559,18 +707,18 @@ const FileManagementTabImproved = () => {
   const handleUpdateTargetClasses = async (fileId: string, newTargetClasses: string[]) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       const token = getAuthToken();
       
-      const response = await fetch(`${API_BASE}/files/${fileId}`, {
+      const response = await fetch(`${API_BASE}/new-structure/fichiers/${fileId}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          targetClass: newTargetClasses[0] || '',
-          targetClasses: newTargetClasses
+          // Note: Les classes cibles sont maintenant gérées au niveau du dossier global
+          // Cette fonction peut être simplifiée ou supprimée selon les besoins
         })
       });
       
@@ -599,7 +747,7 @@ const FileManagementTabImproved = () => {
   const handleEdit = async (updatedCourse: Course) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       const response = await fetch(`${API_BASE}/files/${updatedCourse.id}`, {
         method: 'PATCH',
         headers: { 
@@ -636,7 +784,7 @@ const FileManagementTabImproved = () => {
   // Fonction de téléchargement
   const handleDownload = async (course: Course) => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       
       // Afficher un indicateur de chargement
       const loadingElement = document.createElement('div');
@@ -734,17 +882,6 @@ const FileManagementTabImproved = () => {
     return getFileTypeInfo(mimeType);
   };
 
-  // Filtrage amélioré
-  const filteredFiles = [...uploadedFiles].filter(file => {
-    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         file.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (file.title && file.title.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesSubject = filterSubject === 'Tous' || file.subject === filterSubject;
-    const matchesType = filterType === 'Tous' || file.type === filterType;
-    const matchesStatus = filterStatus === 'Tous' || file.status === filterStatus;
-    
-    return matchesSearch && matchesSubject && matchesType && matchesStatus;
-  });
 
   return (
     <div className="space-y-8">
@@ -772,13 +909,14 @@ const FileManagementTabImproved = () => {
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center">
               <Shield className="w-8 h-8 text-blue-300 mr-4" />
-              Administration - Gestion des cours
+              Administration - Gestion des Fichiers
             </h1>
-            <p className="text-blue-200 mt-2">Gérez vos contenus pédagogiques : ajout, modification, suppression</p>
+            <p className="text-blue-200 mt-2">
+              Organisez vos fichiers dans des dossiers hiérarchiques
+            </p>
             <div className="flex items-center space-x-4 mt-3 text-sm text-blue-300">
-              <span>Total: {filteredFiles.length} cours</span>
-              <span>Publiés: {filteredFiles.filter(f => f.status === 'Publié').length}</span>
-              <span>Brouillons: {filteredFiles.filter(f => f.status === 'Brouillon').length}</span>
+              <span>Dossiers: {folders.length}</span>
+              <span>Fichiers: {uploadedFiles.length}</span>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -789,197 +927,224 @@ const FileManagementTabImproved = () => {
               <RefreshCw className="w-4 h-4" />
               <span>Actualiser</span>
             </button>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Ajouter un cours</span>
-            </button>
+            
+             {isInFolder ? (
+               // Choix d'action selon le contexte
+               <div className="flex items-center space-x-3">
+                 {breadcrumbs.length === 2 ? (
+                   // Dans un dossier global (niveau 2) : créer un sous-dossier
+                   <button
+                     onClick={() => setShowCreateFolderModal(true)}
+                     className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 font-semibold"
+                   >
+                     <FolderPlus className="w-4 h-4" />
+                     <span>Créer un sous-dossier</span>
+                   </button>
+                 ) : (
+                   // Dans un sous-dossier (niveau 3) : ajouter un fichier
+                   <button
+                     onClick={() => setShowUploadModal(true)}
+                     className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-semibold"
+                   >
+                     <Plus className="w-4 h-4" />
+                     <span>Ajouter un fichier</span>
+                   </button>
+                 )}
+               </div>
+             ) : (
+              // Bouton pour créer un dossier global (à la racine)
+              <button
+                onClick={() => setShowCreateFolderModal(true)}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+              >
+                <FolderPlus className="w-5 h-5" />
+                <span>Nouveau Dossier Global</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Filtres et recherche améliorés */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 w-4 h-4" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher par nom, titre ou matière..."
-              className="pl-10 pr-4 py-3 w-full border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-            />
-          </div>
-          <div className="flex items-center space-x-3">
-            <select
-              value={filterSubject}
-              onChange={(e) => setFilterSubject(e.target.value)}
-              className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-            >
-              <option value="Tous">Toutes les matières</option>
-              {subjects.map(subject => (
-                <option key={subject} value={subject}>{subject}</option>
-              ))}
-            </select>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-            >
-              <option value="Tous">Tous les types</option>
-              <option value="PDF">PDF</option>
-              <option value="Vidéo">Vidéo</option>
-              <option value="Texte">Texte</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-            >
-              <option value="Tous">Tous les statuts</option>
-              <option value="Publié">Publié</option>
-              <option value="Brouillon">Brouillon</option>
-            </select>
+      {/* Fil d'Ariane pour les dossiers */}
+      {isInFolder && (
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-4 border border-white/20">
+          <div className="flex items-center space-x-2 text-white">
+            {breadcrumbs.map((item, index) => (
+              <React.Fragment key={item.id || 'root'}>
+                <button
+                  onClick={() => navigateToBreadcrumb(index)}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all ${
+                    index === breadcrumbs.length - 1
+                      ? 'bg-blue-500/20 text-blue-200'
+                      : 'hover:bg-white/10 text-blue-300'
+                  }`}
+                >
+                  {index === 0 ? <Home className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
+                  <span>{item.name}</span>
+                </button>
+                {index < breadcrumbs.length - 1 && (
+                  <ChevronRight className="w-4 h-4 text-blue-400" />
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Liste des fichiers améliorée */}
+
+      {/* Liste des fichiers/dossiers améliorée */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden">
         <div className="p-6 border-b border-white/20">
-          <h2 className="text-xl font-bold text-white flex items-center">
-            <File className="w-5 h-5 text-blue-300 mr-2" />
-            Cours disponibles ({filteredFiles.length})
-          </h2>
+           <h2 className="text-xl font-bold text-white flex items-center">
+             <Folder className="w-5 h-5 text-blue-300 mr-2" />
+             {!currentFolderId ? 'Dossiers globaux' : 
+              folders.length > 0 ? 'Sous-dossiers' : 'Fichiers'} 
+             ({!currentFolderId ? folders.length : 
+               folders.length > 0 ? folders.length : uploadedFiles.length})
+           </h2>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Cours</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Matière</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Classes cibles</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Taille</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Vues</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {filteredFiles.map((file) => {
-                const iconConfig = getFileIcon(file.type, file.fileName);
-                const IconComponent = iconConfig.icon;
-                
-                return (
-                  <tr key={file.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconConfig.color}`}>
-                          <IconComponent className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-white">{file.name}</p>
-                          {file.title && <p className="text-xs text-blue-300">{file.title}</p>}
-                          {file.description && (
-                            <p className="text-xs text-blue-400 mt-1 max-w-xs truncate">{file.description}</p>
-                          )}
-                        </div>
+        {/* Vue dossiers et fichiers - grille */}
+        <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* Dossiers seulement à la racine */}
+              {!currentFolderId && folders.map((folder) => (
+                <div
+                  key={folder.id}
+                  className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
+                  onClick={() => navigateToFolder(folder)}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Folder className="w-8 h-8 text-blue-400" />
+                      <div className="text-xs text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full">
+                        Cliquer pour entrer
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-blue-200">{file.type}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-blue-200">{file.subject}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </div>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFolderToDelete(folder);
+                          setShowDeleteFolderModal(true);
+                        }}
+                        className="p-1 text-red-300 hover:text-white hover:bg-red-500/20 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-white mb-1 truncate">{folder.name}</h3>
+                  {folder.description && (
+                    <p className="text-sm text-blue-300 mb-2 line-clamp-2">{folder.description}</p>
+                  )}
+                  {folder.targetClasses && folder.targetClasses.length > 0 && (
+                    <div className="mb-2">
                       <div className="flex flex-wrap gap-1">
-                        {file.targetClasses && file.targetClasses.length > 0 ? (
-                          file.targetClasses.map((cls, index) => (
-                            <span 
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                            >
-                              {cls}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-gray-400">Aucune classe</span>
+                        {folder.targetClasses.slice(0, 2).map((cls, index) => (
+                          <span 
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                          >
+                            {cls}
+                          </span>
+                        ))}
+                        {folder.targetClasses.length > 2 && (
+                          <span className="text-xs text-blue-400">
+                            +{folder.targetClasses.length - 2} autres
+                          </span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-blue-200">{file.size}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-blue-200">{file.uploadDate}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-blue-200">{file.views}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-blue-400">
+                    <span>{folder.children?.length || 0} sous-dossiers</span>
+                    <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+
+               {/* Sous-dossiers dans un dossier global */}
+               {currentFolderId && folders.length > 0 && folders.map((folder) => (
+                 <div
+                   key={folder.id}
+                   className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
+                   onClick={() => navigateToFolder(folder)}
+                 >
+                   <div className="flex items-center justify-between mb-3">
+                     <div className="flex items-center space-x-2">
+                       <Folder className="w-8 h-8 text-blue-400" />
+                       <div className="text-xs text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full">
+                         Sous-dossier
+                       </div>
+                     </div>
+                     <div className="text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                       Cliquer pour entrer
+                     </div>
+                   </div>
+                   <h3 className="font-semibold text-white mb-2 truncate">{folder.name}</h3>
+                   {folder.description && (
+                     <p className="text-sm text-blue-300 mb-3 line-clamp-2">{folder.description}</p>
+                   )}
+                   <div className="flex items-center justify-between text-xs text-blue-400">
+                     <span>Sous-dossier</span>
+                     <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
+                   </div>
+                 </div>
+               ))}
+
+               {/* Fichiers seulement dans les sous-dossiers (niveau 3) */}
+               {currentFolderId && breadcrumbs.length === 3 && uploadedFiles.map((file) => {
+                const iconConfig = getFileIcon(file.type, file.fileName);
+                const IconComponent = iconConfig.icon;
+                return (
+                  <div
+                    key={file.id}
+                    className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <IconComponent className="w-8 h-8 text-green-400" />
                       <button
-                        onClick={() => toggleStatus(file)}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
-                          file.status === 'Publié' 
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                            : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                        }`}
+                        onClick={() => handleDownload(file)}
+                        className="p-1 text-blue-300 hover:text-white hover:bg-white/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Télécharger"
                       >
-                        {file.status}
+                        <Download className="w-4 h-4" />
                       </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => handleDownload(file)}
-                          className="p-2 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                          title="Télécharger"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setFileToEdit(file);
-                            setShowEditModal(true);
-                          }}
-                          className="p-2 text-green-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                          title="Modifier"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setFileToDelete(file);
-                            setShowDeleteModal(true);
-                          }}
-                          className="p-2 text-red-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                    </div>
+                    <h3 className="font-semibold text-white mb-1 truncate">{file.name}</h3>
+                    {file.title && (
+                      <p className="text-sm text-blue-300 mb-2 line-clamp-2">{file.title}</p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-blue-400">
+                      <span>{file.size}</span>
+                      <span>{file.views} téléchargements</span>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-          
-          {filteredFiles.length === 0 && (
-            <div className="text-center py-12">
-              <File className="w-12 h-12 text-blue-300 mx-auto mb-4" />
-              <p className="text-blue-200 text-lg">Aucun cours trouvé</p>
-              <p className="text-blue-300 text-sm">Essayez de modifier vos filtres ou ajoutez un nouveau cours</p>
+
+               {!currentFolderId && folders.length === 0 && (
+                 <div className="col-span-full text-center py-12">
+                   <Folder className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+                   <p className="text-blue-200 text-lg">Aucun dossier global créé</p>
+                   <p className="text-blue-300 text-sm">Créez votre premier dossier global pour commencer</p>
+                 </div>
+               )}
+               
+               {currentFolderId && folders.length === 0 && uploadedFiles.length === 0 && (
+                 <div className="col-span-full text-center py-12">
+                   <Folder className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+                   <p className="text-blue-200 text-lg">Aucun contenu</p>
+                   <p className="text-blue-300 text-sm">
+                     {breadcrumbs.length === 2 ? 
+                       'Créez des sous-dossiers pour organiser vos fichiers' : 
+                       'Ajoutez des fichiers dans ce sous-dossier'}
+                   </p>
+                 </div>
+               )}
             </div>
-          )}
-        </div>
+          </div>
       </div>
 
       {/* Modal d'upload amélioré */}
@@ -1010,67 +1175,6 @@ const FileManagementTabImproved = () => {
                     value={courseTitle}
                     onChange={(e) => setCourseTitle(e.target.value)}
                     placeholder="Ex: La Révolution française"
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Matière</label>
-                  <select
-                    value={courseSubject}
-                    onChange={(e) => setCourseSubject(e.target.value)}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                  >
-                    {subjects.map(subject => (
-                      <option key={subject} value={subject}>{subject}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Niveau</label>
-                  <select
-                    value={courseLevel}
-                    onChange={(e) => setCourseLevel(e.target.value)}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                  >
-                    {levels.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Classes cibles *</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border border-white/20 rounded-xl p-3 bg-white/10 backdrop-blur-md">
-                    {classes.map(cls => (
-                      <label key={cls} className="flex items-center space-x-2 text-white cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-all">
-                        <input
-                          type="checkbox"
-                          checked={courseClass.includes(cls)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCourseClass(prev => [...prev, cls]);
-                            } else {
-                              setCourseClass(prev => prev.filter(c => c !== cls));
-                            }
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
-                        />
-                        <span className="text-sm">{cls}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {courseClass.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-blue-300">Classes sélectionnées : {courseClass.join(', ')}</p>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par des virgules)</label>
-                  <input
-                    type="text"
-                    value={courseTags}
-                    onChange={(e) => setCourseTags(e.target.value)}
-                    placeholder="Ex: révolution, france, histoire"
                     className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
                   />
                 </div>
@@ -1283,6 +1387,147 @@ const FileManagementTabImproved = () => {
           subjects={subjects}
           levels={levels}
         />
+      )}
+
+      {/* Modal de création de dossier */}
+      {showCreateFolderModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 max-w-md w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <FolderPlus className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Nouveau Dossier</h3>
+                <p className="text-blue-300 text-sm">
+                  {currentFolderId ? 'Créer un sous-dossier dans ce dossier' : 'Créer un dossier global'}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Nom du dossier</label>
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Ex: Cours d'Histoire, Exercices de Math..."
+                  className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Description (optionnel)</label>
+                <textarea
+                  value={newFolderDescription}
+                  onChange={(e) => setNewFolderDescription(e.target.value)}
+                  placeholder="Description du dossier..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300 resize-none"
+                />
+              </div>
+              
+              {/* Sélection des classes cibles - seulement pour le premier dossier (racine) */}
+              {!currentFolderId && (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Classes cibles (optionnel)
+                  </label>
+                  <p className="text-xs text-blue-300 mb-3">
+                    Sélectionnez les classes qui pourront accéder à ce dossier global
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-white/20 rounded-xl p-3 bg-white/5">
+                    {availableClasses.map(cls => (
+                      <label key={cls} className="flex items-center space-x-2">
+                        <input 
+                          type="checkbox" 
+                          checked={newFolderTargetClasses.includes(cls)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewFolderTargetClasses(prev => [...prev, cls]);
+                            } else {
+                              setNewFolderTargetClasses(prev => prev.filter(c => c !== cls));
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <span className="text-sm text-white">{cls}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {newFolderTargetClasses.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-blue-300">
+                        Classes sélectionnées : {newFolderTargetClasses.join(', ')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCreateFolderModal(false);
+                  setNewFolderName('');
+                  setNewFolderDescription('');
+                  setNewFolderTargetClasses([]);
+                }}
+                className="px-4 py-2 text-blue-300 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={createFolder}
+                disabled={isUploading}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isUploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Créer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de suppression de dossier */}
+      {showDeleteFolderModal && folderToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 max-w-md w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Supprimer le dossier</h3>
+                <p className="text-blue-300 text-sm">Cette action est irréversible</p>
+              </div>
+            </div>
+            <p className="text-white mb-6">
+              Êtes-vous sûr de vouloir supprimer le dossier <strong>"{folderToDelete.name}"</strong> ?
+              <br />
+              <span className="text-red-300 text-sm">Tous les fichiers et sous-dossiers seront également supprimés.</span>
+            </p>
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteFolderModal(false);
+                  setFolderToDelete(null);
+                }}
+                className="px-4 py-2 text-blue-300 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => deleteFolder(folderToDelete)}
+                disabled={isUploading}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isUploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Supprimer</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

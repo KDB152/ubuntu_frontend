@@ -115,7 +115,6 @@ const QuizzesManagementTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSubject, setFilterSubject] = useState('Tous');
   const [filterStatus, setFilterStatus] = useState('Tous');
-  const [filterLevel, setFilterLevel] = useState('Tous');
   const [selectedQuizzes, setSelectedQuizzes] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -168,7 +167,7 @@ const QuizzesManagementTab = () => {
   };
 
   useEffect(() => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
     const load = async () => {
       setIsLoading(true);
       try {
@@ -235,7 +234,7 @@ const QuizzesManagementTab = () => {
   const handleDeleteQuiz = async (quiz: Quiz) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       await fetch(`${API_BASE}/quizzes/${quiz.id}`, { method: 'DELETE' });
       setQuizzes(prev => prev.filter(q => q.id !== quiz.id));
       showNotification('success', 'Quiz supprimé avec succès');
@@ -251,7 +250,7 @@ const QuizzesManagementTab = () => {
   const handleEditQuiz = async (updatedQuiz: Quiz) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       await fetch(`${API_BASE}/quizzes/${updatedQuiz.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -281,7 +280,7 @@ const QuizzesManagementTab = () => {
   const handleCreateQuiz = async (newQuiz: Partial<Quiz>) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
       const res = await fetch(`${API_BASE}/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -361,7 +360,7 @@ const QuizzesManagementTab = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
         const res = await fetch(`${API_BASE}/quizzes`);
         const json = await res.json();
         const mapped: Quiz[] = (json.items || []).map((q: any) => ({
@@ -399,9 +398,8 @@ const QuizzesManagementTab = () => {
                          (quiz.tags || []).some(tag => (tag?.toLowerCase() || '').includes(searchQuery.toLowerCase()));
     const matchesSubject = filterSubject === 'Tous' || quiz.subject === filterSubject;
     const matchesStatus = filterStatus === 'Tous' || quiz.status === filterStatus;
-    const matchesLevel = filterLevel === 'Tous' || quiz.level === filterLevel;
     
-    return matchesSearch && matchesSubject && matchesStatus && matchesLevel;
+    return matchesSearch && matchesSubject && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
@@ -534,16 +532,6 @@ const QuizzesManagementTab = () => {
                   <option value="Tous">Toutes les matières</option>
                   {subjects.map(subject => (
                     <option key={subject} value={subject}>{subject}</option>
-                  ))}
-                </select>
-                <select
-                  value={filterLevel}
-                  onChange={(e) => setFilterLevel(e.target.value)}
-                  className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-                >
-                  <option value="Tous">Tous les niveaux</option>
-                  {levels.map(level => (
-                    <option key={level} value={level}>{level}</option>
                   ))}
                 </select>
                 <select
