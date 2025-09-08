@@ -963,7 +963,7 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
                   <option value="all">🎯 Toutes les matières</option>
                   <option value="history">📚 Histoire</option>
                   <option value="geography">🌍 Géographie</option>
-                  <option value="both">🧠 Histoire-Géographie</option>
+                  <option value="both">🧠 EMC</option>
                 </select>
               </div>
 

@@ -473,14 +473,15 @@ const AdminDashboard = () => {
                   >
                     {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                   </button>
-                  
-                  <button 
-                    onClick={handleRefresh}
-                    className="p-2 text-blue-200 hover:text-blue-100 hover:bg-blue-800/50 rounded-lg transition-all"
-                    title="Actualiser"
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                  </button>
+
+                                {/* Bouton de déconnexion */}
+                                <button
+                                  onClick={handleLogout}
+                                  className="flex items-center space-x-2 px-4 py-2 bg-transparent border border-white/30 rounded-xl text-red-400 hover:bg-red-500/20 hover:border-red-400/50 transition-all"
+                                >
+                                  <LogOut className="w-4 h-4" />
+                                  <span className="font-medium">Déconnexion</span>
+                                </button>
                 </div>
               </div>
             </div>

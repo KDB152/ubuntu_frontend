@@ -463,25 +463,6 @@ const ParentDashboard: React.FC = () => {
                 />
               </div>
 
-
-              {/* Actions rapides */}
-              <div className="flex items-center space-x-2">
-                <button 
-                  onClick={handleRefresh}
-                  className="p-3 bg-blue-800/50 rounded-xl text-blue-200 hover:bg-blue-700/50 transition-all"
-                  title="Actualiser"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => setActiveTab('messages')}
-                  className="p-3 bg-blue-500 hover:bg-blue-600 rounded-xl text-white transition-all"
-                  title="Nouveau message"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-
               {/* Bouton de déconnexion */}
               <button
                 onClick={handleLogout}

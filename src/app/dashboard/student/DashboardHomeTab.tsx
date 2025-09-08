@@ -40,7 +40,8 @@ import {
   Sun,
   Moon,
   CloudRain,
-  Smile
+  Smile,
+  RefreshCw
 } from 'lucide-react';
 
 interface QuickAction {
@@ -81,6 +82,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
   const { stats: realStats } = useRealStats();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState('');
+  const [userName, setUserName] = useState('Utilisateur'); // État local pour éviter l'hydratation mismatch
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [weeklyStats, setWeeklyStats] = useState({
     quizzesCompleted: 0,
@@ -103,6 +105,9 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
     } else {
       setGreeting('Bonsoir');
     }
+
+    // Charger le nom d'utilisateur côté client uniquement
+    setUserName(getCurrentUserName());
 
     return () => clearInterval(timer);
   }, []);
@@ -177,25 +182,34 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                {greeting}, {getCurrentUserName()} ! 👋
+                {greeting}, {userName} ! 👋
               </h1>
               <p className="text-blue-100 text-lg">
                 Prêt à continuer votre apprentissage aujourd'hui ?
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold">
-                {currentTime.toLocaleTimeString('fr-FR', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </div>
-              <div className="text-blue-200">
-                {currentTime.toLocaleDateString('fr-FR', { 
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long'
-                })}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="p-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+                title="Actualiser"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
+              <div className="text-right">
+                <div className="text-2xl font-bold">
+                  {currentTime.toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </div>
+                <div className="text-blue-200">
+                  {currentTime.toLocaleDateString('fr-FR', { 
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long'
+                  })}
+                </div>
               </div>
             </div>
           </div>

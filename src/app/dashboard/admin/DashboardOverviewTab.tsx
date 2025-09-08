@@ -297,16 +297,6 @@ const DashboardOverviewTab = () => {
             <p className="text-blue-200 mt-2">Vue d'ensemble de votre plateforme Chrono-Carto</p>
           </div>
           <div className="flex items-center space-x-3">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
-              className="px-4 py-2 bg-white/10 text-white rounded-xl border border-white/20 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
-            >
-              <option value="24h">Dernières 24h</option>
-              <option value="7d">7 derniers jours</option>
-              <option value="30d">30 derniers jours</option>
-              <option value="90d">90 derniers jours</option>
-            </select>
             <button
               onClick={refreshData}
               disabled={isLoading}

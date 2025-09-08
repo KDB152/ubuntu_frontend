@@ -16,7 +16,8 @@ import {
   X,
   BookOpen,
   Euro,
-  FileText
+  FileText,
+  RefreshCw
 } from 'lucide-react';
 import { AnimatedPage, AnimatedCard, AnimatedButton, AnimatedStats } from '../../components/ui/animations';
 
@@ -218,6 +219,13 @@ const ParentDashboard: React.FC = () => {
               <p className="text-gray-600">Bienvenue, {parentData.name}</p>
             </div>
             <div className="flex items-center space-x-3">
+              <AnimatedButton 
+                onClick={() => window.location.reload()}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+                title="Actualiser"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </AnimatedButton>
               <AnimatedButton className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all">
                 <Settings className="w-5 h-5" />
               </AnimatedButton>

@@ -970,6 +970,13 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
           </div>
           
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="p-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+              title="Actualiser"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value as any)}

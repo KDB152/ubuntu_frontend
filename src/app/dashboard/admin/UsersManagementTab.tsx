@@ -125,6 +125,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
     }
   }, [searchParams]);
 
+
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
@@ -323,11 +324,6 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           birthDate: (updatedUser as any).birthDate ? (updatedUser as any).birthDate.split('T')[0] : (updatedUser as any).birth_date,
         }),
         
-        // Champs spécifiques aux parents (table parents)
-        ...(activeTab === 'parents' && {
-          address: (updatedUser as any).address,
-          occupation: (updatedUser as any).occupation,
-        }),
         
       };
 
@@ -335,32 +331,12 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       
-      // D'abord, récupérer le bon ID utilisateur via l'email
-      let userId = updatedUser.id;
-      try {
-        const usersResponse = await fetch(`${backendUrl}/users/debug/all`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (usersResponse.ok) {
-          const allUsers = await usersResponse.json();
-          const userByEmail = allUsers.find((u: any) => u.email === updatedUser.email);
-          if (userByEmail) {
-            userId = userByEmail.id;
-            console.log('🔍 Found correct user ID:', userId, 'for email:', updatedUser.email);
-    } else {
-            // L'utilisateur n'existe pas dans la base de données
-            const availableUsers = allUsers.map((u: any) => `ID: ${u.id} - ${u.email} (${u.firstName} ${u.lastName})`).join('\n');
-            throw new Error(`L'utilisateur avec l'email "${updatedUser.email}" n'existe pas dans la base de données.\n\nUtilisateurs disponibles:\n${availableUsers}`);
-          }
-        }
-      } catch (error) {
-        if (error.message.includes('n\'existe pas dans la base de données')) {
-          throw error; // Re-lancer l'erreur si c'est notre erreur personnalisée
-        }
-        console.warn('🔍 Could not fetch user ID by email, using original ID:', userId);
-      }
+      // Utiliser directement l'ID de l'utilisateur (plus fiable que la recherche par email)
+      const userId = updatedUser.id;
+      console.log('🔍 Using user ID directly:', userId, 'for user:', updatedUser.firstName, updatedUser.lastName);
+      console.log('🔍 Full user object:', updatedUser);
+      console.log('🔍 Available students IDs:', students.map(s => ({ id: s.id, name: `${s.firstName} ${s.lastName}`, email: s.email })));
+      console.log('🔍 Available parents IDs:', parents.map(p => ({ id: p.id, name: `${p.firstName} ${p.lastName}`, email: p.email })));
       
       console.log('🔍 Updating user:', userId, 'with data:', userData);
       console.log('🔍 Using token:', token ? 'Token present' : 'No token');
@@ -396,6 +372,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
         
         throw new Error(`Erreur lors de la mise à jour de l'utilisateur: ${errorMessage}`);
       }
+
 
       // L'endpoint PUT /users/:id retourne déjà les données mises à jour
       // Pas besoin de faire un appel supplémentaire
@@ -593,6 +570,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
             <button
               onClick={() => window.location.reload()}
               className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+              title="Actualiser la page"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Actualiser</span>
@@ -672,16 +650,6 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
             />
           </div>
           <div className="flex items-center space-x-3">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-            >
-              <option value="Tous">Tous les statuts</option>
-              <option value="Actif">Actif</option>
-              <option value="Inactif">Inactif</option>
-              {activeTab === 'students' && <option value="Suspendu">Suspendu</option>}
-            </select>
             {activeTab === 'students' && (
               <select
                 value={filterClass}
@@ -1442,9 +1410,36 @@ interface EditUserModalProps {
 
 const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, onClose, isLoading, classes, levels }) => {
   const [formData, setFormData] = useState(user);
+  const [emailError, setEmailError] = useState('');
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return 'Format d\'email invalide';
+    }
+    return '';
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setFormData((prev: any) => ({ ...prev, email: newEmail }));
+    
+    // Validation en temps réel
+    const error = validateEmail(newEmail);
+    setEmailError(error);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation finale
+    const emailValidationError = validateEmail(formData.email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      return;
+    }
+    
+    setEmailError('');
     onSave(formData);
   };
 
@@ -1490,14 +1485,35 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white mb-2">Email *</label>
+              <label className="block text-sm font-semibold text-white mb-2 flex items-center">
+                <Mail className="w-4 h-4 mr-2 text-blue-300" />
+                Email *
+                <span className="ml-2 text-xs text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full">
+                  Modifiable
+                </span>
+              </label>
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData((prev: any) => ({ ...prev, email: e.target.value }))}
+                onChange={handleEmailChange}
                 required
-                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300 ${
+                  emailError ? 'border-red-500' : 'border-white/20'
+                }`}
+                placeholder="exemple@email.com"
               />
+              {emailError && (
+                <p className="text-red-400 text-sm mt-1 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {emailError}
+                </p>
+              )}
+              {!emailError && formData.email !== user.email && (
+                <p className="text-green-400 text-sm mt-1 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Email modifié avec succès
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-white mb-2">Téléphone *</label>
@@ -1549,40 +1565,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
             </>
           )}
 
-          {userType === 'parents' && (
-            <>
-              {/* Informations personnelles du parent */}
-              <div className="bg-white/5 rounded-xl p-6">
-                <h3 className="text-white font-semibold mb-4 flex items-center">
-                  <User className="w-5 h-5 text-blue-300 mr-2" />
-                  Informations personnelles
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-sm font-semibold text-white mb-2">Adresse</label>
-                  <input
-                      type="text"
-                      value={(formData as any).address || ''}
-                      onChange={(e) => setFormData((prev: any) => ({ ...prev, address: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                      placeholder="Adresse du parent"
-                  />
-                </div>
-                <div>
-                    <label className="block text-sm font-semibold text-white mb-2">Profession</label>
-                  <input
-                      type="text"
-                      value={(formData as any).occupation || ''}
-                      onChange={(e) => setFormData((prev: any) => ({ ...prev, occupation: e.target.value }))}
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-                      placeholder="Profession du parent"
-                  />
-                </div>
-                </div>
-              </div>
-
-            </>
-          )}
 
           {/* Statut et approbation */}
           <div className="bg-white/5 rounded-xl p-6">

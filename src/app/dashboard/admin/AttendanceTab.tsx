@@ -208,13 +208,13 @@ const AttendanceTab: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <Calendar className="w-5 h-5 text-blue-300" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-white/20 rounded-lg bg-white/10 text-white"
-            />
+            <button
+              onClick={() => window.location.reload()}
+              className="p-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+              title="Actualiser"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </AnimatedCard>

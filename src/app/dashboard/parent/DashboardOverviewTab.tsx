@@ -333,17 +333,12 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
           </div>
           
           <div className="flex items-center space-x-4">
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="week">Cette semaine</option>
-              <option value="month">Ce mois</option>
-              <option value="year">Cette année</option>
-            </select>
             
-            <button className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-all">
+            <button 
+              onClick={() => window.location.reload()}
+              className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-all"
+              title="Actualiser"
+            >
               <RefreshCw className="w-5 h-5" />
             </button>
           </div>

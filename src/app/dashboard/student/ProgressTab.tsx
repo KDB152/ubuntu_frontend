@@ -505,16 +505,13 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              className="px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all duration-300"
+            <button
+              onClick={() => window.location.reload()}
+              className="p-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+              title="Actualiser"
             >
-              <option value="week">Cette semaine</option>
-              <option value="month">Ce mois</option>
-              <option value="trimester">Ce trimestre</option>
-              <option value="year">Cette année</option>
-            </select>
+              <RefreshCw className="w-5 h-5" />
+            </button>
             
             <select
               value={selectedSubject}
@@ -524,15 +521,8 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
               <option value="all">Toutes matières</option>
               <option value="history">Histoire</option>
               <option value="geography">Géographie</option>
+              <option value="geography">EMC</option>
             </select>
-            
-            <button 
-              onClick={loadProgressData}
-              className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl text-white hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
-              title="Actualiser les données"
-            >
-              <RefreshCw className="w-6 h-6" />
-            </button>
           </div>
         </div>
 

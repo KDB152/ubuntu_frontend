@@ -28,6 +28,7 @@ import {
   Download,
   Heart,
   MessageCircle,
+  RefreshCw,
   ChevronRight,
   Plus,
   Shuffle,
@@ -702,6 +703,13 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             <p className="text-blue-200">Découvrez et testez vos connaissances</p>
           </div>
           <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="p-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+              title="Actualiser"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
             <div className="text-center">
               <div className="text-white text-base font-bold">{availableQuizzes.length}</div>
               <div className="text-blue-300 text-sm">Disponibles</div>
@@ -798,7 +806,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                   <option value="all">Toutes les matières</option>
                   <option value="history">Histoire</option>
                   <option value="geography">Géographie</option>
-                  <option value="both">Histoire-Géographie</option>
+                  <option value="both">EMC</option>
                 </select>
               </div>
 

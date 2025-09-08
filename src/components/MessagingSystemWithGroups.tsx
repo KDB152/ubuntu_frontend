@@ -517,7 +517,13 @@ const MessagingSystemWithGroups: React.FC<MessagingSystemProps> = ({ currentUser
                     )}
                     <p className="text-sm">{message.content}</p>
                     <p className="text-xs opacity-70 mt-1">
-                      {new Date(message.created_at).toLocaleTimeString()}
+                      {new Date(message.created_at).toLocaleString('fr-FR', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
                     </p>
                   </div>
                 </div>

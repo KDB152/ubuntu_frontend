@@ -3,7 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chrono-carto-ap
 
 // Generic API request function
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem('token');
   
   const config: RequestInit = {
     headers: {
@@ -19,6 +19,22 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Gestion spéciale pour les erreurs 401 (token expiré/invalide)
+      if (response.status === 401) {
+        // Nettoyer le localStorage et rediriger vers la page de connexion
+        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userDetails');
+        
+        // Rediriger vers la page de connexion si on est dans le navigateur
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        
+        throw new Error('Token invalide ou manquant');
+      }
+      
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
     
@@ -586,7 +602,7 @@ export const updateUserProfile = async (userId: number, profileData: any) => {
 
 export const changePassword = async (currentPassword: string, newPassword: string) => {
   try {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('Token d\'authentification manquant');
     }

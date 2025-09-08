@@ -32,7 +32,8 @@ import {
   Loader2,
   Upload,
   Save,
-  Edit
+  Edit,
+  RefreshCw
 } from 'lucide-react';
 
 interface User {
@@ -96,6 +97,37 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
   const [editingMessageContent, setEditingMessageContent] = useState('');
   const [editingConversation, setEditingConversation] = useState<number | null>(null);
   const [editingConversationTitle, setEditingConversationTitle] = useState('');
+
+  // Fonction pour vérifier si un message peut être modifié/supprimé (30 minutes max pour étudiants/parents)
+  const canEditOrDeleteMessage = (message: Message): boolean => {
+    // Les admins peuvent toujours modifier/supprimer
+    if (currentUserRole === 'admin') {
+      return true;
+    }
+    
+    // Pour les étudiants et parents, vérifier si moins de 30 minutes se sont écoulées
+    if (currentUserRole === 'student' || currentUserRole === 'parent') {
+      const messageTime = new Date(message.created_at).getTime();
+      const currentTime = new Date().getTime();
+      const thirtyMinutesInMs = 30 * 60 * 1000; // 30 minutes en millisecondes
+      
+      return (currentTime - messageTime) < thirtyMinutesInMs;
+    }
+    
+    // Par défaut, ne pas permettre la modification/suppression
+    return false;
+  };
+
+  // Fonction pour vérifier si un message peut être édité (exclut les fichiers)
+  const canEditMessage = (message: Message): boolean => {
+    // Les messages de type fichier ne peuvent jamais être édités
+    if (message.message_type === 'file' || message.file_path) {
+      return false;
+    }
+    
+    // Sinon, utiliser la même logique que canEditOrDeleteMessage
+    return canEditOrDeleteMessage(message);
+  };
 
   // Emojis corrigés et bien organisés
   const popularEmojis = [
@@ -324,7 +356,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
       console.log(`📥 Téléchargement du fichier: ${fileName} (messageId: ${messageId})`);
       
       // Vérifier le token
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Token d\'authentification manquant');
       }
@@ -707,12 +739,21 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
               <MessageSquare className="w-6 h-6 mr-3 text-blue-400" />
               Messages
             </h2>
-            <button
-              onClick={() => setShowNewConversation(true)}
-              className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="p-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+                title="Actualiser"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setShowNewConversation(true)}
+                className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -775,18 +816,6 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                             <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex-shrink-0 animate-pulse shadow-lg"></div>
                           )}
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteConversation(conversation.id);
-                            }}
-                            className="p-1 hover:bg-red-500/20 rounded-lg transition-all duration-300 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 hover:scale-110"
-                            title="Supprimer la conversation"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
                       {conversation.lastMessage?.content && (
                         <p className="text-gray-300 text-sm truncate mt-1">
@@ -799,7 +828,10 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                         </span>
                         {conversation.lastMessage && (
                           <span className="text-xs text-gray-500">
-                            {new Date(conversation.lastMessage.created_at).toLocaleTimeString([], { 
+                            {new Date(conversation.lastMessage.created_at).toLocaleString('fr-FR', { 
+                              day: '2-digit', 
+                              month: '2-digit', 
+                              year: 'numeric',
                               hour: '2-digit', 
                               minute: '2-digit' 
                             })}
@@ -1004,22 +1036,26 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                           )}
                           
                           {/* Boutons d'édition/suppression pour les messages de l'utilisateur connecté */}
-                          {message.sender_id === currentUserId && (
+                          {message.sender_id === currentUserId && (canEditMessage(message) || canEditOrDeleteMessage(message)) && (
                             <div className="flex space-x-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => handleEditMessage(message.id, message.content)}
-                                className="p-1 hover:bg-white/20 rounded transition-all"
-                                title="Modifier le message"
-                              >
-                                <Edit className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteMessage(message.id)}
-                                className="p-1 hover:bg-red-500/20 rounded transition-all text-red-400"
-                                title="Supprimer le message"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              {canEditMessage(message) && (
+                                <button
+                                  onClick={() => handleEditMessage(message.id, message.content)}
+                                  className="p-1 hover:bg-white/20 rounded transition-all"
+                                  title="Modifier le message"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                              )}
+                              {canEditOrDeleteMessage(message) && (
+                                <button
+                                  onClick={() => handleDeleteMessage(message.id)}
+                                  className="p-1 hover:bg-red-500/20 rounded transition-all text-red-400"
+                                  title="Supprimer le message"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1027,7 +1063,13 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                       <div className={`flex items-center justify-between mt-2 text-xs ${
                         message.sender_id === currentUserId ? 'text-blue-100' : 'text-gray-400'
                       }`}>
-                        <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                        <span>{new Date(message.created_at).toLocaleString('fr-FR', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          year: 'numeric',
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}</span>
                         {message.sender_id === currentUserId && (
                           <CheckCircle className={`w-3 h-3 ${message.is_read ? 'text-green-300' : 'text-gray-400'}`} />
                         )}
