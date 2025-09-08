@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { messagingAPI } from '../lib/api';
+import { TextWithLinks } from '../utils/linkUtils';
 import {
   MessageSquare,
   Send,
@@ -35,6 +36,7 @@ import {
   Edit,
   RefreshCw
 } from 'lucide-react';
+import UserAvatar from './UserAvatar';
 
 interface User {
   id: number;
@@ -798,10 +800,16 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                 >
                   <div className="flex items-center space-x-3">
                     <div 
-                      className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:shadow-blue-500/25 hover:scale-105 transition-all duration-300"
+                      className="cursor-pointer hover:scale-105 transition-all duration-300"
                       onClick={() => selectConversation(conversation)}
                     >
-                      <User className="w-6 h-6 text-white" />
+                      <UserAvatar
+                        userId={conversation.participant1_id === currentUserId ? conversation.participant2_id : conversation.participant1_id}
+                        firstName={availableUsers.find(user => user.id === (conversation.participant1_id === currentUserId ? conversation.participant2_id : conversation.participant1_id))?.firstName}
+                        lastName={availableUsers.find(user => user.id === (conversation.participant1_id === currentUserId ? conversation.participant2_id : conversation.participant1_id))?.lastName}
+                        size="lg"
+                        className="shadow-lg hover:shadow-blue-500/25"
+                      />
                     </div>
                     <div 
                       className="flex-1 min-w-0 cursor-pointer"
@@ -949,8 +957,19 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                 messages.map(message => (
                   <div
                     key={message.id}
-                    className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end space-x-2 ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
                   >
+                    {/* Avatar pour les messages des autres utilisateurs */}
+                    {message.sender_id !== currentUserId && (
+                      <UserAvatar
+                        userId={message.sender_id}
+                        firstName={message.sender?.firstName}
+                        lastName={message.sender?.lastName}
+                        size="sm"
+                        className="flex-shrink-0"
+                      />
+                    )}
+                    
                     <div
                       className={`group max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg transition-all duration-300 hover:scale-[1.02] ${
                         message.sender_id === currentUserId
@@ -1032,7 +1051,13 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                               </div>
                             </div>
                           ) : (
-                            <p className="text-sm leading-relaxed">{message.content}</p>
+                            <div className="text-sm leading-relaxed">
+                              <TextWithLinks 
+                                text={message.content} 
+                                className="text-sm leading-relaxed"
+                                linkClassName="underline hover:no-underline transition-all"
+                              />
+                            </div>
                           )}
                           
                           {/* Boutons d'édition/suppression pour les messages de l'utilisateur connecté */}

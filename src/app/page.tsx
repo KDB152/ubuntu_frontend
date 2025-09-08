@@ -29,29 +29,29 @@ const HomePage = () => {
   const features = [
     {
       icon: Globe,
-      title: "Cartes Interactives",
-      description: "Explorez l'histoire et la géographie à travers des cartes dynamiques et des chronologies immersives",
-      benefits: ["Cartes historiques animées", "Timeline interactive", "Zoom sur les événements clés"]
+      title: "Quiz Interactifs",
+      description: "Testez vos connaissances avec des quiz variés en histoire, géographie et EMC",
+      benefits: ["Questions à choix multiples", "Corrections détaillées", "Suivi des progrès"]
     },
     {
-      icon: Zap,
-      title: "IA Pédagogique",
-      description: "Un assistant intelligent qui s'adapte à votre rythme et identifie vos points forts et faibles",
-      benefits: ["Recommandations personnalisées", "Analyse des difficultés", "Parcours adaptatif"]
+      icon: MessageCircle,
+      title: "Messagerie Éducative",
+      description: "Communiquez avec vos enseignants et collègues pour poser vos questions",
+      benefits: ["Échanges avec les professeurs", "Forum d'entraide", "Notifications en temps réel"]
     },
     {
-      icon: Award,
-      title: "Préparation Complète",
-      description: "Entraînez-vous avec des simulations d'examen et préparez votre Grand Oral avec confiance",
-      benefits: ["Sujets type Bac corrigés", "Coaching Grand Oral", "Fiches méthodologiques"]
+      icon: Calendar,
+      title: "Gestion des Séances",
+      description: "Organisez vos cours particuliers et suivez votre planning d'apprentissage",
+      benefits: ["Planification des séances", "Suivi des paiements", "Historique des cours"]
     }
   ];
 
   const stats = [
-    { number: "15,000+", label: "Élèves actifs", icon: Users },
-    { number: "95%", label: "Taux de réussite", icon: TrendingUp },
-    { number: "500+", label: "Ressources pédagogiques", icon: BookMarked },
-    { number: "24/7", label: "Accès disponible", icon: Clock }
+    { number: "100%", label: "Gratuit", icon: Users },
+    { number: "3", label: "Matières couvertes", icon: TrendingUp },
+    { number: "∞", label: "Accès illimité", icon: BookMarked },
+    { number: "24/7", label: "Disponible", icon: Clock }
   ];
 
   const subjects = [
@@ -79,10 +79,10 @@ const HomePage = () => {
   ];
 
   const resources = [
-    { icon: Video, title: "Vidéos explicatives", count: "200+" },
-    { icon: FileText, title: "Fiches de révision", count: "150+" },
-    { icon: BarChart3, title: "Quiz interactifs", count: "300+" },
-    { icon: MessageCircle, title: "Forum d'entraide", count: "24/7" }
+    { icon: Video, title: "Contenus pédagogiques", count: "En cours" },
+    { icon: FileText, title: "Quiz et exercices", count: "Disponibles" },
+    { icon: BarChart3, title: "Suivi des progrès", count: "Inclus" },
+    { icon: MessageCircle, title: "Support communautaire", count: "Actif" }
   ];
 
   useEffect(() => {
@@ -211,41 +211,44 @@ const HomePage = () => {
           <div className={`animate-fade-in-up ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             <div className="mb-6">
               <span className="inline-block bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 px-4 py-2 rounded-full text-sm font-medium border border-amber-500/30">
-                🎓 Plateforme éducative nouvelle génération
+                🎓 Plateforme éducative gratuite
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Maîtrisez l'
+              Apprenez l'
               <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
                 Histoire
               </span>
               <br />
-              Explorez la
+              Découvrez la
               <span className="bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent">
                 Géographie
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-white/80 mb-8 max-w-4xl mx-auto leading-relaxed">
-              La plateforme d'apprentissage révolutionnaire qui transforme vos cours d'histoire-géographie en aventures passionnantes. 
-              <span className="text-amber-300 font-semibold"> 100% gratuit et sans abonnement.</span>
+              Une plateforme éducative simple et efficace pour l'histoire-géographie et l'EMC. 
+              <span className="text-amber-300 font-semibold"> Entièrement gratuit et accessible à tous.</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
               <Link href="/register" className="group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center space-x-2">
                 <span>Commencer gratuitement</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="group border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300 flex items-center space-x-2">
+              <Link href="/login" className="group border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300 flex items-center space-x-2">
                 <Play className="w-5 h-5" />
-                <span>Voir la démo</span>
-              </button>
+                <span>Se connecter</span>
+              </Link>
             </div>
             
             {/* Statistiques rapides */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
               {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-2xl md:text-3xl font-bold text-amber-300 mb-1">{stat.number}</div>
-                  <div className="text-sm text-white/60">{stat.label}</div>
+                <div key={index} className="text-center group">
+                  <div className="w-24 h-24 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <stat.icon className="w-8 h-8 text-amber-300" />
+                  </div>
+                  <div className="text-4xl md:text-5xl font-bold text-amber-300 mb-1">{stat.number}</div>
+                  <div className="text-sm text-white/70">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -272,11 +275,11 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Une expérience d'apprentissage
-              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> révolutionnaire</span>
+              Des outils d'apprentissage
+              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> pratiques</span>
             </h2>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Découvrez nos outils innovants conçus pour transformer votre façon d'apprendre l'histoire et la géographie
+              Des fonctionnalités simples et efficaces pour vous accompagner dans votre apprentissage de l'histoire-géographie
             </p>
           </div>
 
@@ -381,19 +384,19 @@ const HomePage = () => {
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-3xl p-12 border border-amber-500/30">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Prêt à révolutionner vos révisions ?
+              Prêt à commencer votre apprentissage ?
             </h2>
             <p className="text-xl text-white/80 mb-8 leading-relaxed">
-              Rejoignez des milliers d'élèves qui ont déjà transformé leur façon d'apprendre l'histoire-géographie
+              Créez votre compte gratuitement et accédez à tous nos outils d'apprentissage en histoire-géographie
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
               <Link href="/register" className="group bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2">
                 <span>Commencer gratuitement</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300">
-                Découvrir les fonctionnalités
-              </button>
+              <Link href="/login" className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all duration-300">
+                Se connecter
+              </Link>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white/60 text-sm">
@@ -424,7 +427,7 @@ const HomePage = () => {
                 <span className="text-2xl font-bold text-white">Chrono-Carto</span>
               </div>
               <p className="text-white/60 mb-6 max-w-md">
-                L'avenir de l'éducation en histoire-géographie. Transformez votre façon d'apprendre avec nos outils innovants et notre pédagogie adaptative, entièrement gratuitement.
+                Une plateforme éducative simple et gratuite pour l'apprentissage de l'histoire-géographie et de l'EMC. Des outils pratiques pour étudiants et enseignants.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-amber-500 transition-colors">

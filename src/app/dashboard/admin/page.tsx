@@ -180,20 +180,6 @@ const AdminPage = () => {
                 <p className="text-blue-200 text-sm">Toutes les fonctionnalités sont maintenant disponibles</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 text-sm text-blue-300">
-              <div className="flex items-center space-x-2">
-                <Users className="w-4 h-4" />
-                <span>{stats.totalUsers} utilisateurs</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-4 h-4" />
-                <span>{stats.totalQuizzes} quiz</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="w-4 h-4" />
-                <span>{stats.unreadMessages} messages non lus</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

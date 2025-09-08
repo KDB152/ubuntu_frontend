@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { TextWithLinks } from '../utils/linkUtils';
 import { 
   MessageSquare, 
   Send, 
@@ -380,7 +381,13 @@ const NewMessagingSystem: React.FC<NewMessagingSystemProps> = ({
                         {message.sender.firstName} {message.sender.lastName}
                       </p>
                     )}
-                    <p className="text-sm">{message.content}</p>
+                    <div className="text-sm">
+                      <TextWithLinks 
+                        text={message.content} 
+                        className="text-sm"
+                        linkClassName="underline hover:no-underline transition-all"
+                      />
+                    </div>
                     {message.file_path && (
                       <div className="mt-2">
                         <button

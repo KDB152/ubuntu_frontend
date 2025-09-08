@@ -9,7 +9,6 @@ import {
   Users,
   BookOpen,
   MessageSquare,
-  Settings,
   FileText,
   Shield,
   Database,
@@ -63,11 +62,11 @@ import MessagesManagementTab from './MessagesManagementTab';
 import RendezVousManagementTab from './RendezVousManagementTab';
 import AttendanceTab from './AttendanceTab';
 import PaymentsManagementTab from './PaymentsManagementTab';
-import SettingsTab from './SettingsTab';
+import AdminProfileTab from './AdminProfileTab';
 import FileManagementTab from './FileManagementTab';
 import { AnimatedCard, AnimatedButton, AnimatedList, AnimatedListItem } from '../../../components/ui/animations';
 
-type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'files' | 'settings';
+type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'files' | 'profile';
 
 interface AdminUser {
   id: string;
@@ -221,17 +220,17 @@ const AdminDashboard = () => {
       badge: null
     },
     {
-      id: 'settings',
-      label: 'Paramètres',
-      icon: Settings,
-      description: 'Configuration du système'
+      id: 'profile',
+      label: 'Mon Profil',
+      icon: User,
+      description: 'Gestion du profil administrateur'
     }
   ];
 
   // Gérer les paramètres d'URL pour les onglets
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'rendez-vous', 'attendance', 'payments', 'files', 'settings'].includes(tabParam)) {
+    if (tabParam && ['overview', 'users', 'quizzes', 'messages', 'rendez-vous', 'attendance', 'payments', 'files', 'profile'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
@@ -320,8 +319,8 @@ const AdminDashboard = () => {
         return <PaymentsManagementTab />;
       case 'files':
         return <FileManagementTab />;
-      case 'settings':
-        return <SettingsTab admin={currentUser} />;
+      case 'profile':
+        return <AdminProfileTab />;
       default:
         return <DashboardOverviewTab />;
     }

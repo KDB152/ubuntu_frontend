@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { getCurrentUserName } from '@/lib/userUtils';
-import { useRealStats } from '@/hooks/useRealStats';
+import { useSimpleStats } from '@/hooks/useSimpleStats';
+import { useStudentDashboardStats } from '@/hooks/useStudentDashboardStats';
 import {
   BookOpen,
-  Clock,
   Target,
   TrendingUp,
   Award,
@@ -17,12 +17,11 @@ import {
   CheckCircle,
   AlertCircle,
   Trophy,
-  Zap,
   Heart,
   BookMarked,
   Users,
   BarChart3,
-  Activity,
+  Zap,
   Timer,
   Flag,
   Sparkles,
@@ -79,16 +78,22 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
   onNavigateToMessages, 
   onNavigateToCalendar 
 }) => {
-  const { stats: realStats } = useRealStats();
+  const { stats: simpleStats } = useSimpleStats();
+  const { stats: studentStats } = useStudentDashboardStats();
+  
+  // Debug: afficher les stats dans la console
+  useEffect(() => {
+    console.log('🎯 DashboardHomeTab - studentStats:', studentStats);
+  }, [studentStats]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState('');
   const [userName, setUserName] = useState('Utilisateur'); // État local pour éviter l'hydratation mismatch
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [weeklyStats, setWeeklyStats] = useState({
-    quizzesCompleted: 0,
-    averageScore: 0,
-    timeSpent: 0,
-    streak: 0
+    quizzesCompleted: simpleStats.completedQuizzes,
+    averageScore: simpleStats.averageScore,
+    timeSpent: 0, // Pas de données de temps pour l'instant
+    streak: 0 // Pas de données de série pour l'instant
   });
 
   useEffect(() => {
@@ -111,6 +116,15 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
 
     return () => clearInterval(timer);
   }, []);
+
+  // Mettre à jour les statistiques avec les données réelles
+  useEffect(() => {
+    setWeeklyStats(prev => ({
+      ...prev,
+      quizzesCompleted: simpleStats.completedQuizzes,
+      averageScore: simpleStats.averageScore
+    }));
+  }, [simpleStats.completedQuizzes, simpleStats.averageScore]);
 
   const quickActions: QuickAction[] = [
     {
@@ -225,7 +239,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
       </div>
 
       {/* Statistiques de la semaine */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
@@ -238,7 +252,7 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
           </div>
           <div className="mt-4 flex items-center text-green-400 text-sm">
             <TrendingUp className="w-4 h-4 mr-1" />
-            +2 cette semaine
+            {weeklyStats.quizzesCompleted > 0 ? 'Progression continue' : 'Commencez votre premier quiz !'}
           </div>
         </div>
 
@@ -254,44 +268,45 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
           </div>
           <div className="mt-4 flex items-center text-blue-400 text-sm">
             <TrendingUp className="w-4 h-4 mr-1" />
-            +5% ce mois-ci
+            {weeklyStats.averageScore > 0 ? 'Amélioration continue' : 'Terminez un quiz pour voir votre score !'}
           </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-200 text-sm">Temps d'étude</p>
-              <p className="text-white text-2xl font-bold">{Math.floor(weeklyStats.timeSpent / 60)}h{weeklyStats.timeSpent % 60}m</p>
+              <p className="text-blue-200 text-sm">Messages reçus</p>
+              <p className="text-white text-2xl font-bold">{studentStats.totalMessages}</p>
             </div>
             <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-              <Clock className="w-6 h-6 text-purple-400" />
+              <MessageSquare className="w-6 h-6 text-purple-400" />
             </div>
           </div>
           <div className="mt-4 flex items-center text-purple-400 text-sm">
-            <Activity className="w-4 h-4 mr-1" />
-            Cette semaine
+            <MessageCircle className="w-4 h-4 mr-1" />
+            {studentStats.unreadMessages > 0 ? `${studentStats.unreadMessages} non lus` : studentStats.totalMessages > 0 ? 'Tous les messages lus' : 'Aucun message'}
           </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-200 text-sm">Série actuelle</p>
-              <p className="text-white text-2xl font-bold">{weeklyStats.streak} jours</p>
+              <p className="text-blue-200 text-sm">Ressources</p>
+              <p className="text-white text-2xl font-bold">{studentStats.totalResources}</p>
             </div>
-            <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-              <Zap className="w-6 h-6 text-yellow-400" />
+            <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-orange-400" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-yellow-400 text-sm">
-            <Sparkles className="w-4 h-4 mr-1" />
-            Record personnel !
+          <div className="mt-4 flex items-center text-orange-400 text-sm">
+            <BookMarked className="w-4 h-4 mr-1" />
+            {studentStats.totalResources > 0 ? 'Dossiers disponibles' : 'Aucune ressource'}
           </div>
         </div>
+
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         {/* Actions rapides */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
@@ -332,27 +347,19 @@ const DashboardHomeTab: React.FC<DashboardHomeTabProps> = ({
 
         </div>
 
-        {/* Sidebar droite */}
-        <div className="space-y-6">
+        {/* Sidebar droite - Motivation du jour */}
+        <div className="lg:col-span-1 flex flex-col">
           {/* Motivation du jour */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 text-white">
-            <div className="flex items-center mb-3">
-              <Heart className="w-6 h-6 mr-2 text-pink-200" />
-              <h2 className="text-lg font-bold">Motivation du jour</h2>
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-12 text-white h-full flex flex-col justify-center">
+            <div className="flex items-center mb-10">
+              <Heart className="w-12 h-12 mr-5 text-pink-200" />
+              <h2 className="text-4xl font-bold">Motivation du jour</h2>
             </div>
-            <p className="text-pink-100 text-sm mb-4">
-              "L'éducation est l'arme la plus puissante qu'on puisse utiliser pour changer le monde."
-            </p>
-            <p className="text-pink-200 text-xs">- Nelson Mandela</p>
-            <div className="mt-4 flex items-center justify-between">
-              <button className="flex items-center text-pink-200 hover:text-white text-sm transition-colors">
-                <ThumbsUp className="w-4 h-4 mr-1" />
-                J'aime
-              </button>
-              <button className="flex items-center text-pink-200 hover:text-white text-sm transition-colors">
-                <Share2 className="w-4 h-4 mr-1" />
-                Partager
-              </button>
+            <div className="flex-1 flex flex-col justify-center">
+              <p className="text-pink-100 text-3xl leading-relaxed mb-10 font-medium">
+                "L'éducation est l'arme la plus puissante qu'on puisse utiliser pour changer le monde."
+              </p>
+              <p className="text-pink-200 text-2xl font-semibold">- Nelson Mandela</p>
             </div>
           </div>
         </div>

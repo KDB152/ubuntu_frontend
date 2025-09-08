@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { messagingAPI } from '../lib/api';
+import { TextWithLinks } from '../utils/linkUtils';
 import { User, Message, Conversation, Group } from '../types/messaging';
 import {
   MessageSquare,
@@ -515,7 +516,13 @@ const MessagingSystemWithGroups: React.FC<MessagingSystemProps> = ({ currentUser
                         {message.sender.firstName} {message.sender.lastName}
                       </p>
                     )}
-                    <p className="text-sm">{message.content}</p>
+                    <div className="text-sm">
+                      <TextWithLinks 
+                        text={message.content} 
+                        className="text-sm"
+                        linkClassName="underline hover:no-underline transition-all"
+                      />
+                    </div>
                     <p className="text-xs opacity-70 mt-1">
                       {new Date(message.created_at).toLocaleString('fr-FR', { 
                         day: '2-digit', 

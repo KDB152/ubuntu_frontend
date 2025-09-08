@@ -27,8 +27,8 @@ const LoginPage = () => {
   ];
 
   const features = [
-    { icon: Zap, title: "IA Pédagogique", description: "Apprentissage personnalisé" },
-    { icon: Globe, title: "Cartes Interactives", description: "Exploration immersive" },
+    { icon: Globe, title: "Quiz Interactifs", description: "Testez vos connaissances" },
+    { icon: Users, title: "Messagerie", description: "Échangez avec vos enseignants" },
     { icon: Shield, title: "Sécurité RGPD", description: "Données protégées" }
   ];
 
@@ -213,16 +213,16 @@ const LoginPage = () => {
             {/* Statistiques */}
             <div className="mt-12 grid grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-amber-300 mb-1">15,000+</div>
-                <div className="text-white/60 text-sm">Élèves actifs</div>
+                <div className="text-2xl font-bold text-amber-300 mb-1">100%</div>
+                <div className="text-white/60 text-sm">Gratuit</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-amber-300 mb-1">95%</div>
-                <div className="text-white/60 text-sm">Taux de réussite</div>
+                <div className="text-2xl font-bold text-amber-300 mb-1">3</div>
+                <div className="text-white/60 text-sm">Matières</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-amber-300 mb-1">500+</div>
-                <div className="text-white/60 text-sm">Ressources</div>
+                <div className="text-2xl font-bold text-amber-300 mb-1">24/7</div>
+                <div className="text-white/60 text-sm">Disponible</div>
               </div>
             </div>
           </div>

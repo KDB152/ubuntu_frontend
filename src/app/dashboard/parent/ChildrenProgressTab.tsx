@@ -166,35 +166,8 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         const response = await fetch(`/api/parent/children?parentId=${correctParentId}`);
         
         if (!response.ok) {
-          console.warn('⚠️ API non disponible, utilisation de données de test avec scores réels');
-          // Données de test avec scores réels en cas d'erreur API
-          const testChildren: Child[] = [
-            {
-              id: '68',
-              firstName: 'Mayssa',
-              lastName: 'El Abed',
-              avatar: '/avatars/child-default.jpg',
-              class: 'Terminale',
-              level: 'Terminale',
-              school: 'Lycée Ibn Khaldoun',
-              teacher: 'Mme. Ben Ali',
-              stats: {
-                averageScore: 63, // Score moyen réel
-                totalQuizzes: 4,  // Nombre réel de quiz
-                completedQuizzes: 4,
-                currentStreak: 2,
-                totalXP: 150,
-                badges: 0,
-                rank: 1
-              },
-              recentActivity: {
-                lastQuiz: 'Quiz Histoire',
-                lastScore: 50,
-                lastActive: new Date().toISOString()
-              }
-            }
-          ];
-          setParentChildren(testChildren);
+          console.warn('⚠️ API non disponible, aucun enfant trouvé');
+          setParentChildren([]);
           return;
         }
         
@@ -202,8 +175,9 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         console.log('✅ Profil parent récupéré:', profile);
         
         // Transformer les données des enfants et récupérer les scores réels
-        const children: Child[] = await Promise.all(
-          profile.children.map(async (child: any) => {
+        const children: Child[] = profile.children && profile.children.length > 0 
+          ? await Promise.all(
+              profile.children.map(async (child: any) => {
             let averageScore = 0;
             let totalQuizzes = 0;
             
@@ -226,10 +200,10 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
             }
             
             return {
-              id: child.id.toString(),
-              firstName: child.full_name.split(' ')[0] || '',
-              lastName: child.full_name.split(' ').slice(1).join(' ') || '',
-              avatar: '/avatars/child-default.jpg',
+              id: child.id ? child.id.toString() : '',
+              firstName: child.full_name ? child.full_name.split(' ')[0] || '' : '',
+              lastName: child.full_name ? child.full_name.split(' ').slice(1).join(' ') || '' : '',
+              avatar: undefined, // Pas d'avatar par défaut
               class: child.class_level || '',
               level: 'Terminale', // Valeur par défaut
               school: 'École par défaut',
@@ -250,41 +224,14 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
               }
             };
           })
-        );
+        ) : [];
         
         setParentChildren(children);
         console.log('✅ Enfants chargés:', children);
         
       } catch (error) {
         console.error('❌ Erreur lors du chargement des enfants:', error);
-        // Données de test en cas d'erreur
-        const testChildren: Child[] = [
-          {
-            id: '68',
-            firstName: 'Mayssa',
-            lastName: 'El Abed',
-            avatar: '/avatars/child-default.jpg',
-            class: 'Terminale',
-            level: 'Terminale',
-            school: 'Lycée Ibn Khaldoun',
-            teacher: 'Mme. Ben Ali',
-            stats: {
-              averageScore: 75,
-              totalQuizzes: 4,
-              completedQuizzes: 4,
-              currentStreak: 2,
-              totalXP: 150,
-                badges: 0,
-              rank: 1
-            },
-            recentActivity: {
-              lastQuiz: 'Quiz Histoire',
-              lastScore: 50,
-              lastActive: new Date().toISOString()
-            }
-          }
-        ];
-        setParentChildren(testChildren);
+        setParentChildren([]);
       }
     };
 
@@ -898,7 +845,8 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
                   <User className="w-8 h-8 text-blue-400" />
                 </div>
                 <h3 className="text-white text-lg font-semibold mb-2">Aucun enfant trouvé</h3>
-                <p className="text-blue-300">Chargement des enfants...</p>
+                <p className="text-blue-300">Aucun enfant n'est associé à votre compte parent.</p>
+                <p className="text-blue-200 text-sm mt-2">Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
               </div>
             ) : (
               parentChildren.map((child) => (

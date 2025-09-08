@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { getChildName, getSchoolName } from '@/lib/userUtils';
+import { useRealStats } from '@/hooks/useRealStats';
+import { useParentDashboardStats } from '@/hooks/useParentDashboardStats';
 import {
   TrendingUp,
   TrendingDown,
@@ -96,72 +98,7 @@ import {
   LineChart,
   AreaChart,
   ScatterChart,
-  // RadarChart, // Icône non disponible
-  Gauge,
-  Speedometer,
-  Timer,
-  Stopwatch,
-  Hourglass,
-  AlarmClock,
-  Watch,
-  Sunrise,
-  Sunset,
-  Sun,
-  Moon,
-  CloudRain,
-  CloudSnow,
-  Wind,
-  Thermometer,
-  Umbrella,
-  Rainbow,
-  Snowflake,
-  Droplets,
-  Waves,
-  TreePine,
-  Flower,
-  Leaf,
-  Seedling,
-  Sprout,
-  Cactus,
-  PalmTree,
-  Evergreen,
-  Deciduous,
-  Mushroom,
-  Shell,
-  Bug,
-  Butterfly,
-  Bird,
-  Fish,
-  Rabbit,
-  Turtle,
-  Snail,
-  Ant,
-  Bee,
-  Spider,
-  Worm,
-  Microbe,
-  Dna,
-  Atom,
-  Molecule,
-  Magnet,
-  Flashlight,
-  Lightbulb,
-  Candle,
-  Fire,
-  Fireworks,
-  Confetti,
-  Balloon,
-  Gift,
-  Party,
-  Cake,
-  IceCream,
-  Coffee,
-  Tea,
-  Wine,
-  Beer,
-  Cocktail,
-  Juice,
-  Milk
+  Timer
 } from 'lucide-react';
 
 interface Child {
@@ -178,7 +115,6 @@ interface Child {
     totalQuizzes: number;
     completedQuizzes: number;
     currentStreak: number;
-    totalXP: number;
     badges: number;
     rank: number;
   };
@@ -225,6 +161,9 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
   onNavigateToReports,
   onNavigateToSettings
 }) => {
+  // Hook pour les statistiques réelles
+  const { stats: realStats } = useRealStats();
+  const { stats: parentStats } = useParentDashboardStats();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
 
 
@@ -276,38 +215,17 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
   };
 
   const calculateOverallStats = () => {
-    if (!parent || parent.children.length === 0) {
-      return {
-        averageScore: 0,
-        totalQuizzes: 0,
-        completedQuizzes: 0,
-        totalXP: 0,
-        totalBadges: 0,
-        bestRank: 0
-      };
-    }
-
-    const stats = parent.children.reduce((acc, child) => {
-      acc.averageScore += child.stats.averageScore;
-      acc.totalQuizzes += child.stats.totalQuizzes;
-      acc.completedQuizzes += child.stats.completedQuizzes;
-      acc.totalXP += child.stats.totalXP;
-      acc.totalBadges += child.stats.badges;
-      acc.bestRank = Math.min(acc.bestRank || Infinity, child.stats.rank);
-      return acc;
-    }, {
-      averageScore: 0,
-      totalQuizzes: 0,
-      completedQuizzes: 0,
-      totalXP: 0,
-      totalBadges: 0,
-      bestRank: Infinity
-    });
-
+    // Utiliser les vraies données de l'API
     return {
-      ...stats,
-      averageScore: Math.round(stats.averageScore / parent.children.length),
-      bestRank: stats.bestRank === Infinity ? 0 : stats.bestRank
+      averageScore: parentStats.averageScore,
+      totalQuizzes: realStats.totalQuizzes,
+      completedQuizzes: parentStats.completedQuizzes,
+      totalBadges: Math.floor(parentStats.completedQuizzes / 5), // Badges basés sur les quiz terminés
+      bestRank: 1, // Rang par défaut
+      totalMessages: parentStats.totalMessages,
+      unreadMessages: parentStats.unreadMessages,
+      totalMeetings: parentStats.totalMeetings,
+      pendingMeetings: parentStats.pendingMeetings
     };
   };
 
@@ -359,7 +277,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4 text-green-400" />
-            <span className="text-green-400 text-sm">+5% ce mois</span>
+            <span className="text-green-400 text-sm">Score des enfants</span>
           </div>
         </div>
 
@@ -374,39 +292,55 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-blue-300 text-sm">sur {overallStats.totalQuizzes} au total</span>
+            <span className="text-blue-300 text-sm">Quiz des enfants</span>
           </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <div className="text-white text-2xl font-bold">{overallStats.totalXP.toLocaleString()}</div>
-              <div className="text-blue-300 text-sm">XP total</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
-              <Award className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <div className="text-white text-2xl font-bold">{overallStats.totalBadges}</div>
-              <div className="text-blue-300 text-sm">Badges obtenus</div>
+              <div className="text-white text-2xl font-bold">{overallStats.totalMessages}</div>
+              <div className="text-blue-300 text-sm">Messages reçus</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Trophy className="w-4 h-4 text-purple-400" />
-            <span className="text-purple-400 text-sm">Meilleur rang: #{overallStats.bestRank}</span>
+            <span className="text-blue-300 text-sm">{overallStats.unreadMessages} non lus</span>
+          </div>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <div className="text-white text-2xl font-bold">{overallStats.totalMeetings}</div>
+              <div className="text-blue-300 text-sm">Rendez-vous</div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-blue-300 text-sm">{overallStats.pendingMeetings} en attente</span>
           </div>
         </div>
       </div>
 
+
+      {/* Message si aucun enfant */}
+      {parent && parent.children.length === 0 && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="w-8 h-8 text-blue-400" />
+            </div>
+            <h3 className="text-white text-lg font-semibold mb-2">Aucun enfant trouvé</h3>
+            <p className="text-blue-300">Aucun enfant n'est associé à votre compte parent.</p>
+            <p className="text-blue-200 text-sm mt-2">Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
+          </div>
+        </div>
+      )}
 
       {/* Résumé des enfants */}
       {parent && parent.children.length > 1 && (
@@ -417,7 +351,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
               onClick={() => onNavigateToReports?.()}
               className="text-blue-400 hover:text-white transition-all"
             >
-              Voir détails complets →
+              Voir paiements →
             </button>
           </div>
           
@@ -504,7 +438,7 @@ const DashboardOverviewTab: React.FC<DashboardOverviewTabProps> = ({
             className="flex flex-col items-center space-y-2 p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
           >
             <FileText className="w-8 h-8 text-purple-400" />
-            <span className="text-white text-sm font-medium">Voir rapports</span>
+            <span className="text-white text-sm font-medium">Paiement</span>
           </button>
           
           <button 

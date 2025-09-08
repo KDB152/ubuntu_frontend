@@ -19,8 +19,8 @@ const ForgotPasswordPage = () => {
 
   const features = [
     { icon: Shield, title: "Sécurité renforcée", description: "Protection de vos données" },
-    { icon: Zap, title: "Récupération rapide", description: "Email envoyé en quelques secondes" },
-    { icon: Users, title: "Support 24/7", description: "Assistance disponible" }
+    { icon: Mail, title: "Récupération simple", description: "Email de réinitialisation" },
+    { icon: Clock, title: "Processus rapide", description: "Quelques minutes suffisent" }
   ];
 
   useEffect(() => {

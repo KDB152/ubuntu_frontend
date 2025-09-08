@@ -130,7 +130,10 @@ export async function GET(request: NextRequest) {
     
     await connection.end();
     
-    if ((rows as any[]).length === 0) {
+    // Filtrer les enfants qui ont des valeurs NULL
+    const validChildren = (rows as any[]).filter(row => row.student_id !== null);
+    
+    if ((rows as any[]).length === 0 || validChildren.length === 0) {
       return NextResponse.json(
         { error: 'Parent non trouvé ou aucun enfant associé' },
         { status: 404 }
@@ -144,7 +147,7 @@ export async function GET(request: NextRequest) {
       email: (rows as any[])[0].parent_email,
       phone: (rows as any[])[0].parent_phone,
       class_level: (rows as any[])[0].parent_class_level,
-      children: (rows as any[]).map(row => ({
+      children: validChildren.map(row => ({
         id: row.student_id,
         full_name: row.student_full_name,
         email: row.student_email,

@@ -64,9 +64,9 @@ const RegisterPage: React.FC = () => {
   ];
 
   const benefits = [
-    { icon: Zap, title: "IA Pédagogique", description: "Apprentissage personnalisé" },
-    { icon: Globe, title: "Cartes Interactives", description: "Exploration immersive" },
-    { icon: Award, title: "Préparation Examens", description: "Succès garanti" },
+    { icon: Globe, title: "Quiz Interactifs", description: "Testez vos connaissances" },
+    { icon: Users, title: "Messagerie", description: "Échangez avec vos enseignants" },
+    { icon: Calendar, title: "Gestion des Séances", description: "Organisez vos cours" },
     { icon: Shield, title: "Sécurité RGPD", description: "Données protégées" }
   ];
 
@@ -137,7 +137,14 @@ const RegisterPage: React.FC = () => {
       } else if (!AVAILABLE_CLASSES.includes(formData.studentClass)) {
         newErrors.studentClass = 'Veuillez sélectionner une classe valide';
       }
-      // Validation optionnelle des données parent
+      // Le téléphone parent est obligatoire pour les étudiants
+      if (!formData.parentPhone || !formData.parentPhone.trim()) {
+        newErrors.parentPhone = 'Le numéro de téléphone du parent est obligatoire';
+      } else if (!/^[0-9+\-\s()]+$/.test(formData.parentPhone)) {
+        newErrors.parentPhone = 'Veuillez entrer un numéro de téléphone valide pour le parent';
+      }
+      
+      // Validation optionnelle des autres données parent
       if (formData.parentEmail && !validateEmail(formData.parentEmail)) {
         newErrors.parentEmail = 'Veuillez entrer une adresse email valide pour le parent';
       }
@@ -191,31 +198,38 @@ const RegisterPage: React.FC = () => {
 
     try {
       // Prepare the data to send to the backend
-      const requestData = {
+      const requestData: any = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
         userType: formData.userType,
-        // Student-specific fields
-        studentBirthDate: formData.userType === 'student' ? formData.studentBirthDate : undefined,
-        studentClass: formData.userType === 'student' ? formData.studentClass : undefined,
-        // Parent-specific fields
-        childFirstName: formData.userType === 'parent' ? formData.childFirstName : undefined,
-        childLastName: formData.userType === 'parent' ? formData.childLastName : undefined,
-        childBirthDate: formData.userType === 'parent' ? formData.childBirthDate : undefined,
-        childClass: formData.userType === 'parent' ? formData.childClass : undefined,
-        childPassword: formData.userType === 'parent' ? formData.childPassword : undefined,
-        childEmail: formData.userType === 'parent' ? formData.childEmail : undefined,
-        childPhone: formData.userType === 'parent' ? formData.childPhone : undefined,
-        // Parent contact fields (for students)
-        parentFirstName: formData.userType === 'student' ? formData.parentFirstName : undefined,
-        parentLastName: formData.userType === 'student' ? formData.parentLastName : undefined,
-        parentEmail: formData.userType === 'student' ? formData.parentEmail : undefined,
-        parentPhone: formData.userType === 'student' ? formData.parentPhone : undefined,
-        parentPassword: formData.userType === 'student' ? formData.parentPassword : undefined,
       };
+
+      // Student-specific fields
+      if (formData.userType === 'student') {
+        if (formData.studentBirthDate) requestData.studentBirthDate = formData.studentBirthDate;
+        if (formData.studentClass) requestData.studentClass = formData.studentClass;
+        
+        // Parent contact fields (only include if not empty)
+        if (formData.parentFirstName?.trim()) requestData.parentFirstName = formData.parentFirstName;
+        if (formData.parentLastName?.trim()) requestData.parentLastName = formData.parentLastName;
+        if (formData.parentEmail?.trim()) requestData.parentEmail = formData.parentEmail;
+        if (formData.parentPhone?.trim()) requestData.parentPhone = formData.parentPhone;
+        if (formData.parentPassword?.trim()) requestData.parentPassword = formData.parentPassword;
+      }
+
+      // Parent-specific fields
+      if (formData.userType === 'parent') {
+        if (formData.childFirstName?.trim()) requestData.childFirstName = formData.childFirstName;
+        if (formData.childLastName?.trim()) requestData.childLastName = formData.childLastName;
+        if (formData.childBirthDate?.trim()) requestData.childBirthDate = formData.childBirthDate;
+        if (formData.childClass?.trim()) requestData.childClass = formData.childClass;
+        if (formData.childPassword?.trim()) requestData.childPassword = formData.childPassword;
+        if (formData.childEmail?.trim()) requestData.childEmail = formData.childEmail;
+        if (formData.childPhone?.trim()) requestData.childPhone = formData.childPhone;
+      }
 
       const response = await fetch('http://192.168.1.11:3001/auth/register', {
         method: 'POST',
@@ -378,16 +392,16 @@ const RegisterPage: React.FC = () => {
               {/* Statistiques */}
               <div className="grid grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-amber-300 mb-1">15,000+</div>
-                  <div className="text-white/60 text-sm">Élèves actifs</div>
+                  <div className="text-2xl font-bold text-amber-300 mb-1">100%</div>
+                  <div className="text-white/60 text-sm">Gratuit</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-amber-300 mb-1">95%</div>
-                  <div className="text-white/60 text-sm">Taux de réussite</div>
+                  <div className="text-2xl font-bold text-amber-300 mb-1">3</div>
+                  <div className="text-white/60 text-sm">Matières</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-amber-300 mb-1">500+</div>
-                  <div className="text-white/60 text-sm">Ressources</div>
+                  <div className="text-2xl font-bold text-amber-300 mb-1">24/7</div>
+                  <div className="text-white/60 text-sm">Disponible</div>
                 </div>
               </div>
             </div>
@@ -776,15 +790,25 @@ const RegisterPage: React.FC = () => {
                 {/* Informations des enfants (pour les parents) */}
                 {formData.userType === 'parent' && (
                   <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <h3 className="text-lg font-semibold text-white mb-2 flex items-center">
                       <Baby className="w-5 h-5 mr-2 text-amber-300" />
                       Informations de l'enfant
+                      <span className="ml-2 text-sm font-normal text-amber-300/80">(Optionnel)</span>
                     </h3>
+                    <p className="text-sm text-white/70 mb-4">
+                      Vous pouvez ajouter les informations de votre enfant maintenant ou plus tard depuis votre profil.
+                    </p>
+                    <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-blue-200">
+                        <strong>💡 Information :</strong> Si vous ne renseignez pas les informations de votre enfant, 
+                        un compte étudiant temporaire sera créé automatiquement. Vous pourrez le personnaliser plus tard.
+                      </p>
+                    </div>
                     
                     {/* Les champs enfant sont déjà dans la section précédente, on les déplace ici */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -806,7 +830,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <input
                             type="text"
@@ -828,7 +852,7 @@ const RegisterPage: React.FC = () => {
                     {/* Email et téléphone de l'enfant */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Email de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Email de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -850,7 +874,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -875,7 +899,7 @@ const RegisterPage: React.FC = () => {
                     {/* Date de naissance et classe de l'enfant */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Date de naissance de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Calendar className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -896,7 +920,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                             <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -934,7 +958,7 @@ const RegisterPage: React.FC = () => {
 
                     {/* Mot de passe de l'enfant */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -967,7 +991,7 @@ const RegisterPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe de l'enfant</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1004,14 +1028,22 @@ const RegisterPage: React.FC = () => {
                 {/* Informations des parents (pour les étudiants) */}
                 {formData.userType === 'student' && (
                   <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <h3 className="text-lg font-semibold text-white mb-2 flex items-center">
                       <User className="w-5 h-5 mr-2 text-amber-300" />
                       Informations des parents
+                      <span className="ml-2 text-sm font-normal text-red-400/80">(Téléphone obligatoire)</span>
                     </h3>
+                    <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-blue-200">
+                        <strong>💡 Information :</strong> Le numéro de téléphone de votre parent est obligatoire. 
+                        Si vous ne renseignez pas les autres informations de vos parents, 
+                        un compte parent temporaire sera créé automatiquement. Vous pourrez le personnaliser plus tard.
+                      </p>
+                    </div>
                     
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom du parent</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom du parent <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <User className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1033,7 +1065,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Nom du parent</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom du parent <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <input
                             type="text"
@@ -1054,7 +1086,7 @@ const RegisterPage: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Email du parent</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Email du parent <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Mail className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1076,7 +1108,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent <span className="text-red-400 text-xs">*</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1089,7 +1121,8 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.parentPhone ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Téléphone du parent (optionnel)"
+                            placeholder="Téléphone du parent (obligatoire)"
+                            required
                           />
                         </div>
                         {errors.parentPhone && (
@@ -1100,7 +1133,7 @@ const RegisterPage: React.FC = () => {
 
                     {/* Mot de passe du parent */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe du parent</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Mot de passe du parent <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1133,7 +1166,7 @@ const RegisterPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe du parent</label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Confirmer le mot de passe du parent <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <Lock className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />

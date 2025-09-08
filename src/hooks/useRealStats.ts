@@ -40,29 +40,62 @@ export const useRealStats = () => {
       const userDetails = localStorage.getItem('userDetails');
       const currentUser = userDetails ? JSON.parse(userDetails) : null;
       const currentUserId = currentUser?.id;
+      const userRole = currentUser?.role;
       
-      // 1. Récupérer tous les étudiants
-      const studentsResponse = await fetch(`${API_BASE}/admin/students`);
       let totalStudents = 0;
-      
-      if (studentsResponse.ok) {
-        const studentsData = await studentsResponse.json();
-        const students = studentsData.items || [];
-        totalStudents = students.length;
-      }
-
-      // 2. Récupérer tous les parents
-      const parentsResponse = await fetch(`${API_BASE}/admin/parents`);
       let totalParents = 0;
+      let totalUsers = 0;
       
-      if (parentsResponse.ok) {
-        const parentsData = await parentsResponse.json();
-        const parents = parentsData.items || [];
-        totalParents = parents.length;
-      }
+      // Récupérer les statistiques selon le rôle de l'utilisateur
+      if (userRole === 'admin') {
+        // Pour les admins, récupérer toutes les données avec authentification
+        const token = localStorage.getItem('token');
+        
+        try {
+          const studentsResponse = await fetch(`${API_BASE}/admin/students`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (studentsResponse.ok) {
+            const studentsData = await studentsResponse.json();
+            const students = studentsData.items || [];
+            totalStudents = students.length;
+            console.log('👨‍🎓 Étudiants trouvés:', totalStudents);
+          } else {
+            console.log('❌ Erreur récupération étudiants:', studentsResponse.status);
+          }
+        } catch (error) {
+          console.log('Erreur récupération étudiants:', error);
+        }
 
-      // 3. Calculer le total des utilisateurs (étudiants + parents)
-      const totalUsers = totalStudents + totalParents;
+        try {
+          const parentsResponse = await fetch(`${API_BASE}/admin/parents`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (parentsResponse.ok) {
+            const parentsData = await parentsResponse.json();
+            const parents = parentsData.items || [];
+            totalParents = parents.length;
+            console.log('👨‍👩‍👧‍👦 Parents trouvés:', totalParents);
+          } else {
+            console.log('❌ Erreur récupération parents:', parentsResponse.status);
+          }
+        } catch (error) {
+          console.log('Erreur récupération parents:', error);
+        }
+        
+        totalUsers = totalStudents + totalParents;
+      } else {
+        // Pour les étudiants et parents, utiliser des valeurs par défaut ou des estimations
+        totalUsers = 1; // Au minimum l'utilisateur connecté
+        totalStudents = userRole === 'student' ? 1 : 0;
+        totalParents = userRole === 'parent' ? 1 : 0;
+      }
 
       // 2. Récupérer tous les quiz
       const quizzesResponse = await fetch(`${API_BASE}/quizzes`);
@@ -82,8 +115,15 @@ export const useRealStats = () => {
       
       if (currentUserId) {
         try {
-          // Récupérer les conversations de l'utilisateur
-          const conversationsResponse = await fetch(`${API_BASE}/messaging/conversations?userId=${currentUserId}`);
+          // Récupérer les conversations de l'utilisateur avec authentification
+          const token = localStorage.getItem('token');
+          const conversationsResponse = await fetch(`${API_BASE}/messaging/conversations?userId=${currentUserId}&userRole=${userRole}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
           if (conversationsResponse.ok) {
             const conversations = await conversationsResponse.json();
             userConversations = conversations.length;
@@ -91,7 +131,13 @@ export const useRealStats = () => {
             // Pour chaque conversation, récupérer les messages non lus
             for (const conversation of conversations) {
               try {
-                const messagesResponse = await fetch(`${API_BASE}/messaging/conversations/${conversation.id}/messages`);
+                const messagesResponse = await fetch(`${API_BASE}/messaging/conversations/${conversation.id}/messages`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+                
                 if (messagesResponse.ok) {
                   const messages = await messagesResponse.json();
                   totalMessages += messages.length;
@@ -106,6 +152,8 @@ export const useRealStats = () => {
                 console.error('Erreur lors de la récupération des messages:', error);
               }
             }
+          } else {
+            console.log('❌ Erreur récupération conversations:', conversationsResponse.status);
           }
         } catch (error) {
           console.error('Erreur lors de la récupération des conversations:', error);
@@ -116,33 +164,36 @@ export const useRealStats = () => {
       let totalAttempts = 0;
       let averageScore = 0;
       
-      if (totalQuizzes > 0) {
-        let totalScore = 0;
-        let scoreCount = 0;
-        
-        for (const quiz of quizzes) {
-          try {
-            const attemptsResponse = await fetch(`${API_BASE}/quizzes/${quiz.id}/attempts`);
-            if (attemptsResponse.ok) {
-              const attempts = await attemptsResponse.json();
-              totalAttempts += attempts.length;
-              
-              attempts.forEach((attempt: any) => {
-                if (attempt.percentage !== undefined) {
-                  totalScore += attempt.percentage;
-                  scoreCount++;
-                }
-              });
+      if (currentUserId) {
+        try {
+          // Récupérer les tentatives de l'utilisateur connecté avec authentification
+          const token = localStorage.getItem('token');
+          const attemptsResponse = await fetch(`${API_BASE}/quizzes/attempts?student_id=${currentUserId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             }
-          } catch (error) {
-            // Ignore les erreurs
+          });
+          
+          if (attemptsResponse.ok) {
+            const attempts = await attemptsResponse.json();
+            totalAttempts = attempts.length;
+            
+            if (attempts.length > 0) {
+              const totalScore = attempts.reduce((sum: number, attempt: any) => {
+                return sum + (attempt.percentage || 0);
+              }, 0);
+              averageScore = totalScore / attempts.length;
+            }
+          } else {
+            console.log('❌ Erreur récupération tentatives:', attemptsResponse.status);
           }
+        } catch (error) {
+          console.log('Erreur récupération tentatives:', error);
         }
-        
-        averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
       }
 
-      setStats({
+      const finalStats = {
         totalUsers,
         totalStudents,
         totalParents,
@@ -153,7 +204,13 @@ export const useRealStats = () => {
         averageScore,
         userConversations,
         userUnreadMessages
-      });
+      };
+      
+      console.log('📊 Statistiques réelles chargées:', finalStats);
+      console.log('👤 Utilisateur connecté:', { id: currentUserId, role: userRole });
+      console.log('🔄 Mise à jour de l\'interface avec les nouvelles données');
+      
+      setStats(finalStats);
       
     } catch (error) {
       setError('Erreur lors du chargement des statistiques');

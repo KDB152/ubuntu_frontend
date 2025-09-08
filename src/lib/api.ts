@@ -93,49 +93,49 @@ export const authAPI = {
 export const adminAPI = {
   // Students management
   getStudents: (params?: { page?: number; limit?: number }) =>
-    apiRequest(`/students?${new URLSearchParams(params as any)}`),
+    apiRequest(`/admin/students?${new URLSearchParams(params as any)}`),
 
   createStudent: (studentData: any) =>
-    apiRequest('/students', {
+    apiRequest('/admin/students', {
       method: 'POST',
       body: JSON.stringify(studentData),
     }),
 
   updateStudent: (id: number, studentData: any) =>
-    apiRequest(`/students/${id}`, {
+    apiRequest(`/admin/students/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(studentData),
     }),
 
   deleteStudent: (id: number) =>
-    apiRequest(`/students/${id}`, {
+    apiRequest(`/admin/students/${id}`, {
       method: 'DELETE',
     }),
 
   // Parents management
   getParents: (params?: { page?: number; limit?: number }) =>
-    apiRequest(`/parents?${new URLSearchParams(params as any)}`),
+    apiRequest(`/admin/parents?${new URLSearchParams(params as any)}`),
 
   createParent: (parentData: any) =>
-    apiRequest('/parents', {
+    apiRequest('/admin/parents', {
       method: 'POST',
       body: JSON.stringify(parentData),
     }),
 
   updateParent: (id: number, parentData: any) =>
-    apiRequest(`/parents/${id}`, {
+    apiRequest(`/admin/parents/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(parentData),
     }),
 
   deleteParent: (id: number) =>
-    apiRequest(`/parents/${id}`, {
+    apiRequest(`/admin/parents/${id}`, {
       method: 'DELETE',
     }),
 
   // User approval
   approveUser: (id: number, approve: boolean) =>
-    apiRequest(`/users/${id}/approve`, {
+    apiRequest(`/admin/users/${id}/approve`, {
       method: 'PATCH',
       body: JSON.stringify({ approve }),
     }),

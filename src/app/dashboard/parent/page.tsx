@@ -11,7 +11,6 @@ import {
   Calendar,
   Users,
   CreditCard,
-  Settings,
   Search,
   RefreshCw,
   Plus,
@@ -31,7 +30,6 @@ import MessagesTab from './MessagesTab';
 import CalendarTab from './CalendarTab';
 import MeetingsTab from './MeetingsTab';
 import PaymentsTab from './PaymentsTab';
-import SettingsTab from './SettingsTab';
 import ParentProfileTab from './ParentProfileTab';
 
 interface Child {
@@ -232,12 +230,6 @@ const ParentDashboard: React.FC = () => {
       label: 'Mon Profil',
       icon: User,
       component: ParentProfileTab
-    },
-    {
-      id: 'settings',
-      label: 'Paramètres',
-      icon: Settings,
-      component: SettingsTab
     }
   ];
 
@@ -331,34 +323,43 @@ const ParentDashboard: React.FC = () => {
 
               {childSelectorOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl border border-white/20 shadow-xl z-50">
-                  {parent.children.map((child) => (
-                    <button
-                      key={child.id}
-                      onClick={() => {
-                        setSelectedChild(child.id);
-                        setChildSelectorOpen(false);
-                      }}
-                      className={`w-full flex items-center space-x-3 p-3 text-left hover:bg-blue-800/50 transition-all first:rounded-t-xl last:rounded-b-xl ${
-                        selectedChild === child.id ? 'bg-blue-500/20 text-blue-300' : 'text-blue-200'
-                      }`}
-                    >
-                      {child.avatar ? (
-                        <img
-                          src={child.avatar}
-                          alt={child.firstName}
-                          className="w-5 h-5 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-semibold">{child.firstName} {child.lastName}</div>
-                        <div className="text-xs text-blue-200">{child.class} - {child.school}</div>
+                  {parent.children.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <User className="w-4 h-4 text-blue-400" />
                       </div>
-                    </button>
-                  ))}
+                      <p className="text-blue-300 text-sm">Aucun enfant trouvé</p>
+                    </div>
+                  ) : (
+                    parent.children.map((child) => (
+                      <button
+                        key={child.id}
+                        onClick={() => {
+                          setSelectedChild(child.id);
+                          setChildSelectorOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-3 p-3 text-left hover:bg-blue-800/50 transition-all first:rounded-t-xl last:rounded-b-xl ${
+                          selectedChild === child.id ? 'bg-blue-500/20 text-blue-300' : 'text-blue-200'
+                        }`}
+                      >
+                        {child.avatar ? (
+                          <img
+                            src={child.avatar}
+                            alt={child.firstName}
+                            className="w-5 h-5 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-semibold">{child.firstName} {child.lastName}</div>
+                          <div className="text-xs text-blue-200">{child.class} - {child.school}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -484,8 +485,7 @@ const ParentDashboard: React.FC = () => {
             onNavigateToMessages={() => setActiveTab('messages')}
             onNavigateToCalendar={() => setActiveTab('calendar')}
             onNavigateToMeetings={() => setActiveTab('meetings')}
-            onNavigateToReports={() => setActiveTab('reports')}
-            onNavigateToSettings={() => setActiveTab('settings')}
+            onNavigateToReports={() => setActiveTab('payments')}
           />
         </div>
       </div>

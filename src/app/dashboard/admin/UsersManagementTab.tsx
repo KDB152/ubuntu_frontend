@@ -1058,7 +1058,14 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                 <h3 className="text-base font-semibold text-white mb-4 flex items-center">
                   <User className="w-5 h-5 mr-2 text-amber-300" />
                   Informations des parents
+                  <span className="ml-2 text-sm font-normal text-red-400/80">(Téléphone obligatoire)</span>
                 </h3>
+                <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-200">
+                    <strong>💡 Information :</strong> Le numéro de téléphone du parent est obligatoire. 
+                    Si les autres informations ne sont pas renseignées, un compte parent temporaire sera créé automatiquement.
+                  </p>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
@@ -1109,7 +1116,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                   </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Téléphone du parent <span className="text-red-400 text-xs">*</span></label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1119,7 +1126,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.parentPhone || ''}
                     onChange={(e) => setFormData((prev: any) => ({ ...prev, parentPhone: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Téléphone du parent (optionnel)"
+                        placeholder="Téléphone du parent (obligatoire)"
+                        required
                       />
                     </div>
                   </div>

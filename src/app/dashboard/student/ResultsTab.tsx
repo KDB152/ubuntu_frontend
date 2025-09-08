@@ -75,7 +75,6 @@ interface QuizResult {
   classAverage?: number;
   improvement?: number;
   badges?: string[];
-  xpEarned: number;
   feedback?: string;
   detailedResults: {
     questionId: string;
@@ -127,7 +126,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
       classAverage: 75,
       improvement: 15,
       badges: ['Révolutionnaire', 'Historien en herbe'],
-      xpEarned: 135,
       feedback: 'Excellent travail ! Vous maîtrisez bien les événements de la Révolution française.',
       detailedResults: [
         {
@@ -186,7 +184,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
       classAverage: 72,
       improvement: 10,
       badges: ['Géographe'],
-      xpEarned: 102,
       feedback: 'Bonne compréhension des climats européens. Travaillez les nuances entre les différents types.',
       detailedResults: []
     },
@@ -851,7 +848,7 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
             <div className="bg-gradient-to-br from-warning-500/15 to-orange-600/15 rounded-2xl p-6 text-center border border-warning-500/25 hover:scale-105 transition-transform duration-300">
               <div className="text-warning-400 text-4xl font-bold mb-2">{stats.bestScore}%</div>
               <div className="text-warning-300 text-sm font-semibold">Meilleur score</div>
-              <div className="text-warning-200/60 text-xs mt-2">Record personnel</div>
+              <div className="text-warning-200/60 text-xs mt-2">Meilleure performance</div>
             </div>
             <div className="bg-gradient-to-br from-purple-500/15 to-violet-600/15 rounded-2xl p-6 text-center border border-purple-500/25 hover:scale-105 transition-transform duration-300">
               <div className="text-purple-400 text-4xl font-bold mb-2">{stats.totalXP}</div>

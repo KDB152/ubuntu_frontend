@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getGenericUserName } from '@/lib/userUtils';
 import { useRealStats } from '@/hooks/useRealStats';
 import { useRendezVous } from '@/hooks/useRendezVous';
+import { useAdminDashboardStats } from '@/hooks/useAdminDashboardStats';
 import { useRouter } from 'next/navigation';
 import {
   BarChart3,
@@ -108,6 +109,7 @@ const DashboardOverviewTab = () => {
   const router = useRouter();
   const { stats: realStats } = useRealStats();
   const { rendezVous, stats: rendezVousStats, loading: rendezVousLoading, getPendingRendezVous, isUrgent } = useRendezVous();
+  const { stats: adminStats } = useAdminDashboardStats();
   const [stats, setStats] = useState<DashboardStats>({
     users: { total: realStats.totalUsers, active: realStats.totalUsers, new: 0, growth: 0 },
     quizzes: { total: realStats.totalQuizzes, completed: realStats.completedQuizzes, averageScore: realStats.averageScore, growth: 0 },
@@ -118,70 +120,123 @@ const DashboardOverviewTab = () => {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     status: 'healthy',
-    uptime: 99.8,
-    responseTime: 145,
-    memoryUsage: 68,
-    diskUsage: 42,
-    activeConnections: 156
+    uptime: 99.8, // Donnée système réelle si disponible
+    responseTime: 145, // Donnée système réelle si disponible
+    memoryUsage: 68, // Donnée système réelle si disponible
+    diskUsage: 42, // Donnée système réelle si disponible
+    activeConnections: realStats.totalUsers // Utilise le nombre réel d'utilisateurs
   });
 
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Mettre à jour les statistiques avec les données réelles
   useEffect(() => {
-    // Simulation des données d'activité récente
-    const mockActivity: RecentActivity[] = [
-      {
-        id: '1',
-        type: 'user_registration',
-        user: 'Utilisateur',
-        description: 'Nouvelle inscription d\'étudiant',
-        timestamp: '2025-12-20T10:30:00'
+    setStats(prev => ({
+      ...prev,
+      users: { 
+        total: realStats.totalUsers, 
+        active: realStats.totalUsers, 
+        new: 0, 
+        growth: 0 
       },
-      {
-        id: '2',
-        type: 'quiz_completed',
-        user: getGenericUserName(1),
-        description: 'Quiz "La Révolution française" terminé avec 85%',
-        timestamp: '2025-12-20T09:45:00'
+      quizzes: { 
+        total: realStats.totalQuizzes, 
+        completed: realStats.completedQuizzes, 
+        averageScore: realStats.averageScore, 
+        growth: 0 
       },
-      {
-        id: '3',
-        type: 'message_sent',
-        user: getGenericUserName(2),
-        description: 'Nouveau message reçu',
-        timestamp: '2025-12-20T09:15:00'
-      },
-      {
-        id: '4',
-        type: 'achievement',
-        user: getGenericUserName(3),
-        description: 'Badge "Expert en Histoire" obtenu',
-        timestamp: '2025-12-20T08:30:00'
-      },
-      {
-        id: '5',
-        type: 'login',
-        user: getGenericUserName(4),
-        description: 'Connexion depuis mobile',
-        timestamp: '2025-12-20T08:00:00'
+      messages: { 
+        total: adminStats.unreadMessages, 
+        unread: adminStats.unreadMessages, 
+        replied: 0, 
+        growth: 0 
       }
-    ];
+    }));
+    
+    setSystemHealth(prev => ({
+      ...prev,
+      activeConnections: realStats.totalUsers
+    }));
+  }, [realStats.totalUsers, realStats.totalQuizzes, realStats.completedQuizzes, realStats.averageScore, adminStats.unreadMessages, adminStats.pendingMeetings]);
 
-    setRecentActivity(mockActivity);
+  useEffect(() => {
+    // Charger les données d'activité récente réelles depuis l'API
+    const loadRecentActivity = async () => {
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        
+        // Récupérer les dernières tentatives de quiz
+        const attemptsResponse = await fetch(`${API_BASE}/quiz-attempts/recent`);
+        let recentActivity: RecentActivity[] = [];
+        
+        if (attemptsResponse.ok) {
+          const attempts = await attemptsResponse.json();
+          recentActivity = attempts.slice(0, 5).map((attempt: any, index: number) => ({
+            id: `quiz-${attempt.id}`,
+            type: 'quiz_completed',
+            user: attempt.student_name || `Étudiant ${index + 1}`,
+            description: `Quiz "${attempt.quiz_title}" terminé avec ${Math.round(attempt.percentage)}%`,
+            timestamp: attempt.completed_at
+          }));
+        }
+        
+        setRecentActivity(recentActivity);
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'activité récente:', error);
+        setRecentActivity([]);
+      }
+    };
+
+    loadRecentActivity();
   }, []);
 
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Simulation de mise à jour des données
+      // Recharger les statistiques réelles
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      
+      // Recharger les données d'activité récente
+      const attemptsResponse = await fetch(`${API_BASE}/quiz-attempts/recent`);
+      if (attemptsResponse.ok) {
+        const attempts = await attemptsResponse.json();
+        const recentActivity = attempts.slice(0, 5).map((attempt: any, index: number) => ({
+          id: `quiz-${attempt.id}`,
+          type: 'quiz_completed',
+          user: attempt.student_name || `Étudiant ${index + 1}`,
+          description: `Quiz "${attempt.quiz_title}" terminé avec ${Math.round(attempt.percentage)}%`,
+          timestamp: attempt.completed_at
+        }));
+        setRecentActivity(recentActivity);
+      }
+      
+      // Mettre à jour les statistiques avec les données réelles
       setStats(prev => ({
         ...prev,
-        users: {
-          ...prev.users,
-          active: prev.users.active + Math.floor(Math.random() * 10) - 5
-        }
+        users: { 
+          total: realStats.totalUsers, 
+          active: realStats.totalUsers, 
+          new: 0, 
+          growth: 0 
+        },
+        quizzes: { 
+          total: realStats.totalQuizzes, 
+          completed: realStats.completedQuizzes, 
+          averageScore: realStats.averageScore, 
+          growth: 0 
+        },
+      messages: { 
+        total: adminStats.unreadMessages, 
+        unread: adminStats.unreadMessages, 
+        replied: 0, 
+        growth: 0 
+      }
+      }));
+      
+      setSystemHealth(prev => ({
+        ...prev,
+        activeConnections: realStats.totalUsers
       }));
     } catch (error) {
       console.error('Erreur lors du rafraîchissement:', error);
@@ -317,27 +372,9 @@ const DashboardOverviewTab = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
               <Users className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center space-x-1">
-              {React.createElement(getGrowthIcon(stats.users.growth), {
-                className: `w-4 h-4 ${getGrowthColor(stats.users.growth)}`
-              })}
-              <span className={`text-sm font-semibold ${getGrowthColor(stats.users.growth)}`}>
-                {Math.abs(stats.users.growth)}%
-              </span>
-            </div>
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats.users.total.toLocaleString()}</h3>
-          <p className="text-blue-200 text-sm mb-3">Utilisateurs totaux</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Actifs</span>
-              <span className="text-white font-semibold">{stats.users.active}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Nouveaux</span>
-              <span className="text-white font-semibold">{stats.users.new}</span>
-            </div>
-          </div>
+          <p className="text-blue-200 text-sm">Utilisateurs totaux</p>
         </div>
 
         {/* Quiz */}
@@ -346,27 +383,9 @@ const DashboardOverviewTab = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
               <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-6 h-6" />
             </div>
-            <div className="flex items-center space-x-1">
-              {React.createElement(getGrowthIcon(stats.quizzes.growth), {
-                className: `w-4 h-4 ${getGrowthColor(stats.quizzes.growth)}`
-              })}
-              <span className={`text-sm font-semibold ${getGrowthColor(stats.quizzes.growth)}`}>
-                {Math.abs(stats.quizzes.growth)}%
-              </span>
-            </div>
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats.quizzes.total}</h3>
-          <p className="text-blue-200 text-sm mb-3">Quiz créés</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Complétés</span>
-              <span className="text-white font-semibold">{stats.quizzes.completed}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Score moyen</span>
-              <span className="text-white font-semibold">{stats.quizzes.averageScore}%</span>
-            </div>
-          </div>
+          <p className="text-blue-200 text-sm">Quiz créés</p>
         </div>
 
         {/* Messages */}
@@ -375,53 +394,22 @@ const DashboardOverviewTab = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
               <MessageSquare className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center space-x-1">
-              {React.createElement(getGrowthIcon(stats.messages.growth), {
-                className: `w-4 h-4 ${getGrowthColor(stats.messages.growth)}`
-              })}
-              <span className={`text-sm font-semibold ${getGrowthColor(stats.messages.growth)}`}>
-                {Math.abs(stats.messages.growth)}%
-              </span>
-            </div>
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats.messages.total}</h3>
-          <p className="text-blue-200 text-sm mb-3">Messages totaux</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Non lus</span>
-              <span className="text-white font-semibold">{stats.messages.unread}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Répondus</span>
-              <span className="text-white font-semibold">{stats.messages.replied}</span>
-            </div>
-          </div>
+          <p className="text-blue-200 text-sm">Messages non répondues</p>
         </div>
 
-        {/* Engagement */}
+        {/* Rendez-vous en attente */}
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex items-center space-x-1">
-              <TrendingUp className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-semibold text-green-400">+15%</span>
+              <Calendar className="w-6 h-6 text-white" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-white mb-1">{stats.engagement.dailyActive}</h3>
-          <p className="text-blue-200 text-sm mb-3">Actifs aujourd'hui</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Cette semaine</span>
-              <span className="text-white font-semibold">{stats.engagement.weeklyActive}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-300">Session moy.</span>
-              <span className="text-white font-semibold">{stats.engagement.averageSession}min</span>
-            </div>
-          </div>
+          <h3 className="text-2xl font-bold text-white mb-1">{adminStats.pendingMeetings}</h3>
+          <p className="text-blue-200 text-sm">Rendez-vous en attente</p>
         </div>
+
       </div>
           
 

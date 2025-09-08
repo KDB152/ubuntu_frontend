@@ -28,6 +28,7 @@ import {
   BookOpen,
   History,
   Globe,
+  X,
   Trophy,
   Medal,
   Crown,
@@ -180,7 +181,6 @@ interface QuizResult {
   strengths: string[];
   weaknesses: string[];
   badges: string[];
-  xpEarned: number;
   attempts: number;
   isImprovement: boolean;
   previousScore?: number;
@@ -259,7 +259,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
           strengths: ['Compréhension'],
           weaknesses: ['À améliorer'],
           badges: [],
-          xpEarned: Math.round(qr.percentage * 0.5) || 0,
           attempts: 1,
           isImprovement: qr.percentage > 60,
           previousScore: undefined
@@ -392,7 +391,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         averageScore: 0,
         totalQuizzes: 0,
         improvements: 0,
-        totalXP: 0,
         totalBadges: 0,
         bestRank: 0
       };
@@ -402,7 +400,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
       acc.averageScore += result.percentage;
       acc.totalQuizzes += 1;
       acc.improvements += result.isImprovement ? 1 : 0;
-      acc.totalXP += result.xpEarned;
       acc.totalBadges += result.badges.length;
       acc.bestRank = Math.min(acc.bestRank || Infinity, result.rank);
       return acc;
@@ -410,7 +407,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
       averageScore: 0,
       totalQuizzes: 0,
       improvements: 0,
-      totalXP: 0,
       totalBadges: 0,
       bestRank: Infinity
     });
@@ -471,8 +467,8 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
             <div className="text-blue-300 text-xs">Temps passé</div>
           </div>
           <div className="text-center">
-            <div className="text-white text-base font-bold">{result.xpEarned}</div>
-            <div className="text-blue-300 text-xs">XP gagnés</div>
+            <div className="text-white text-base font-bold">{result.percentage}%</div>
+            <div className="text-blue-300 text-xs">Score</div>
           </div>
         </div>
 
@@ -593,8 +589,8 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
             <div className="text-blue-300 text-sm">Meilleur rang</div>
           </div>
           <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-base font-bold">{stats.totalXP}</div>
-            <div className="text-blue-300 text-sm">XP total</div>
+            <div className="text-white text-base font-bold">{stats.totalQuizzes}</div>
+            <div className="text-blue-300 text-sm">Quiz total</div>
           </div>
         </div>
       </div>
@@ -816,8 +812,8 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
                       <span className="text-white font-semibold">{selectedResult.attempts}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-blue-200">XP gagnés</span>
-                      <span className="text-yellow-400 font-semibold">{selectedResult.xpEarned}</span>
+                      <span className="text-blue-200">Score obtenu</span>
+                      <span className="text-yellow-400 font-semibold">{selectedResult.percentage}%</span>
                     </div>
                   </div>
                 </div>

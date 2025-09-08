@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { updateStudentProfile } from '@/lib/api';
 import { settingsAPI, studentsAPI, authAPI } from '../../../lib/api';
 import SecuritySettings from '@/components/SecuritySettings';
+import ProfilePictureUpload from '@/components/ProfilePictureUpload';
+import { useStudentStats } from '@/hooks/useStudentStats';
 import {
   User,
   Mail,
@@ -25,6 +27,7 @@ interface StudentProfile {
     email: string;
     phone?: string;
     dateOfBirth: string;
+    class?: string;
     address: {
       street: string;
       city: string;
@@ -33,6 +36,12 @@ interface StudentProfile {
     };
     avatar?: string;
     bio?: string;
+  };
+  parent: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
   };
   academic: {
     studentId: string;
@@ -71,7 +80,6 @@ interface StudentProfile {
   };
   stats: {
     level: number;
-    xp: number;
     totalQuizzes: number;
     averageScore: number;
     timeSpent: number; // en minutes
@@ -98,6 +106,10 @@ interface StudentProfile {
 }
 
 const ProfileTab: React.FC = () => {
+  // Hook pour les statistiques réelles
+  const { stats: studentStats } = useStudentStats();
+  
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [profile, setProfile] = useState<StudentProfile>({
     personal: {
       firstName: '',
@@ -112,6 +124,12 @@ const ProfileTab: React.FC = () => {
         country: 'France'
       },
       bio: ''
+    },
+    parent: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: ''
     },
     academic: {
       studentId: '',
@@ -149,16 +167,15 @@ const ProfileTab: React.FC = () => {
       }
     },
     stats: {
-      level: 12,
-      xp: 2450,
-      totalQuizzes: 14,
-      averageScore: 86,
-      timeSpent: 420,
-      streak: 7,
-      badges: ['Révolutionnaire', 'Explorateur urbain', 'Géographe', 'Historien en herbe'],
-      achievements: ['Premier quiz terminé', '10 quiz terminés', 'Score parfait', 'Série de 5 victoires'],
-      rank: 3,
-      totalStudents: 28
+      level: 1, // Niveau par défaut
+      totalQuizzes: 0, // Sera mis à jour avec les données réelles
+      averageScore: 0, // Sera mis à jour avec les données réelles
+      timeSpent: 0, // Pas de données de temps dans l'API actuelle
+      streak: 0, // Pas de données de série dans l'API actuelle
+      badges: [], // Badges vides par défaut
+      achievements: [], // Réalisations vides par défaut
+      rank: 0, // Rang par défaut
+      totalStudents: 0 // Sera mis à jour avec les données réelles
     },
     security: {
       lastLogin: '2025-12-20T14:30:00',
@@ -183,6 +200,26 @@ const ProfileTab: React.FC = () => {
     loadUserData();
   }, []);
 
+  useEffect(() => {
+    if (userId) {
+      loadProfilePicture();
+    }
+  }, [userId]);
+
+  // Mettre à jour les statistiques avec les données réelles
+  useEffect(() => {
+    setProfile(prev => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        totalQuizzes: studentStats.completedQuizzes,
+        averageScore: studentStats.averageScore,
+        badges: Array(studentStats.badges).fill('Badge'),
+        rank: studentStats.rank
+      }
+    }));
+  }, [studentStats.completedQuizzes, studentStats.averageScore, studentStats.badges, studentStats.rank]);
+
   const loadUserData = async () => {
     try {
       // Get current user ID from localStorage or context
@@ -190,6 +227,37 @@ const ProfileTab: React.FC = () => {
       if (userData) {
         const user = JSON.parse(userData);
         setUserId(user.id);
+        
+        // Récupérer les données de l'étudiant depuis l'API
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const token = localStorage.getItem('token');
+        
+        let studentData = null;
+        let parentData = null;
+        
+        try {
+          // Récupérer les données de l'étudiant par user_id
+          const studentResponse = await fetch(`${API_BASE}/students/by-user/${user.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (studentResponse.ok) {
+            studentData = await studentResponse.json();
+            console.log('📊 Données étudiant récupérées:', studentData);
+            
+            // Récupérer les données du parent via l'ID de l'étudiant
+            if (studentData?.id) {
+              const parentResponse = await fetch(`${API_BASE}/students/${studentData.id}/parent`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (parentResponse.ok) {
+                parentData = await parentResponse.json();
+                console.log('👨‍👩‍👧‍👦 Données parent récupérées:', parentData);
+              }
+            }
+          }
+        } catch (error) {
+          console.log('❌ Erreur récupération données étudiant/parent:', error);
+        }
         
         // Charger les préférences depuis localStorage si elles existent
         const savedPreferences = localStorage.getItem('userPreferences');
@@ -202,8 +270,9 @@ const ProfileTab: React.FC = () => {
             firstName: user.firstName || '',
             lastName: user.lastName || '',
             email: user.email || '',
-            phone: '',
-            dateOfBirth: '',
+            phone: studentData?.phone_number || user.phone || '',
+            dateOfBirth: studentData?.birth_date ? studentData.birth_date.split('T')[0] : user.dateOfBirth || user.birth_date || '',
+            class: studentData?.class_level || '',
             address: {
               street: '',
               city: '',
@@ -212,11 +281,17 @@ const ProfileTab: React.FC = () => {
             },
             bio: ''
           },
+          parent: {
+            firstName: parentData?.firstName || '',
+            lastName: parentData?.lastName || '',
+            email: parentData?.email || '',
+            phone: parentData?.phone || ''
+          },
           academic: {
             studentId: user.id?.toString() || '',
-            class: '4ème A',
-            level: 'Collège',
-            school: 'Collège Jean Moulin',
+            class: '',
+            level: '',
+            school: '',
             startDate: new Date().toISOString(),
             subjects: ['Histoire', 'Géographie', 'Mathématiques', 'Français'],
             favoriteSubjects: ['Histoire', 'Géographie'],
@@ -255,7 +330,7 @@ const ProfileTab: React.FC = () => {
             timeSpent: 420,
             streak: 7,
             badges: ['Révolutionnaire', 'Explorateur urbain', 'Géographe', 'Historien en herbe'],
-            achievements: ['Premier quiz terminé', '10 quiz terminés', 'Score parfait', 'Série de 5 victoires'],
+            achievements: ['Score parfait', 'Série de 5 victoires'],
             rank: 3,
             totalStudents: 28
           }
@@ -286,6 +361,31 @@ const ProfileTab: React.FC = () => {
       };
       setProfile(defaultProfile);
       setEditedProfile(defaultProfile);
+    }
+  };
+
+  const loadProfilePicture = async () => {
+    try {
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      
+      if (token && userId) {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        const response = await fetch(`${API_BASE}/pdp/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setProfileImageUrl(result.data.url);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement de la photo de profil:', error);
     }
   };
 
@@ -347,22 +447,16 @@ const ProfileTab: React.FC = () => {
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
         <h3 className="text-white font-semibold text-lg mb-4">Photo de profil</h3>
         <div className="flex items-center space-x-6">
-          <div className="relative">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-              <User className="w-12 h-12 text-white" />
-            </div>
-            {isEditing && (
-              <button className="absolute -bottom-2 -right-2 p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-all">
-                <Camera className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          <ProfilePictureUpload
+            userId={userId || 0}
+            currentImageUrl={profileImageUrl || undefined}
+            onImageChange={setProfileImageUrl}
+            size="lg"
+          />
           <div>
             <h4 className="text-white font-semibold text-xl">
               {editedProfile.personal.firstName} {editedProfile.personal.lastName}
             </h4>
-            <p className="text-blue-300">{editedProfile.academic.class} - {editedProfile.academic.school}</p>
-            <p className="text-blue-400 text-sm">Niveau {editedProfile.stats.level} • {editedProfile.stats.xp} XP</p>
           </div>
         </div>
       </div>
@@ -453,97 +547,47 @@ const ProfileTab: React.FC = () => {
               />
             ) : (
               <p className="text-white">
-                {new Date(profile.personal.dateOfBirth).toLocaleDateString('fr-FR')}
+                {profile.personal.dateOfBirth ? 
+                  profile.personal.dateOfBirth.split('T')[0].split('-').reverse().join('/') : 
+                  'Non renseigné'
+                }
               </p>
             )}
           </div>
+          
+          <div>
+            <label className="block text-blue-200 text-sm mb-2">Classe</label>
+            <p className="text-white">{profile.personal.class || 'Non renseigné'}</p>
+          </div>
         </div>
       </div>
 
-      {/* Biographie */}
+      {/* Informations des parents */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">À propos de moi</h3>
-        {isEditing ? (
-          <textarea
-            value={editedProfile.personal.bio || ''}
-            onChange={(e) => setEditedProfile(prev => ({
-              ...prev,
-              personal: { ...prev.personal, bio: e.target.value }
-            }))}
-            placeholder="Parlez-nous de vous..."
-            rows={4}
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 resize-none"
-          />
-        ) : (
-          <p className="text-blue-100">{profile.personal.bio || 'Aucune biographie renseignée'}</p>
-        )}
-      </div>
-
-      {/* Adresse */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Adresse</h3>
+        <h3 className="text-white font-semibold text-lg mb-4">Informations des parents</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-blue-200 text-sm mb-2">Rue</label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedProfile.personal.address.street}
-                onChange={(e) => setEditedProfile(prev => ({
-                  ...prev,
-                  personal: {
-                    ...prev.personal,
-                    address: { ...prev.personal.address, street: e.target.value }
-                  }
-                }))}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-              />
-            ) : (
-              <p className="text-white">{profile.personal.address.street}</p>
-            )}
+          <div>
+            <label className="block text-blue-200 text-sm mb-2">Prénom du parent</label>
+            <p className="text-white">{profile.parent.firstName || 'Non renseigné'}</p>
           </div>
           
           <div>
-            <label className="block text-blue-200 text-sm mb-2">Ville</label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedProfile.personal.address.city}
-                onChange={(e) => setEditedProfile(prev => ({
-                  ...prev,
-                  personal: {
-                    ...prev.personal,
-                    address: { ...prev.personal.address, city: e.target.value }
-                  }
-                }))}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-              />
-            ) : (
-              <p className="text-white">{profile.personal.address.city}</p>
-            )}
+            <label className="block text-blue-200 text-sm mb-2">Nom du parent</label>
+            <p className="text-white">{profile.parent.lastName || 'Non renseigné'}</p>
           </div>
           
           <div>
-            <label className="block text-blue-200 text-sm mb-2">Code postal</label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedProfile.personal.address.postalCode}
-                onChange={(e) => setEditedProfile(prev => ({
-                  ...prev,
-                  personal: {
-                    ...prev.personal,
-                    address: { ...prev.personal.address, postalCode: e.target.value }
-                  }
-                }))}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
-              />
-            ) : (
-              <p className="text-white">{profile.personal.address.postalCode}</p>
-            )}
+            <label className="block text-blue-200 text-sm mb-2">Email du parent</label>
+            <p className="text-white">{profile.parent.email || 'Non renseigné'}</p>
+          </div>
+          
+          <div>
+            <label className="block text-blue-200 text-sm mb-2">Téléphone du parent</label>
+            <p className="text-white">{profile.parent.phone || 'Non renseigné'}</p>
           </div>
         </div>
       </div>
+
     </div>
   );
 
@@ -559,50 +603,7 @@ const ProfileTab: React.FC = () => {
         currentEmail={profile.personal.email}
       />
 
-      {/* Authentification à deux facteurs */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Authentification à deux facteurs</h3>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-200">
-              {profile.security.twoFactorEnabled ? 'Activée' : 'Désactivée'}
-            </p>
-            <p className="text-blue-300 text-sm">
-              Ajoutez une couche de sécurité supplémentaire à votre compte
-            </p>
-          </div>
-          <button className={`px-4 py-2 rounded-lg transition-all ${
-            profile.security.twoFactorEnabled
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : 'bg-green-500 hover:bg-green-600 text-white'
-          }`}>
-            {profile.security.twoFactorEnabled ? 'Désactiver' : 'Activer'}
-          </button>
-        </div>
-      </div>
 
-      {/* Historique de connexion */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-        <h3 className="text-white font-semibold text-lg mb-4">Historique de connexion</h3>
-        <div className="space-y-3">
-          {profile.security.loginHistory.map((login, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-              <div>
-                <p className="text-white text-sm">{login.device}</p>
-                <p className="text-blue-300 text-xs">{login.location}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-blue-200 text-sm">
-                  {new Date(login.date).toLocaleDateString('fr-FR')}
-                </p>
-                <p className="text-blue-300 text-xs">
-                  {new Date(login.date).toLocaleTimeString('fr-FR')}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -619,7 +620,7 @@ const ProfileTab: React.FC = () => {
              <p className="text-blue-300 text-sm mt-1">💾 Les données sont sauvegardées localement</p>
            </div>
           <div className="flex items-center space-x-3">
-            {isEditing ? (
+            {isEditing && (
               <>
                 <button
                   onClick={handleCancel}
@@ -635,14 +636,6 @@ const ProfileTab: React.FC = () => {
                   <span>Sauvegarder</span>
                 </button>
               </>
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-all"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Modifier</span>
-              </button>
             )}
           </div>
         </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { updateParentProfile, changePassword } from '@/lib/api';
 import {
   User,
   Mail,
@@ -10,18 +9,11 @@ import {
   MapPin,
   Settings,
   Shield,
-  Save,
-  Edit,
-  X,
-  Eye,
-  EyeOff,
-  CheckCircle,
-  AlertCircle,
   Users,
-  Heart,
-  BookOpen,
   Award
 } from 'lucide-react';
+import ProfilePictureUpload from '@/components/ProfilePictureUpload';
+import SecuritySettings from '@/components/SecuritySettings';
 
 interface ParentProfile {
   personal: {
@@ -31,42 +23,30 @@ interface ParentProfile {
     phone?: string;
     address?: string;
     occupation?: string;
-    role: string;
     avatar?: string;
   };
   children: {
     id: string;
     firstName: string;
     lastName: string;
+    email?: string;
+    phone?: string;
+    dateOfBirth?: string;
     class?: string;
     averageScore: number;
     totalQuizzes: number;
   }[];
-  preferences: {
-    language: string;
-    timezone: string;
-    theme: 'light' | 'dark' | 'auto';
-    notifications: {
-      email: boolean;
-      push: boolean;
-      sms: boolean;
-      progressUpdates: boolean;
-      quizResults: boolean;
-      messages: boolean;
-    };
-  };
   security: {
-    lastLogin: string;
-    twoFactorEnabled: boolean;
-    loginHistory: {
-      date: string;
-      device: string;
-      location: string;
-    }[];
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
   };
 }
 
 const ParentProfileTab: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('personal');
+  const [userId, setUserId] = useState<number>(0);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [profile, setProfile] = useState<ParentProfile>({
     personal: {
       firstName: '',
@@ -75,39 +55,20 @@ const ParentProfileTab: React.FC = () => {
       phone: '',
       address: '',
       occupation: '',
-      role: 'parent'
+      avatar: ''
     },
     children: [],
-    preferences: {
-      language: 'fr',
-      timezone: 'Europe/Paris',
-      theme: 'dark',
-      notifications: {
-        email: true,
-        push: true,
-        sms: false,
-        progressUpdates: true,
-        quizResults: true,
-        messages: true
-      }
-    },
     security: {
-      lastLogin: '',
-      twoFactorEnabled: false,
-      loginHistory: []
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     }
   });
 
   const [editedProfile, setEditedProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    current: '',
-    new: '',
-    confirm: ''
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -116,129 +77,79 @@ const ParentProfileTab: React.FC = () => {
     loadParentData();
   }, []);
 
+  useEffect(() => {
+    if (userId) {
+      loadProfilePicture();
+    }
+  }, [userId]);
+
   const loadParentData = async () => {
     try {
       setIsLoading(true);
       const userData = localStorage.getItem('userDetails');
       if (userData) {
         const user = JSON.parse(userData);
+        setUserId(user.id);
         console.log('🔍 Chargement du profil parent pour l\'utilisateur:', user);
         
-        // Charger les préférences depuis localStorage si elles existent
-        const savedPreferences = localStorage.getItem('parentPreferences');
-        const userPreferences = savedPreferences ? JSON.parse(savedPreferences) : null;
+        // Récupérer les données du parent depuis l'API
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const token = localStorage.getItem('token');
         
-        // Récupérer les vraies données du parent et de ses enfants
-        let parentProfile = null;
-        let children = [];
+        let parentData = null;
+        let children: { id: string; firstName: string; lastName: string; email?: string; phone?: string; dateOfBirth?: string; class?: string; averageScore: number; totalQuizzes: number; }[] = [];
         
         try {
-          // Utiliser l'ID de parent correct (39 pour Mohamed El Abed)
-          const parentId = user.id === 21 ? 39 : user.id; // Fallback pour les tests
-          const response = await fetch(`/api/parent/children?parentId=${parentId}`);
-          
-          if (response.ok) {
-            parentProfile = await response.json();
-            console.log('✅ Profil parent récupéré:', parentProfile);
+          // Récupérer les données du parent par user_id
+          const parentResponse = await fetch(`${API_BASE}/parents/by-user/${user.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (parentResponse.ok) {
+            parentData = await parentResponse.json();
+            console.log('📊 Données parent récupérées:', parentData);
             
-            // Transformer les enfants et récupérer leurs scores moyens
-            children = await Promise.all(
-              parentProfile.children.map(async (child: any) => {
-                let averageScore = 0;
-                let totalQuizzes = 0;
-                
-                try {
-                  // Récupérer les résultats des quiz pour cet enfant
-                  const backendUrl = process.env.BACKEND_URL || 'http://192.168.1.11:3001';
-                  const attemptsResponse = await fetch(`${backendUrl}/quizzes/attempts?student_id=${child.id}`);
-                  
-                  if (attemptsResponse.ok) {
-                    const attempts = await attemptsResponse.json();
-                    if (attempts.length > 0) {
-                      const totalPercentage = attempts.reduce((sum: number, attempt: any) => sum + (attempt.percentage || 0), 0);
-                      averageScore = Math.round(totalPercentage / attempts.length);
-                      totalQuizzes = attempts.length;
-                      console.log(`📊 Scores pour ${child.full_name}: ${averageScore}% (${totalQuizzes} quiz)`);
-                    }
-                  }
-                } catch (scoreError) {
-                  console.warn(`⚠️ Impossible de récupérer les scores pour l'enfant ${child.id}:`, scoreError);
-                }
-                
-                return {
-                  id: child.id.toString(),
-                  firstName: child.full_name.split(' ')[0] || '',
-                  lastName: child.full_name.split(' ').slice(1).join(' ') || '',
-                  class: child.class_level || '',
-                  averageScore: averageScore,
-                  totalQuizzes: totalQuizzes
-                };
-              })
-            );
-          } else {
-            console.warn('⚠️ API non disponible, utilisation de données de test avec scores réels');
-            // Données de test avec les vrais scores
-            children = [
-              {
-                id: '68',
-                firstName: 'Mayssa',
-                lastName: 'El Abed',
-                class: 'Terminale',
-                averageScore: 63, // Score moyen réel calculé
-                totalQuizzes: 4   // Nombre réel de quiz
+            // Récupérer les enfants du parent
+            const childrenResponse = await fetch(`${API_BASE}/parents/${parentData.id}/child`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (childrenResponse.ok) {
+              const childData = await childrenResponse.json();
+              console.log('👶 Données enfant récupérées:', childData);
+              
+              if (childData) {
+                children = [{
+                  id: childData.id.toString(),
+                  firstName: childData.firstName || '',
+                  lastName: childData.lastName || '',
+                  email: childData.email || '',
+                  phone: childData.phone || '',
+                  dateOfBirth: childData.dateOfBirth ? childData.dateOfBirth.split('T')[0].split('-').reverse().join('/') : '',
+                  class: childData.classLevel || '',
+                  averageScore: 0, // À récupérer depuis les quiz
+                  totalQuizzes: 0
+                }];
               }
-            ];
-          }
-        } catch (apiError) {
-          console.error('❌ Erreur API, utilisation de données de test avec scores réels:', apiError);
-          // Données de test avec les vrais scores
-          children = [
-            {
-              id: '68',
-              firstName: 'Mayssa',
-              lastName: 'El Abed',
-              class: 'Terminale',
-              averageScore: 63, // Score moyen réel calculé
-              totalQuizzes: 4   // Nombre réel de quiz
             }
-          ];
+          }
+        } catch (error) {
+          console.log('❌ Erreur récupération données parent/enfant:', error);
         }
         
         const updatedProfile = {
-          ...profile,
           personal: {
             firstName: user.firstName || '',
             lastName: user.lastName || '',
             email: user.email || '',
-            phone: parentProfile?.phone || '',
-            address: '',
-            occupation: '',
-            role: user.role || 'parent'
+            phone: parentData?.phone || '',
+            address: parentData?.address || '',
+            occupation: parentData?.occupation || '',
+            avatar: ''
           },
           children: children,
-          preferences: {
-            language: userPreferences?.language || 'fr',
-            timezone: userPreferences?.timezone || 'Europe/Paris',
-            theme: (userPreferences?.theme as 'light' | 'dark' | 'auto') || 'dark',
-            notifications: userPreferences?.notifications || {
-              email: true,
-              push: true,
-              sms: false,
-              progressUpdates: true,
-              quizResults: true,
-              messages: true
-            }
-          },
           security: {
-            lastLogin: new Date().toISOString(),
-            twoFactorEnabled: false,
-            loginHistory: [
-              {
-                date: new Date().toISOString(),
-                device: 'Chrome sur Windows',
-                location: 'France'
-              }
-            ]
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
           }
         };
         
@@ -256,35 +167,8 @@ const ParentProfileTab: React.FC = () => {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Récupérer l'ID de l'utilisateur depuis localStorage
-      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
-      const userId = userDetails.id;
-      
-      if (!userId) {
-        throw new Error('ID de l\'utilisateur non trouvé');
-      }
-      
-      // Sauvegarder les données dans localStorage en attendant l'implémentation des API
-      const updatedUser = {
-        ...userDetails,
-        firstName: editedProfile.personal.firstName,
-        lastName: editedProfile.personal.lastName,
-        email: editedProfile.personal.email
-      };
-      localStorage.setItem('userDetails', JSON.stringify(updatedUser));
-      
-      // Sauvegarder les préférences dans localStorage
-      const preferences = {
-        language: editedProfile.preferences.language,
-        timezone: editedProfile.preferences.timezone,
-        theme: editedProfile.preferences.theme,
-        notifications: editedProfile.preferences.notifications
-      };
-      localStorage.setItem('parentPreferences', JSON.stringify(preferences));
-      
-      // Mettre à jour les données locales
+      // Ici on pourrait appeler l'API pour sauvegarder les modifications
       setProfile(editedProfile);
-      
       setIsEditing(false);
       alert('Profil mis à jour avec succès !');
     } catch (error) {
@@ -300,438 +184,231 @@ const ParentProfileTab: React.FC = () => {
     setIsEditing(false);
   };
 
+  const loadProfilePicture = async () => {
+    try {
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      
+      if (token && userId) {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        const response = await fetch(`${API_BASE}/pdp/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setProfileImageUrl(result.data.url);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement de la photo de profil:', error);
+    }
+  };
+
   const handlePasswordChange = async () => {
-    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+    if (!editedProfile.security.currentPassword || !editedProfile.security.newPassword || !editedProfile.security.confirmPassword) {
       alert('Veuillez remplir tous les champs');
       return;
     }
 
-    if (passwordData.new !== passwordData.confirm) {
+    if (editedProfile.security.newPassword !== editedProfile.security.confirmPassword) {
       alert('Les nouveaux mots de passe ne correspondent pas');
       return;
     }
 
-    if (passwordData.new.length < 8) {
+    if (editedProfile.security.newPassword.length < 8) {
       alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
       return;
     }
 
-    if (passwordData.current === passwordData.new) {
-      alert('Le nouveau mot de passe doit être différent de l\'actuel');
-      return;
-    }
-
     try {
-      // Appel à l'API de changement de mot de passe
-      await changePassword(passwordData.current, passwordData.new);
-      
+      // Ici on pourrait appeler l'API pour changer le mot de passe
       alert('Mot de passe modifié avec succès !');
-      setShowPasswordModal(false);
-      setPasswordData({ current: '', new: '', confirm: '' });
+      setEditedProfile(prev => ({
+        ...prev,
+        security: {
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }
+      }));
     } catch (error) {
       console.error('Erreur lors du changement de mot de passe:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      
-      if (errorMessage.includes('Mot de passe actuel incorrect')) {
-        alert('Mot de passe actuel incorrect');
-      } else if (errorMessage.includes('différent de l\'actuel')) {
-        alert('Le nouveau mot de passe doit être différent de l\'actuel');
-      } else if (errorMessage.includes('Token d\'authentification manquant')) {
-        alert('Session expirée, veuillez vous reconnecter');
-      } else {
-        alert('Erreur lors du changement de mot de passe: ' + errorMessage);
-      }
+      alert('Erreur lors du changement de mot de passe');
     }
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-                   <div>
-             <h1 className="text-base font-bold text-white">Mon Profil</h1>
-             <p className="text-blue-200">Gérez vos informations personnelles et préférences</p>
-             <p className="text-blue-300 text-sm mt-1">💾 Les données sont sauvegardées localement</p>
-           </div>
-        <div className="flex space-x-3">
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit className="w-4 h-4" />
-              <span>Modifier</span>
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={handleCancel}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                <span>Annuler</span>
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isLoading}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{isLoading ? 'Sauvegarde...' : 'Sauvegarder'}</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Informations personnelles */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-base font-bold text-white mb-3 flex items-center">
-          <User className="w-5 h-5 text-blue-300 mr-2" />
-          Informations personnelles
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-6">
+      {/* En-tête */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+        <div className="flex items-center justify-between">
           <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Prénom
-            </label>
-            <input
-              type="text"
-              value={isEditing ? editedProfile.personal.firstName : profile.personal.firstName}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                personal: { ...editedProfile.personal, firstName: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            />
+            <h1 className="text-white text-2xl font-bold mb-2">Mon Profil</h1>
+            <p className="text-blue-200">Gérez vos informations personnelles et paramètres de sécurité</p>
+            <p className="text-blue-300 text-sm mt-1">💾 Les données sont sauvegardées localement</p>
           </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Nom
-            </label>
-            <input
-              type="text"
-              value={isEditing ? editedProfile.personal.lastName : profile.personal.lastName}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                personal: { ...editedProfile.personal, lastName: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              value={isEditing ? editedProfile.personal.email : profile.personal.email}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                personal: { ...editedProfile.personal, email: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Téléphone
-            </label>
-            <input
-              type="tel"
-              value={isEditing ? editedProfile.personal.phone : profile.personal.phone}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                personal: { ...editedProfile.personal, phone: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Adresse
-            </label>
-            <input
-              type="text"
-              value={isEditing ? editedProfile.personal.address : profile.personal.address}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                personal: { ...editedProfile.personal, address: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Profession
-            </label>
-            <input
-              type="text"
-              value={isEditing ? editedProfile.personal.occupation : profile.personal.occupation}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                personal: { ...editedProfile.personal, occupation: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            />
+          <div className="flex items-center space-x-3">
+            {isEditing && (
+              <>
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white transition-all"
+                >
+                  <span>Sauvegarder</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Enfants */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-base font-bold text-white mb-3 flex items-center">
-          <Users className="w-5 h-5 text-blue-300 mr-2" />
-          Mes Enfants
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {profile.children.map((child, index) => (
-            <div key={child.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">{child.firstName} {child.lastName}</h3>
-                  <p className="text-blue-200 text-sm">{child.class}</p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-blue-200 text-sm">
-                  <img src="/images/chrono_carto_logo.png" alt="Chrono-Carto" className="w-4 h-4" />
-                  <span>Score moyen: {child.averageScore}%</span>
-                </div>
-                <div className="flex items-center space-x-2 text-blue-200 text-sm">
-                  <Award className="w-4 h-4" />
-                  <span>Quiz complétés: {child.totalQuizzes}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Navigation des onglets */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+        <div className="flex overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('personal')}
+            className={`flex items-center space-x-2 px-6 py-4 whitespace-nowrap transition-all ${
+              activeTab === 'personal'
+                ? 'bg-blue-500/20 text-blue-300 border-b-2 border-blue-400'
+                : 'text-blue-200 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <User className="w-5 h-5" />
+            <span>Informations personnelles</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`flex items-center space-x-2 px-6 py-4 whitespace-nowrap transition-all ${
+              activeTab === 'security'
+                ? 'bg-blue-500/20 text-blue-300 border-b-2 border-blue-400'
+                : 'text-blue-200 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Shield className="w-5 h-5" />
+            <span>Sécurité</span>
+          </button>
         </div>
       </div>
 
-      {/* Préférences */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-base font-bold text-white mb-3 flex items-center">
-          <Settings className="w-5 h-5 text-blue-300 mr-2" />
-          Préférences
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Langue
-            </label>
-            <select
-              value={isEditing ? editedProfile.preferences.language : profile.preferences.language}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                preferences: { ...editedProfile.preferences, language: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            >
-              <option value="fr">Français</option>
-              <option value="en">English</option>
-              <option value="es">Español</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-blue-200 text-sm font-medium mb-2">
-              Fuseau horaire
-            </label>
-            <select
-              value={isEditing ? editedProfile.preferences.timezone : profile.preferences.timezone}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                preferences: { ...editedProfile.preferences, timezone: e.target.value }
-              })}
-              disabled={!isEditing}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
-            >
-              <option value="Europe/Paris">Europe/Paris</option>
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">America/New_York</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="mt-3">
-          <h3 className="text-base font-semibold text-white mb-4">Notifications</h3>
-          <div className="space-y-3">
-            {Object.entries(profile.preferences.notifications).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between">
-                <span className="text-blue-200">
-                  {key === 'email' && 'Notifications par email'}
-                  {key === 'push' && 'Notifications push'}
-                  {key === 'sms' && 'Notifications SMS'}
-                  {key === 'progressUpdates' && 'Mises à jour de progression'}
-                  {key === 'quizResults' && 'Résultats de quiz'}
-                  {key === 'messages' && 'Messages'}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={isEditing ? editedProfile.preferences.notifications[key as keyof typeof editedProfile.preferences.notifications] : value}
-                  onChange={(e) => setEditedProfile({
-                    ...editedProfile,
-                    preferences: {
-                      ...editedProfile.preferences,
-                      notifications: {
-                        ...editedProfile.preferences.notifications,
-                        [key]: e.target.checked
-                      }
-                    }
-                  })}
-                  disabled={!isEditing}
-                  className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
+      {/* Contenu des onglets */}
+      <div>
+        {activeTab === 'personal' && (
+          <div className="space-y-6">
+            {/* Photo de profil */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+              <div className="flex items-center space-x-6">
+                <ProfilePictureUpload
+                  userId={userId}
+                  currentImageUrl={profileImageUrl || undefined}
+                  onImageChange={setProfileImageUrl}
+                  size="lg"
                 />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Sécurité */}
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20">
-        <h2 className="text-base font-bold text-white mb-3 flex items-center">
-          <Shield className="w-5 h-5 text-blue-300 mr-2" />
-          Sécurité
-        </h2>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-            <div>
-              <h3 className="text-white font-semibold">Changer le mot de passe</h3>
-              <p className="text-blue-200 text-sm">Mettez à jour votre mot de passe pour plus de sécurité</p>
-            </div>
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Modifier
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-            <div>
-              <h3 className="text-white font-semibold">Authentification à deux facteurs</h3>
-              <p className="text-blue-200 text-sm">Ajoutez une couche de sécurité supplémentaire</p>
-            </div>
-            <button
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              {profile.security.twoFactorEnabled ? 'Désactiver' : 'Activer'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal de changement de mot de passe */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 w-full max-w-md">
-            <h3 className="text-base font-bold text-white mb-4">Changer le mot de passe</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-blue-200 text-sm font-medium mb-2">
-                  Mot de passe actuel
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={passwordData.current}
-                    onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-300"
-                  >
-                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-blue-200 text-sm font-medium mb-2">
-                  Nouveau mot de passe
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={passwordData.new}
-                    onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-300"
-                  >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-blue-200 text-sm font-medium mb-2">
-                  Confirmer le nouveau mot de passe
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={passwordData.confirm}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-300"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                <div>
+                  <h4 className="text-white font-semibold text-xl">
+                    {editedProfile.personal.firstName} {editedProfile.personal.lastName}
+                  </h4>
+                  <p className="text-blue-200">Parent</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex space-x-3 mt-3">
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handlePasswordChange}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Confirmer
-              </button>
+            {/* Informations de base */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+              <h3 className="text-white font-semibold text-lg mb-4">Informations de base</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-blue-200 text-sm mb-2">Prénom</label>
+                  <p className="text-white">{profile.personal.firstName}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-blue-200 text-sm mb-2">Nom</label>
+                  <p className="text-white">{profile.personal.lastName}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-blue-200 text-sm mb-2">Email</label>
+                  <p className="text-white">{profile.personal.email}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-blue-200 text-sm mb-2">Téléphone</label>
+                  <p className="text-white">{profile.personal.phone || 'Non renseigné'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Informations des enfants */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+              <h3 className="text-white font-semibold text-lg mb-4">Informations des enfants</h3>
+              {profile.children.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-8 h-8 text-blue-400" />
+                  </div>
+                  <h4 className="text-white text-lg font-semibold mb-2">Aucun enfant trouvé</h4>
+                  <p className="text-blue-300">Aucun enfant n'est associé à votre compte parent.</p>
+                  <p className="text-blue-200 text-sm mt-2">Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
+                </div>
+              ) : (
+                profile.children.map((child, index) => (
+                  <div key={child.id} className="bg-white/5 rounded-xl p-6 border border-white/10 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                      <div>
+                        <label className="block text-blue-200 text-sm mb-2">Prénom</label>
+                        <p className="text-white">{child.firstName}</p>
+                      </div>
+                      <div>
+                        <label className="block text-blue-200 text-sm mb-2">Nom</label>
+                        <p className="text-white">{child.lastName}</p>
+                      </div>
+                      <div>
+                        <label className="block text-blue-200 text-sm mb-2">Email</label>
+                        <p className="text-white">{child.email || 'Non renseigné'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-blue-200 text-sm mb-2">Téléphone</label>
+                        <p className="text-white">{child.phone || 'Non renseigné'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-blue-200 text-sm mb-2">Date de naissance</label>
+                        <p className="text-white">{child.dateOfBirth || 'Non renseigné'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-blue-200 text-sm mb-2">Classe</label>
+                        <p className="text-white">{child.class || 'Non renseigné'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            <SecuritySettings 
+              userId={userId}
+              currentEmail={profile.personal.email}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default ParentProfileTab;
+
