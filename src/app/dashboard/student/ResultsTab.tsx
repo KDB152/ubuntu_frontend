@@ -61,18 +61,13 @@ interface QuizResult {
   quizId: string;
   quizTitle: string;
   subject: 'history' | 'geography' | 'both';
-  difficulty: 'easy' | 'medium' | 'hard';
   completedAt: string;
   duration: number;
-  score: number;
-  maxScore: number;
   percentage: number;
   questionsCorrect: number;
   questionsTotal: number;
   timeSpent: number;
   attempts: number;
-  rank?: number;
-  classAverage?: number;
   improvement?: number;
   badges?: string[];
   feedback?: string;
@@ -82,8 +77,6 @@ interface QuizResult {
     userAnswer: any;
     correctAnswer: any;
     isCorrect: boolean;
-    points: number;
-    maxPoints: number;
     timeSpent: number;
     explanation?: string;
     difficulty: string;
@@ -112,18 +105,14 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
       quizId: 'quiz-1',
       quizTitle: 'La Révolution française',
       subject: 'history' as const,
-      difficulty: 'medium' as const,
       completedAt: '2025-12-20T10:30:00',
       duration: 1200,
-      score: 135,
-      maxScore: 150,
       percentage: 90,
       questionsCorrect: 7,
       questionsTotal: 8,
       timeSpent: 1200,
       attempts: 1,
       rank: 3,
-      classAverage: 75,
       improvement: 15,
       badges: ['Révolutionnaire', 'Historien en herbe'],
       feedback: 'Excellent travail ! Vous maîtrisez bien les événements de la Révolution française.',
@@ -134,11 +123,8 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
           userAnswer: '1789',
           correctAnswer: '1789',
           isCorrect: true,
-          points: 10,
-          maxPoints: 10,
           timeSpent: 45,
           explanation: 'La Révolution française a commencé en 1789 avec la convocation des États généraux.',
-          difficulty: 'easy'
         },
         {
           questionId: 'q2',
@@ -146,11 +132,8 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
           userAnswer: true,
           correctAnswer: true,
           isCorrect: true,
-          points: 8,
-          maxPoints: 8,
           timeSpent: 30,
           explanation: 'La Déclaration a été adoptée le 26 août 1789.',
-          difficulty: 'easy'
         },
         {
           questionId: 'q3',
@@ -158,10 +141,7 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
           userAnswer: 'Louis XVI',
           correctAnswer: 'Louis XVI',
           isCorrect: true,
-          points: 10,
-          maxPoints: 10,
           timeSpent: 60,
-          difficulty: 'medium'
         }
       ]
     },
@@ -170,18 +150,14 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
       quizId: 'quiz-2',
       quizTitle: 'Les climats européens',
       subject: 'geography' as const,
-      difficulty: 'easy' as const,
       completedAt: '2025-12-19T14:15:00',
       duration: 900,
-      score: 102,
-      maxScore: 120,
       percentage: 85,
       questionsCorrect: 10,
       questionsTotal: 12,
       timeSpent: 900,
       attempts: 2,
       rank: 5,
-      classAverage: 72,
       improvement: 10,
       badges: ['Géographe'],
       feedback: 'Bonne compréhension des climats européens. Travaillez les nuances entre les différents types.',
@@ -192,18 +168,14 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
       quizId: 'quiz-4',
       quizTitle: 'Les grandes villes mondiales',
       subject: 'geography' as const,
-      difficulty: 'medium' as const,
       completedAt: '2025-12-18T16:45:00',
       duration: 1500,
-      score: 165,
-      maxScore: 180,
       percentage: 92,
       questionsCorrect: 16,
       questionsTotal: 18,
       timeSpent: 1500,
       attempts: 1,
       rank: 1,
-      classAverage: 81,
       improvement: 0,
       badges: ['Explorateur urbain', 'Champion'],
       xpEarned: 165,
@@ -215,18 +187,14 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
       quizId: 'quiz-3',
       quizTitle: 'L\'Empire de Napoléon',
       subject: 'history' as const,
-      difficulty: 'hard' as const,
       completedAt: '2025-12-17T11:20:00',
       duration: 1800,
-      score: 140,
-      maxScore: 200,
       percentage: 70,
       questionsCorrect: 14,
       questionsTotal: 20,
       timeSpent: 1800,
       attempts: 1,
       rank: 8,
-      classAverage: 65,
       improvement: 5,
       badges: ['Stratège'],
       xpEarned: 140,
@@ -270,15 +238,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
     return colors[subject as keyof typeof colors] || colors.default;
   }, []);
 
-  const getDifficultyColor = useCallback((difficulty: string) => {
-    const colors = {
-      easy: 'text-success-400 bg-success-500/15 border-success-500/25',
-      medium: 'text-warning-400 bg-warning-500/15 border-warning-500/25',
-      hard: 'text-danger-400 bg-danger-500/15 border-danger-500/25',
-      default: 'text-neutral-400 bg-neutral-500/15 border-neutral-500/25'
-    };
-    return colors[difficulty as keyof typeof colors] || colors.default;
-  }, []);
 
   const getScoreColor = useCallback((percentage: number) => {
     if (percentage >= 90) return 'text-success-400';
@@ -323,10 +282,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
         break;
       case 'title':
         filtered.sort((a, b) => a.quizTitle.localeCompare(b.quizTitle, 'fr'));
-        break;
-      case 'difficulty':
-        const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
-        filtered.sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
         break;
     }
 
@@ -472,15 +427,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
               <div className={`text-4xl font-bold ${getScoreColor(result.percentage)} drop-shadow-lg`}>
                 {result.percentage}%
               </div>
-              <div className="text-white/95 text-sm font-semibold mt-1">
-                {result.score}/{result.maxScore} pts
-              </div>
-              {result.rank && (
-                <div className="text-white/90 text-xs flex items-center justify-end mt-2 bg-white/20 px-2 py-1 rounded-full">
-                  <Trophy className="w-3 h-3 mr-1" />
-                  #{result.rank}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -531,50 +477,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
             </div>
           )}
 
-          {/* Comparaison avec la classe améliorée */}
-          {result.classAverage && (
-            <div className="bg-surface/40 rounded-2xl p-6 mb-6 border border-surface-light/20">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-text-primary text-sm font-semibold flex items-center">
-                  <Users className="w-5 h-5 mr-3 text-primary-400" />
-                  Comparaison avec la classe
-                </span>
-                <span className={`text-sm font-bold px-3 py-1.5 rounded-full ${
-                  result.percentage > result.classAverage 
-                    ? 'text-success-300 bg-success-500/15 border border-success-500/25' 
-                    : 'text-warning-300 bg-warning-500/15 border border-warning-500/25'
-                }`}>
-                  {result.percentage > result.classAverage ? '+' : ''}{result.percentage - result.classAverage}%
-                </span>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-primary-300 font-medium">Vous</span>
-                  <span className="text-text-primary font-bold">{result.percentage}%</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-1 bg-surface/60 rounded-full h-3 overflow-hidden">
-                    <div 
-                      className="bg-gradient-to-r from-primary-400 to-primary-600 h-3 rounded-full transition-all duration-700 shadow-sm"
-                      style={{ width: `${result.percentage}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-primary-300 font-medium">Moyenne classe</span>
-                  <span className="text-text-secondary font-semibold">{result.classAverage}%</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-1 bg-surface/60 rounded-full h-2.5 overflow-hidden">
-                    <div 
-                      className="bg-gradient-to-r from-neutral-400 to-neutral-500 h-2.5 rounded-full"
-                      style={{ width: `${result.classAverage}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Feedback amélioré */}
           {result.feedback && (
@@ -594,9 +496,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
           {/* Actions améliorées */}
           <div className="flex items-center justify-between pt-4 border-t border-surface-light/25">
             <div className="flex items-center space-x-3">
-              <span className={`text-sm px-4 py-2 rounded-full font-semibold border ${getDifficultyColor(result.difficulty)}`}>
-                {result.difficulty === 'easy' ? '🟢 Facile' : result.difficulty === 'medium' ? '🟡 Moyen' : '🔴 Difficile'}
-              </span>
             </div>
 
             <div className="flex items-center space-x-3">
@@ -635,9 +534,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
                           <span className="bg-primary-500/20 text-primary-300 text-sm px-3 py-1.5 rounded-full font-semibold border border-primary-500/25">
                             Q{index + 1}
                           </span>
-                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${getDifficultyColor(detail.difficulty)}`}>
-                            {detail.difficulty}
-                          </span>
                         </div>
                         <h5 className="text-text-primary font-semibold text-base mb-4 leading-relaxed">
                           {detail.question}
@@ -675,9 +571,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
                             <CheckCircle className="w-6 h-6" /> : 
                             <XCircle className="w-6 h-6" />
                           }
-                          <span className="text-base font-bold">
-                            {detail.points}/{detail.maxPoints}
-                          </span>
                         </div>
                         <div className="text-primary-300 text-sm mt-3 flex items-center font-medium">
                           <Clock className="w-4 h-4 mr-2" />
@@ -971,10 +864,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
                   onChange={handleDifficultyChange}
                   className="w-full px-5 py-4 bg-surface/60 border border-surface-light/30 rounded-xl text-text-primary focus:ring-2 focus:ring-primary-400 backdrop-blur-sm text-base"
                 >
-                  <option value="all">⚡ Toutes les difficultés</option>
-                  <option value="easy">🟢 Facile</option>
-                  <option value="medium">🟡 Moyen</option>
-                  <option value="hard">🔴 Difficile</option>
                 </select>
               </div>
 
@@ -999,11 +888,6 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
               {selectedSubject !== 'all' && (
                 <span className="bg-primary-500/15 text-primary-300 px-3 py-2 rounded-full text-sm border border-primary-500/25 font-medium">
                   {selectedSubject === 'history' ? 'Histoire' : selectedSubject === 'geography' ? 'Géographie' : 'Histoire-Géographie'}
-                </span>
-              )}
-              {selectedDifficulty !== 'all' && (
-                <span className="bg-warning-500/15 text-warning-300 px-3 py-2 rounded-full text-sm border border-warning-500/25 font-medium">
-                  {selectedDifficulty === 'easy' ? 'Facile' : selectedDifficulty === 'medium' ? 'Moyen' : 'Difficile'}
                 </span>
               )}
               {searchQuery && (

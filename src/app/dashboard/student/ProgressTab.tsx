@@ -89,7 +89,7 @@ interface Student {
 }
 
 interface ProgressData {
-  subject: 'history' | 'geography' | 'both';
+  subject: 'history' | 'geography' | 'emc' | 'both';
   period: string;
   scores: number[];
   dates: string[];
@@ -285,7 +285,7 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
   const [progressData, setProgressData] = useState<ProgressData[]>([]);
   const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'trimester' | 'year'>('month');
-  const [selectedSubject, setSelectedSubject] = useState<'all' | 'history' | 'geography'>('all');
+  const [selectedSubject, setSelectedSubject] = useState<'all' | 'history' | 'geography' | 'emc'>('all');
   const [showDetails, setShowDetails] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -411,7 +411,9 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
         const averageScore = scores.length > 0 ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
         
         return {
-          subject: subject.toLowerCase() === 'histoire' ? 'history' : subject.toLowerCase() === 'géographie' ? 'geography' : 'both',
+          subject: subject.toLowerCase() === 'histoire' ? 'history' : 
+                  subject.toLowerCase() === 'géographie' ? 'geography' : 
+                  subject.toLowerCase() === 'emc' ? 'emc' : 'both',
           period: 'recent',
           scores,
           dates,
@@ -427,17 +429,19 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
       setProgressData(progressDataArray as ProgressData[]);
       
       const subjectProgressData: SubjectProgress[] = progressDataArray.map((data: any) => ({
-        subject: data.subject === 'history' ? 'Histoire' : 'Géographie',
+        subject: data.subject === 'history' ? 'Histoire' : 
+                data.subject === 'geography' ? 'Géographie' : 
+                data.subject === 'emc' ? 'EMC' : 'Mixte',
         currentLevel: Math.min(20, Math.max(1, Math.floor(data.averageScore / 5))),
         maxLevel: 20,
         progress: Math.min(100, Math.max(0, data.averageScore)),
         recentScores: data.scores,
         trend: data.improvement > 5 ? 'up' : data.improvement < -5 ? 'down' : 'stable',
         nextMilestone: data.improvement > 5 
-          ? `Continuer la progression en ${data.subject}`
+          ? `Continuer la progression en ${data.subject === 'history' ? 'Histoire' : data.subject === 'geography' ? 'Géographie' : data.subject === 'emc' ? 'EMC' : 'cette matière'}`
           : data.improvement < -5
-          ? `Améliorer les performances en ${data.subject}`
-          : `Maintenir le niveau en ${data.subject}`
+          ? `Améliorer les performances en ${data.subject === 'history' ? 'Histoire' : data.subject === 'geography' ? 'Géographie' : data.subject === 'emc' ? 'EMC' : 'cette matière'}`
+          : `Maintenir le niveau en ${data.subject === 'history' ? 'Histoire' : data.subject === 'geography' ? 'Géographie' : data.subject === 'emc' ? 'EMC' : 'cette matière'}`
       }));
       
       setSubjectProgress(subjectProgressData);
@@ -521,7 +525,7 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
               <option value="all">Toutes matières</option>
               <option value="history">Histoire</option>
               <option value="geography">Géographie</option>
-              <option value="geography">EMC</option>
+              <option value="emc">EMC</option>
             </select>
           </div>
         </div>
@@ -573,17 +577,21 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
                     <div className="flex items-center space-x-4">
                       <div className={`p-4 rounded-2xl ${data.subject === 'history' 
                         ? 'bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-400/30' 
-                        : 'bg-gradient-to-br from-green-400/20 to-emerald-500/20 border border-green-400/30'
+                        : data.subject === 'geography'
+                        ? 'bg-gradient-to-br from-green-400/20 to-emerald-500/20 border border-green-400/30'
+                        : 'bg-gradient-to-br from-purple-400/20 to-violet-500/20 border border-purple-400/30'
                       }`}>
                   {data.subject === 'history' ? (
                           <History className="w-8 h-8 text-amber-400" />
-                        ) : (
+                        ) : data.subject === 'geography' ? (
                           <Globe className="w-8 h-8 text-green-400" />
+                        ) : (
+                          <Brain className="w-8 h-8 text-purple-400" />
                         )}
                       </div>
                       <div>
                         <h3 className="text-white font-bold text-2xl capitalize">
-                          {data.subject === 'history' ? 'Histoire' : 'Géographie'}
+                          {data.subject === 'history' ? 'Histoire' : data.subject === 'geography' ? 'Géographie' : 'EMC'}
                         </h3>
                         <p className="text-blue-300 text-sm">{data.totalQuizzes} quiz terminé{data.totalQuizzes > 1 ? 's' : ''}</p>
                       </div>
@@ -730,7 +738,7 @@ const ProgressTab: React.FC<ProgressTabProps> = ({ student, searchQuery }) => {
                              'À améliorer'}
                 </div>
                           <div className="text-blue-300 text-sm">
-                            Performance globale en {data.subject === 'history' ? 'Histoire' : 'Géographie'}
+                            Performance globale en {data.subject === 'history' ? 'Histoire' : data.subject === 'geography' ? 'Géographie' : 'EMC'}
                   </div>
                   </div>
                 </div>

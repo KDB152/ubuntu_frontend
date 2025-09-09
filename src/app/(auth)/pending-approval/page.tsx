@@ -210,7 +210,6 @@ export default function PendingApprovalPage() {
           </h3>
           <ul className="text-blue-200 text-sm space-y-1">
             <li>• Un administrateur va examiner votre compte</li>
-            <li>• Vous recevrez une notification par email</li>
             <li>• Vérifiez régulièrement votre statut</li>
             <li>• Contactez l'administrateur si nécessaire</li>
           </ul>

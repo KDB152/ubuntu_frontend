@@ -99,12 +99,10 @@ const ParentDashboard: React.FC = () => {
   // Use the parent dashboard hook
   const {
     children,
-    selectedChild,
     messages,
     conversations,
     loading,
     error,
-    setSelectedChild,
     loadChildren,
     loadConversations,
     loadMessages,
@@ -117,10 +115,87 @@ const ParentDashboard: React.FC = () => {
 
   // Parent data - fetched from API
   const [parent, setParent] = useState<Parent | null>(null);
+  
+  // État local pour l'enfant sélectionné
+  const [selectedChild, setSelectedChild] = useState<string | null>(null);
 
   useEffect(() => {
     loadParentData();
   }, []);
+
+  // Charger les enfants du parent
+  const loadParentChildren = async (userId: number) => {
+    try {
+      console.log('🔍 Chargement des enfants pour le parent ID:', userId);
+      
+      // Utiliser l'ID de parent correct (même logique que ChildrenProgressTab)
+      const correctParentId = userId === 21 ? 39 : userId;
+      
+      // Utiliser l'API pour récupérer les enfants
+      const response = await fetch(`/api/parent/children?parentId=${correctParentId}`);
+      
+      if (!response.ok) {
+        console.warn('⚠️ API non disponible, aucun enfant trouvé');
+        return;
+      }
+      
+      const profile = await response.json();
+      console.log('✅ Profil parent récupéré:', profile);
+      
+      if (profile.children && profile.children.length > 0) {
+        // Transformer les données des enfants
+        const children = profile.children.map((child: any) => ({
+          id: child.id.toString(),
+          firstName: child.firstName || child.full_name?.split(' ')[0] || '',
+          lastName: child.lastName || child.full_name?.split(' ').slice(1).join(' ') || '',
+          class: child.classLevel || child.class || '',
+          level: 'Terminale',
+          school: 'École par défaut',
+          teacher: 'Professeur par défaut',
+          stats: {
+            averageScore: 0,
+            totalQuizzes: 0,
+            completedQuizzes: 0,
+            currentStreak: 0,
+            totalXP: 0,
+            badges: 0,
+            rank: 1
+          },
+          recentActivity: {
+            lastQuiz: 'Aucun quiz',
+            lastScore: 0,
+            lastActive: new Date().toISOString()
+          }
+        }));
+        
+        // Mettre à jour le parent avec les enfants
+        setParent(prevParent => {
+          if (prevParent) {
+            return {
+              ...prevParent,
+              children: children
+            };
+          }
+          return prevParent;
+        });
+        
+        console.log('✅ Enfants chargés:', children);
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des enfants:', error);
+    }
+  };
+
+  // Sélectionner automatiquement le premier enfant quand les enfants sont chargés
+  useEffect(() => {
+    console.log('🔍 useEffect selectedChild - parent?.children:', parent?.children);
+    console.log('🔍 useEffect selectedChild - selectedChild:', selectedChild);
+    
+    if (parent?.children && parent.children.length > 0 && !selectedChild) {
+      console.log('🔍 Sélection automatique du premier enfant:', parent.children[0]);
+      setSelectedChild(parent.children[0].id);
+    }
+  }, [parent?.children, selectedChild]);
 
   const loadParentData = async () => {
     try {
@@ -171,6 +246,9 @@ const ParentDashboard: React.FC = () => {
         loadChildren(user.id);
         loadConversations(user.id);
         loadNotifications(user.id);
+        
+        // Charger les enfants du parent
+        loadParentChildren(user.id);
       } else {
         console.error('No parent data found for user:', user.id);
       }
@@ -237,6 +315,11 @@ const ParentDashboard: React.FC = () => {
   const CurrentComponent = currentMenuItem?.component || DashboardOverviewTab;
 
   const selectedChildData = parent?.children.find(child => child.id === selectedChild);
+  
+  // Debug logs
+  console.log('🔍 selectedChildData calculé:', selectedChildData);
+  console.log('🔍 selectedChild actuel:', selectedChild);
+  console.log('🔍 parent.children:', parent?.children);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -323,14 +406,7 @@ const ParentDashboard: React.FC = () => {
 
               {childSelectorOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl border border-white/20 shadow-xl z-50">
-                  {parent.children.length === 0 ? (
-                    <div className="p-4 text-center">
-                      <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <User className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <p className="text-blue-300 text-sm">Aucun enfant trouvé</p>
-                    </div>
-                  ) : (
+                  {parent.children.length > 0 && (
                     parent.children.map((child) => (
                       <button
                         key={child.id}

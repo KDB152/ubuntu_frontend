@@ -170,13 +170,9 @@ interface QuizResult {
   maxScore: number;
   percentage: number;
   completedAt: string;
-  timeSpent: number; // en minutes
-  difficulty: 'easy' | 'medium' | 'hard';
   questionsTotal: number;
   questionsCorrect: number;
   questionsIncorrect: number;
-  rank: number;
-  classAverage: number;
   teacherComment?: string;
   strengths: string[];
   weaknesses: string[];
@@ -197,6 +193,9 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
   parent,
   searchQuery
 }) => {
+  // Debug logs
+  console.log('🔍 QuizResultsTab - selectedChild reçu:', selectedChild);
+  console.log('🔍 QuizResultsTab - parent reçu:', parent);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [selectedResult, setSelectedResult] = useState<QuizResult | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
@@ -221,53 +220,64 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         }
         
         const user = JSON.parse(userData);
+        console.log('🔍 QuizResultsTab - selectedChild:', selectedChild);
+        console.log('🔍 QuizResultsTab - user.id:', user.id);
         
-        // Toujours charger tous les quiz du parent par défaut
-        let apiUrl = `/api/quiz-results?parentUserId=${user.id}`;
-        
-        // Si un enfant spécifique est sélectionné ET différent de 'all', filtrer pour cet enfant
+        // Si un enfant spécifique est sélectionné, charger ses résultats
         if (selectedChild?.id && selectedChild.id !== 'all' && selectedChild.id !== undefined) {
-          apiUrl = `/api/quiz-results?studentId=${selectedChild.id}`;
+          console.log('🔍 Chargement des résultats pour l\'enfant:', selectedChild.id);
+          
+          // Utiliser l'API frontend pour récupérer les résultats
+          const response = await fetch(`/api/quiz-results?studentId=${selectedChild.id}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Résultats récupérés:', data);
+            
+            // Transformer les résultats de quiz pour correspondre à l'interface
+            const transformedResults: QuizResult[] = data.quizResults.map((qr: any) => {
+              // Utiliser les données calculées par l'API
+              const questionsTotal = qr.questions_total || 2;
+              const questionsCorrect = qr.questions_correct || 0;
+              const questionsIncorrect = questionsTotal - questionsCorrect;
+              
+              return {
+                id: qr.id,
+                childId: qr.student_id.toString(),
+                quizTitle: qr.quiz_title,
+                subject: qr.subject === 'Histoire' ? 'history' : qr.subject === 'Géographie' ? 'geography' : 'both',
+                score: qr.score,
+                maxScore: qr.total_points,
+                percentage: qr.percentage,
+                completedAt: qr.completed_at,
+                questionsTotal: questionsTotal,
+                questionsCorrect: questionsCorrect,
+                questionsIncorrect: questionsIncorrect,
+                teacherComment: undefined,
+                strengths: ['Compréhension'],
+                weaknesses: ['À améliorer'],
+                badges: [],
+                attempts: 1,
+                isImprovement: qr.percentage > 60,
+                previousScore: undefined
+              };
+            });
+            
+            setResults(transformedResults);
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn('⚠️ Erreur lors du chargement des résultats:', response.status, errorData);
+            setResults([]);
+          }
+        } else {
+          // Aucun enfant sélectionné, ne pas charger de résultats
+          console.log('🔍 Aucun enfant sélectionné, pas de résultats à charger');
+          setResults([]);
         }
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-          throw new Error('Erreur lors du chargement des résultats de quiz');
-        }
-        
-        const data = await response.json();
-        
-        // Transformer les résultats de quiz pour correspondre à l'interface
-        const transformedResults: QuizResult[] = data.quizResults.map((qr: any) => ({
-          id: qr.id,
-          childId: qr.student_id.toString(),
-          quizTitle: qr.quiz_title,
-          subject: qr.subject === 'Histoire' ? 'history' : qr.subject === 'Géographie' ? 'geography' : 'both',
-          score: qr.score,
-          maxScore: qr.total_points,
-          percentage: qr.percentage,
-          completedAt: qr.completed_at,
-          timeSpent: Math.round(qr.time_spent / 60) || 1, // Convertir secondes en minutes
-          difficulty: 'medium', // Valeur par défaut
-          questionsTotal: qr.total_points || 10,
-          questionsCorrect: qr.score || 0,
-          questionsIncorrect: (qr.total_points || 10) - (qr.score || 0),
-          rank: 1, // À calculer
-          classAverage: 75, // À récupérer depuis la base
-          teacherComment: undefined,
-          strengths: ['Compréhension'],
-          weaknesses: ['À améliorer'],
-          badges: [],
-          attempts: 1,
-          isImprovement: qr.percentage > 60,
-          previousScore: undefined
-        }));
-        
-        setResults(transformedResults);
         
       } catch (error) {
         console.error('Erreur lors du chargement des données enfant:', error);
+        setResults([]);
       } finally {
         setLoading(false);
       }
@@ -295,14 +305,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
     }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'text-green-400 bg-green-500/20';
-      case 'medium': return 'text-yellow-400 bg-yellow-500/20';
-      case 'hard': return 'text-red-400 bg-red-500/20';
-      default: return 'text-gray-400 bg-gray-500/20';
-    }
-  };
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-400';
@@ -318,12 +320,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
     return 'from-red-500 to-pink-600';
   };
 
-  const getRankColor = (rank: number) => {
-    if (rank === 1) return 'text-yellow-400';
-    if (rank <= 3) return 'text-blue-400';
-    if (rank <= 5) return 'text-green-400';
-    return 'text-gray-400';
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -335,12 +331,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
     });
   };
 
-  const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}min`;
-  };
 
   const getChildName = (childId: string) => {
     // Essayer d'abord avec les données parent
@@ -351,11 +341,9 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
       }
     }
     
-    // Sinon, utiliser les données des quiz (qui contiennent student_name)
-    const result = results.find(r => r.childId === childId);
-    if (result) {
-      // Les résultats de quiz contiennent le nom de l'étudiant
-      return 'Mayssa El Abed'; // On sait que c'est Mayssa pour l'instant
+    // Utiliser le nom de l'enfant sélectionné
+    if (selectedChild?.firstName && selectedChild?.lastName) {
+      return `${selectedChild.firstName} ${selectedChild.lastName}`;
     }
     
     return 'Étudiant';
@@ -377,9 +365,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         return b.percentage - a.percentage;
       case 'subject':
         return a.subject.localeCompare(b.subject);
-      case 'difficulty':
-        const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
-        return difficultyOrder[b.difficulty] - difficultyOrder[a.difficulty];
       default:
         return 0;
     }
@@ -392,7 +377,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
         totalQuizzes: 0,
         improvements: 0,
         totalBadges: 0,
-        bestRank: 0
       };
     }
 
@@ -401,20 +385,17 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
       acc.totalQuizzes += 1;
       acc.improvements += result.isImprovement ? 1 : 0;
       acc.totalBadges += result.badges.length;
-      acc.bestRank = Math.min(acc.bestRank || Infinity, result.rank);
       return acc;
     }, {
       averageScore: 0,
       totalQuizzes: 0,
       improvements: 0,
       totalBadges: 0,
-      bestRank: Infinity
     });
 
     return {
       ...stats,
       averageScore: Math.round(stats.averageScore / stats.totalQuizzes),
-      bestRank: stats.bestRank === Infinity ? 0 : stats.bestRank
     };
   };
 
@@ -449,22 +430,14 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
             <div className={`text-base font-bold ${getScoreColor(result.percentage)}`}>
               {result.percentage}%
             </div>
-            <div className="flex items-center space-x-1">
-              <Trophy className={`w-4 h-4 ${getRankColor(result.rank)}`} />
-              <span className={`text-sm ${getRankColor(result.rank)}`}>#{result.rank}</span>
-            </div>
           </div>
         </div>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="text-center">
             <div className="text-white text-base font-bold">{result.questionsCorrect}/{result.questionsTotal}</div>
             <div className="text-blue-300 text-xs">Bonnes réponses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-white text-base font-bold">{formatDuration(result.timeSpent)}</div>
-            <div className="text-blue-300 text-xs">Temps passé</div>
           </div>
           <div className="text-center">
             <div className="text-white text-base font-bold">{result.percentage}%</div>
@@ -495,27 +468,9 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
           )}
         </div>
 
-        {/* Barre de progression vs moyenne */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-blue-200 text-sm">vs Moyenne de classe</span>
-            <span className="text-blue-300 text-sm">{result.classAverage}%</span>
-          </div>
-          <div className="w-full bg-white/20 rounded-full h-2">
-            <div 
-              className={`bg-gradient-to-r ${getScoreGradient(result.percentage)} h-2 rounded-full transition-all`}
-              style={{ width: `${Math.min((result.percentage / 100) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Difficulté et tentatives */}
-        <div className="flex items-center justify-between">
-          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${getDifficultyColor(result.difficulty)}`}>
-            {result.difficulty === 'easy' ? 'Facile' : 
-             result.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
-          </span>
-          
+        {/* Tentatives */}
+        <div className="flex items-center justify-end">
           <div className="flex items-center space-x-2 text-blue-300 text-sm">
             <Clock className="w-4 h-4" />
             <span>{result.attempts} tentative{result.attempts > 1 ? 's' : ''}</span>
@@ -583,14 +538,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
           <div className="bg-white/5 rounded-xl p-4 text-center">
             <div className="text-white text-base font-bold">{stats.totalQuizzes}</div>
             <div className="text-blue-300 text-sm">Quiz terminés</div>
-          </div>
-          <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-base font-bold">#{stats.bestRank || 1}</div>
-            <div className="text-blue-300 text-sm">Meilleur rang</div>
-          </div>
-          <div className="bg-white/5 rounded-xl p-4 text-center">
-            <div className="text-white text-base font-bold">{stats.totalQuizzes}</div>
-            <div className="text-blue-300 text-sm">Quiz total</div>
           </div>
         </div>
       </div>
@@ -711,12 +658,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
                       </div>
                       <div className="text-blue-300 text-sm">Score obtenu</div>
                     </div>
-                    <div className="text-center">
-                      <div className={`text-base font-bold ${getRankColor(selectedResult.rank)}`}>
-                        #{selectedResult.rank}
-                      </div>
-                      <div className="text-blue-300 text-sm">Classement</div>
-                    </div>
                   </div>
                 </div>
 
@@ -795,19 +736,6 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-blue-200">Temps passé</span>
-                      <span className="text-white font-semibold">
-                        {formatDuration(selectedResult.timeSpent)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200">Difficulté</span>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getDifficultyColor(selectedResult.difficulty)}`}>
-                        {selectedResult.difficulty === 'easy' ? 'Facile' : 
-                         selectedResult.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-blue-200">Tentatives</span>
                       <span className="text-white font-semibold">{selectedResult.attempts}</span>
                     </div>
@@ -835,38 +763,7 @@ const QuizResultsTab: React.FC<QuizResultsTabProps> = ({
                       </div>
                     </div>
                     
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-blue-200 text-sm">Moyenne classe</span>
-                        <span className="text-blue-300 font-semibold">{selectedResult.classAverage}%</span>
-                      </div>
-                      <div className="w-full bg-white/20 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-gray-500 to-slate-600 h-2 rounded-full"
-                          style={{ width: `${selectedResult.classAverage}%` }}
-                        />
-                      </div>
-                    </div>
                     
-                    <div className="pt-2 border-t border-white/20">
-                      <div className="flex items-center space-x-2">
-                        {selectedResult.percentage > selectedResult.classAverage ? (
-                          <>
-                            <TrendingUp className="w-4 h-4 text-green-400" />
-                            <span className="text-green-400 text-sm font-semibold">
-                              +{selectedResult.percentage - selectedResult.classAverage}% au-dessus
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <TrendingDown className="w-4 h-4 text-red-400" />
-                            <span className="text-red-400 text-sm font-semibold">
-                              {selectedResult.classAverage - selectedResult.percentage}% en-dessous
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </div>
 

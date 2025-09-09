@@ -28,7 +28,6 @@ interface Question {
   type: 'multiple' | 'single' | 'text' | 'boolean';
   options?: string[];
   correct_answer?: string;
-  points: number;
   explanation?: string;
 }
 
@@ -220,10 +219,6 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({
                           {getQuestionTypeIcon(question.type)}
                           <span className="text-sm font-medium">{getQuestionTypeLabel(question.type)}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-blue-200">
-                          <Hash className="w-3 h-3" />
-                          <span className="text-sm">{question.points} point(s)</span>
-                        </div>
                       </div>
                       <h3 className="text-white font-medium mb-3 text-base">
                         Question {index + 1}: {question.question}
@@ -352,7 +347,6 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
     type: question?.type || 'single',
     options: question?.options || ['', '', '', ''],
     correct_answer: question?.correct_answer || '',
-    points: question?.points || 1,
     explanation: question?.explanation || ''
   });
 
@@ -490,17 +484,6 @@ const QuestionFormModal: React.FC<QuestionFormModalProps> = ({
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">Points</label>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={formData.points}
-              onChange={(e) => setFormData(prev => ({ ...prev, points: parseInt(e.target.value) }))}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-            />
-          </div>
 
           <div className="lg:col-span-2">
             <label className="block text-sm font-semibold text-white mb-2">Explication (optionnel)</label>

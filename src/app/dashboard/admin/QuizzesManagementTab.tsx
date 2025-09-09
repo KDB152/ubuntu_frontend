@@ -47,7 +47,6 @@ interface Question {
   type: 'multiple' | 'single' | 'text' | 'boolean';
   options?: string[];
   correctAnswer: string | string[];
-  points: number;
   explanation?: string;
 }
 
@@ -56,21 +55,16 @@ interface Quiz {
   title: string;
   description: string;
   subject: string;
-  level: string;
   duration: number; // en minutes
   questions: Question[];
-  totalPoints: number;
   attempts: number;
   averageScore: number;
-  passScore: number;
   status: 'Publié' | 'Brouillon' | 'Archivé';
   createdDate: string;
   lastModified: string;
-  tags: string[];
   isTimeLimited: boolean;
   allowRetake: boolean;
   showResults: boolean;
-  randomizeQuestions: boolean;
   targetGroups?: string[]; // Groupes cibles qui peuvent tenter le quiz
 }
 
@@ -107,6 +101,11 @@ const AVAILABLE_GROUPS = [
   '1ère groupe 3',
 ];
 
+// Fonction utilitaire pour formater les pourcentages sans .0
+const formatPercentage = (value: number): string => {
+  return value % 1 === 0 ? value.toString() : value.toFixed(1);
+};
+
 const QuizzesManagementTab = () => {
   const searchParams = useSearchParams();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -130,7 +129,6 @@ const QuizzesManagementTab = () => {
   const [activeTab, setActiveTab] = useState<'quizzes' | 'results'>('quizzes');
 
   const subjects = ['Histoire', 'Géographie', 'EMC'];
-  const levels = ['Seconde', 'Première', 'Terminale'];
 
   // Gérer les paramètres d'URL pour ouvrir automatiquement le modal de création
   useEffect(() => {
@@ -145,8 +143,20 @@ const QuizzesManagementTab = () => {
     return quizzes.map(quiz => {
       const quizAttempts = attempts.filter(attempt => attempt.quizId === quiz.id);
       const totalAttempts = quizAttempts.length;
-      const averageScore = totalAttempts > 0 
-        ? Math.round(quizAttempts.reduce((sum, a) => sum + a.percentage, 0) / totalAttempts)
+      
+      // Calculer la moyenne basée sur les étudiants uniques (dernière tentative de chaque étudiant)
+      const uniqueStudents = new Map();
+      quizAttempts.forEach(attempt => {
+        const studentId = attempt.studentId;
+        if (!uniqueStudents.has(studentId) || 
+            new Date(attempt.completedAt) > new Date(uniqueStudents.get(studentId).completedAt)) {
+          uniqueStudents.set(studentId, attempt);
+        }
+      });
+      
+      const uniqueStudentAttempts = Array.from(uniqueStudents.values());
+      const averageScore = uniqueStudentAttempts.length > 0 
+        ? Math.round(uniqueStudentAttempts.reduce((sum, a) => sum + a.percentage, 0) / uniqueStudentAttempts.length)
         : 0;
       const bestScore = totalAttempts > 0 
         ? Math.max(...quizAttempts.map(a => a.percentage))
@@ -163,7 +173,7 @@ const QuizzesManagementTab = () => {
         bestScore,
         worstScore
       };
-    }).filter(result => result.totalAttempts > 0); // Ne montrer que les quiz avec des tentatives
+    }); // Montrer tous les quiz, même ceux sans tentatives
   };
 
   useEffect(() => {
@@ -179,17 +189,14 @@ const QuizzesManagementTab = () => {
           title: q.title,
           description: q.description || '',
           subject: q.subject,
-          level: q.level,
           duration: q.duration || 0,
           questions: [],
-          totalPoints: q.total_points || 0,
           attempts: q.attempts || 0,
           averageScore: Number(q.average_score || 0),
           passScore: q.pass_score || 0,
           status: q.status as 'Publié' | 'Brouillon' | 'Archivé',
           createdDate: q.created_at?.slice(0,10) || '',
           lastModified: q.updated_at?.slice(0,10) || '',
-          tags: q.tags || [],
           isTimeLimited: !!q.is_time_limited,
           allowRetake: !!q.allow_retake,
           showResults: !!q.show_results,
@@ -258,11 +265,11 @@ const QuizzesManagementTab = () => {
           title: updatedQuiz.title,
           description: updatedQuiz.description,
           subject: updatedQuiz.subject,
-          level: updatedQuiz.level,
           duration: updatedQuiz.duration,
-          pass_score: updatedQuiz.passScore,
           status: updatedQuiz.status,
-          tags: updatedQuiz.tags,
+          is_time_limited: updatedQuiz.isTimeLimited,
+          allow_retake: updatedQuiz.allowRetake,
+          show_results: updatedQuiz.showResults,
           target_groups: updatedQuiz.targetGroups
         })
       });
@@ -288,15 +295,11 @@ const QuizzesManagementTab = () => {
           title: newQuiz.title,
           description: newQuiz.description,
           subject: newQuiz.subject,
-          level: newQuiz.level,
           duration: newQuiz.duration,
-          pass_score: newQuiz.passScore,
           status: newQuiz.status || 'Brouillon',
-          tags: newQuiz.tags || [],
           is_time_limited: newQuiz.isTimeLimited,
           allow_retake: newQuiz.allowRetake,
           show_results: newQuiz.showResults,
-          randomize_questions: newQuiz.randomizeQuestions,
           target_groups: newQuiz.targetGroups || [],
         })
       });
@@ -306,21 +309,16 @@ const QuizzesManagementTab = () => {
         title: created.title,
         description: created.description,
         subject: created.subject,
-        level: created.level,
         duration: created.duration,
         questions: [],
-        totalPoints: created.total_points || 0,
         attempts: created.attempts || 0,
         averageScore: Number(created.average_score || 0),
-        passScore: created.pass_score || 0,
         status: created.status,
         createdDate: created.created_at?.slice(0,10) || '',
         lastModified: created.updated_at?.slice(0,10) || '',
-        tags: created.tags || [],
         isTimeLimited: !!created.is_time_limited,
         allowRetake: !!created.allow_retake,
         showResults: !!created.show_results,
-        randomizeQuestions: !!created.randomize_questions,
         targetGroups: created.target_groups || [],
       };
       setQuizzes(prev => [...prev, mapped]);
@@ -340,19 +338,67 @@ const QuizzesManagementTab = () => {
   };
 
   const duplicateQuiz = async (quiz: Quiz) => {
-    const duplicatedQuiz = {
-      ...quiz,
-      id: Date.now().toString(),
-      title: `${quiz.title} (Copie)`,
-      status: 'Brouillon' as const,
-      createdDate: new Date().toISOString().split('T')[0],
-      lastModified: new Date().toISOString().split('T')[0],
-      attempts: 0,
-      averageScore: 0
-    };
-    
-    setQuizzes(prev => [...prev, duplicatedQuiz]);
-    showNotification('success', 'Quiz dupliqué avec succès');
+    try {
+      setIsLoading(true);
+      
+      // Préparer les données pour la création
+      const duplicatedQuizData = {
+        title: `${quiz.title} (Copie)`,
+        description: quiz.description,
+        subject: quiz.subject,
+        duration: quiz.duration,
+        status: 'Brouillon',
+        isTimeLimited: quiz.isTimeLimited,
+        allowRetake: quiz.allowRetake,
+        showResults: quiz.showResults,
+        targetGroups: quiz.targetGroups || []
+      };
+
+      // Envoyer la requête au backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/quizzes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(duplicatedQuizData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la duplication du quiz');
+      }
+
+      const created = await response.json();
+      
+      // Mapper la réponse du backend
+      const mapped: Quiz = {
+        id: String(created.id),
+        title: created.title,
+        description: created.description,
+        subject: created.subject,
+        duration: created.duration,
+        questions: [],
+        attempts: created.attempts || 0,
+        averageScore: Number(created.average_score || 0),
+        status: created.status,
+        createdDate: created.created_at?.slice(0,10) || '',
+        lastModified: created.updated_at?.slice(0,10) || '',
+        isTimeLimited: !!created.is_time_limited,
+        allowRetake: !!created.allow_retake,
+        showResults: !!created.show_results,
+        targetGroups: created.target_groups || [],
+      };
+
+      // Mettre à jour l'état local
+      setQuizzes(prev => [...prev, mapped]);
+      showNotification('success', 'Quiz dupliqué avec succès');
+      
+    } catch (error) {
+      console.error('Erreur lors de la duplication:', error);
+      showNotification('error', 'Erreur lors de la duplication du quiz');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuestionsUpdated = () => {
@@ -368,17 +414,14 @@ const QuizzesManagementTab = () => {
           title: q.title,
           description: q.description || '',
           subject: q.subject,
-          level: q.level,
           duration: q.duration || 0,
           questions: [],
-          totalPoints: q.total_points || 0,
           attempts: q.attempts || 0,
           averageScore: Number(q.average_score || 0),
           passScore: q.pass_score || 0,
           status: q.status,
           createdDate: q.created_at?.slice(0,10) || '',
           lastModified: q.updated_at?.slice(0,10) || '',
-          tags: q.tags || [],
           isTimeLimited: !!q.is_time_limited,
           allowRetake: !!q.allow_retake,
           showResults: !!q.show_results,
@@ -394,8 +437,17 @@ const QuizzesManagementTab = () => {
 
   const filteredQuizzes = quizzes.filter(quiz => {
     const matchesSearch = (quiz.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-                         (quiz.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-                         (quiz.tags || []).some(tag => (tag?.toLowerCase() || '').includes(searchQuery.toLowerCase()));
+                         (quiz.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+    const matchesSubject = filterSubject === 'Tous' || quiz.subject === filterSubject;
+    const matchesStatus = filterStatus === 'Tous' || quiz.status === filterStatus;
+    
+    return matchesSearch && matchesSubject && matchesStatus;
+  });
+
+  const filteredQuizResults = quizResults.filter(result => {
+    const quiz = result.quiz;
+    const matchesSearch = (quiz.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (quiz.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
     const matchesSubject = filterSubject === 'Tous' || quiz.subject === filterSubject;
     const matchesStatus = filterStatus === 'Tous' || quiz.status === filterStatus;
     
@@ -519,7 +571,7 @@ const QuizzesManagementTab = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher par titre, description ou tags..."
+                  placeholder="Rechercher par titre ou description..."
                   className="pl-10 pr-4 py-3 w-full border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
                 />
               </div>
@@ -550,7 +602,9 @@ const QuizzesManagementTab = () => {
 
           {/* Liste des quiz */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredQuizzes.map((quiz) => (
+            {filteredQuizResults.map((result) => {
+              const quiz = result.quiz;
+              return (
               <div key={quiz.id} className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
                 {/* En-tête de la carte */}
                 <div className="p-6 border-b border-white/20">
@@ -559,7 +613,7 @@ const QuizzesManagementTab = () => {
                       <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2">
                         {quiz.title}
                       </h3>
-                      <p className="text-sm text-blue-200 mt-1">{quiz.subject} • {quiz.level}</p>
+                      <p className="text-sm text-blue-200 mt-1">{quiz.subject}</p>
                     </div>
                                          <div className="flex items-center space-x-2">
                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(quiz.status)}`}>
@@ -588,36 +642,29 @@ const QuizzesManagementTab = () => {
                      </div>
                      <div className="text-center">
                        <div className="flex items-center justify-center space-x-1 text-blue-200 mb-1">
-                         <Target className="w-4 h-4" />
-                         <span className="text-xs">Points</span>
-                       </div>
-                       <p className="text-base font-bold text-white">{quiz.totalPoints}</p>
-                     </div>
-                     <div className="text-center">
-                       <div className="flex items-center justify-center space-x-1 text-blue-200 mb-1">
                          <Users className="w-4 h-4" />
                          <span className="text-xs">Tentatives</span>
                        </div>
-                       <p className="text-base font-bold text-white">{quiz.attempts}</p>
+                       <p className="text-base font-bold text-white">{result.totalAttempts}</p>
                      </div>
                      <div className="text-center">
                        <div className="flex items-center justify-center space-x-1 text-blue-200 mb-1">
                          <Star className="w-4 h-4" />
                          <span className="text-xs">Moyenne</span>
                        </div>
-                       <p className="text-base font-bold text-white">{quiz.averageScore.toFixed(1)}/20</p>
+                       <p className="text-base font-bold text-white">{formatPercentage(result.averageScore)}%</p>
                      </div>
                    </div>
 
                    {/* Résultats des étudiants */}
-                   {quiz.attempts > 0 && (
+                   {result.totalAttempts > 0 && (
                      <div className="border-t border-white/20 pt-4">
                        <h4 className="text-sm font-semibold text-white mb-3 flex items-center">
                          <BarChart3 className="w-4 h-4 mr-2" />
                          Résultats des étudiants
                        </h4>
                        <div className="space-y-2 max-h-32 overflow-y-auto">
-                         {getQuizAttempts(quiz.id).slice(0, 3).map((attempt) => (
+                         {result.attempts.slice(0, 3).map((attempt) => (
                            <div key={attempt.id} className="flex items-center justify-between bg-white/5 rounded-lg p-2">
                              <div className="flex items-center space-x-2">
                                <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
@@ -625,7 +672,7 @@ const QuizzesManagementTab = () => {
                                    {attempt.studentName.split(' ').map(n => n[0]).join('')}
                                  </span>
                                </div>
-                               <span className="text-xs text-white truncate max-w-20">{attempt.studentName}</span>
+                                <span className="text-xs text-white">{attempt.studentName}</span>
                              </div>
                              <div className="flex items-center space-x-2">
                                <span className={`text-xs font-bold ${getScoreColor(attempt.percentage)}`}>
@@ -644,10 +691,10 @@ const QuizzesManagementTab = () => {
                              </div>
                            </div>
                          ))}
-                         {getQuizAttempts(quiz.id).length > 3 && (
+                         {result.attempts.length > 3 && (
                            <div className="text-center">
                              <span className="text-xs text-blue-300">
-                               +{getQuizAttempts(quiz.id).length - 3} autres tentatives
+                               +{result.attempts.length - 3} autres tentatives
                              </span>
                            </div>
                          )}
@@ -655,21 +702,6 @@ const QuizzesManagementTab = () => {
                      </div>
                    )}
 
-                  {/* Tags */}
-                  {quiz.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {quiz.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 text-xs bg-blue-500/20 text-blue-200 rounded-lg">
-                          {tag}
-                        </span>
-                      ))}
-                      {quiz.tags.length > 3 && (
-                        <span className="px-2 py-1 text-xs bg-white/10 text-blue-300 rounded-lg">
-                          +{quiz.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
 
                   {/* Groupes cibles */}
                   {quiz.targetGroups && quiz.targetGroups.length > 0 && (
@@ -772,10 +804,11 @@ const QuizzesManagementTab = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
-          {filteredQuizzes.length === 0 && (
+          {filteredQuizResults.length === 0 && (
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 text-center">
               <Award className="w-10 h-10 text-blue-300 mx-auto mb-4" />
               <p className="text-blue-200 text-base mb-2">Aucun quiz trouvé</p>
@@ -837,7 +870,6 @@ const QuizzesManagementTab = () => {
                     <tr>
                       <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Étudiant</th>
                       <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Quiz</th>
-                      <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Score</th>
                       <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Pourcentage</th>
                       <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Temps</th>
                       <th className="px-3 py-4 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Date</th>
@@ -861,13 +893,8 @@ const QuizzesManagementTab = () => {
                           <td className="px-3 py-4 whitespace-nowrap">
                             <div>
                               <p className="text-sm font-medium text-white">{quiz?.title || 'Quiz inconnu'}</p>
-                              <p className="text-xs text-blue-300">{quiz?.subject} • {quiz?.level}</p>
+                              <p className="text-xs text-blue-300">{quiz?.subject}</p>
                             </div>
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap">
-                            <span className="text-sm font-bold text-white">
-                              {attempt.score}/{attempt.totalPoints}
-                            </span>
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-2">
@@ -914,7 +941,6 @@ const QuizzesManagementTab = () => {
           onClose={() => setShowCreateModal(false)}
           isLoading={isLoading}
           subjects={subjects}
-          levels={levels}
         />
       )}
 
@@ -928,7 +954,6 @@ const QuizzesManagementTab = () => {
           }}
           isLoading={isLoading}
           subjects={subjects}
-          levels={levels}
         />
       )}
 
@@ -976,33 +1001,26 @@ interface CreateQuizModalProps {
   onClose: () => void;
   isLoading: boolean;
   subjects: string[];
-  levels: string[];
 }
 
-const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLoading, subjects, levels }) => {
+const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLoading, subjects }) => {
   const [formData, setFormData] = useState<Partial<Quiz>>({
     title: '',
     description: '',
     subject: 'Histoire',
-    level: 'Terminale',
-    duration: 30,
-    passScore: 10,
+    duration: 10,
     status: 'Brouillon',
-    tags: [],
     isTimeLimited: true,
     allowRetake: true,
     showResults: true,
-    randomizeQuestions: false,
     targetGroups: []
   });
 
-  const [tagsInput, setTagsInput] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const quiz = {
-      ...formData,
-      tags: tagsInput.split(',').map(tag => tag.trim()).filter(Boolean)
+      ...formData
     };
     onSave(quiz);
   };
@@ -1046,18 +1064,6 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white mb-2">Niveau</label>
-              <select
-                value={formData.level}
-                onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value }))}
-                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-              >
-                {levels.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-white mb-2">Durée (minutes)</label>
               <input
                 type="number"
@@ -1065,17 +1071,6 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
                 max="180"
                 value={formData.duration}
                 onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-white mb-2">Note de passage</label>
-              <input
-                type="number"
-                min="0"
-                max="20"
-                value={formData.passScore}
-                onChange={(e) => setFormData(prev => ({ ...prev, passScore: parseInt(e.target.value) }))}
                 className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
               />
             </div>
@@ -1092,16 +1087,6 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par des virgules)</label>
-            <input
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-              placeholder="Ex: révolution, france, histoire"
-            />
-          </div>
 
           <div>
             <label className="block text-sm font-semibold text-white mb-2">Groupes cibles *</label>
@@ -1138,45 +1123,50 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onSave, onClose, isLo
             )}
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-white">Options du quiz</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex items-center space-x-3 cursor-pointer">
+          <div className="bg-white/5 rounded-xl p-6">
+            <h3 className="text-white font-semibold mb-4 flex items-center">
+              <Settings className="w-5 h-5 text-blue-300 mr-2" />
+              Options du quiz
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.isTimeLimited}
                   onChange={(e) => setFormData(prev => ({ ...prev, isTimeLimited: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
                 />
-                <span className="text-white">Limiter le temps</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
+                <div>
+                  <span className="text-white font-medium">Limiter le temps</span>
+                  <p className="text-sm text-blue-200 mt-1">Le quiz sera limité par la durée spécifiée</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.allowRetake}
                   onChange={(e) => setFormData(prev => ({ ...prev, allowRetake: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
                 />
-                <span className="text-white">Autoriser les reprises</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
+                <div>
+                  <span className="text-white font-medium">Autoriser les reprises</span>
+                  <p className="text-sm text-blue-200 mt-1">Les étudiants pourront refaire le quiz plusieurs fois</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.showResults}
                   onChange={(e) => setFormData(prev => ({ ...prev, showResults: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
                 />
-                <span className="text-white">Afficher les résultats</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.randomizeQuestions}
-                  onChange={(e) => setFormData(prev => ({ ...prev, randomizeQuestions: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <span className="text-white">Mélanger les questions</span>
-              </label>
+                <div>
+                  <span className="text-white font-medium">Afficher les résultats</span>
+                  <p className="text-sm text-blue-200 mt-1">Les étudiants verront leurs réponses et les bonnes réponses après avoir terminé le quiz</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1219,19 +1209,16 @@ interface EditQuizModalProps {
   onClose: () => void;
   isLoading: boolean;
   subjects: string[];
-  levels: string[];
 }
 
-const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, isLoading, subjects, levels }) => {
+const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, isLoading, subjects }) => {
   const [formData, setFormData] = useState<Quiz>(quiz);
-  const [tagsInput, setTagsInput] = useState(quiz.tags.join(', '));
   const [selectedGroups, setSelectedGroups] = useState<string[]>(quiz.targetGroups || []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const updatedQuiz = {
       ...formData,
-      tags: tagsInput.split(',').map(tag => tag.trim()).filter(Boolean),
       targetGroups: selectedGroups,
       lastModified: new Date().toISOString().split('T')[0]
     };
@@ -1276,18 +1263,6 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white mb-2">Niveau</label>
-              <select
-                value={formData.level}
-                onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value }))}
-                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white"
-              >
-                {levels.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-white mb-2">Durée (minutes)</label>
               <input
                 type="number"
@@ -1295,17 +1270,6 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
                 max="180"
                 value={formData.duration}
                 onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-white mb-2">Note de passage</label>
-              <input
-                type="number"
-                min="0"
-                max="20"
-                value={formData.passScore}
-                onChange={(e) => setFormData(prev => ({ ...prev, passScore: parseInt(e.target.value) }))}
                 className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
               />
             </div>
@@ -1321,15 +1285,6 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">Tags (séparés par des virgules)</label>
-            <input
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
-            />
-          </div>
 
           <div>
             <label className="block text-sm font-semibold text-white mb-2">Groupes cibles</label>
@@ -1373,45 +1328,50 @@ const EditQuizModal: React.FC<EditQuizModalProps> = ({ quiz, onSave, onClose, is
             </select>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-white">Options du quiz</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex items-center space-x-3 cursor-pointer">
+          <div className="bg-white/5 rounded-xl p-6">
+            <h3 className="text-white font-semibold mb-4 flex items-center">
+              <Settings className="w-5 h-5 text-blue-300 mr-2" />
+              Options du quiz
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.isTimeLimited}
                   onChange={(e) => setFormData(prev => ({ ...prev, isTimeLimited: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
                 />
-                <span className="text-white">Limiter le temps</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
+                <div>
+                  <span className="text-white font-medium">Limiter le temps</span>
+                  <p className="text-sm text-blue-200 mt-1">Le quiz sera limité par la durée spécifiée</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.allowRetake}
                   onChange={(e) => setFormData(prev => ({ ...prev, allowRetake: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
                 />
-                <span className="text-white">Autoriser les reprises</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
+                <div>
+                  <span className="text-white font-medium">Autoriser les reprises</span>
+                  <p className="text-sm text-blue-200 mt-1">Les étudiants pourront refaire le quiz plusieurs fois</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.showResults}
                   onChange={(e) => setFormData(prev => ({ ...prev, showResults: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
                 />
-                <span className="text-white">Afficher les résultats</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.randomizeQuestions}
-                  onChange={(e) => setFormData(prev => ({ ...prev, randomizeQuestions: e.target.checked }))}
-                  className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <span className="text-white">Mélanger les questions</span>
-              </label>
+                <div>
+                  <span className="text-white font-medium">Afficher les résultats</span>
+                  <p className="text-sm text-blue-200 mt-1">Les étudiants verront leurs réponses et les bonnes réponses après avoir terminé le quiz</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1516,7 +1476,7 @@ interface QuizResultsModalProps {
 
 const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onClose }) => {
   const averageScore = attempts.length > 0 ? attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / attempts.length : 0;
-  const passRate = attempts.length > 0 ? (attempts.filter(attempt => attempt.score >= quiz.passScore).length / attempts.length) * 100 : 0;
+  const passRate = attempts.length > 0 ? (attempts.filter(attempt => attempt.percentage >= 50).length / attempts.length) * 100 : 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
@@ -1539,16 +1499,12 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
               <div className="text-sm text-blue-200">Tentatives</div>
             </div>
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-base font-bold text-white">{averageScore.toFixed(1)}%</div>
+              <div className="text-base font-bold text-white">{formatPercentage(averageScore)}%</div>
               <div className="text-sm text-blue-200">Moyenne</div>
             </div>
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-base font-bold text-white">{passRate.toFixed(1)}%</div>
+              <div className="text-base font-bold text-white">{formatPercentage(passRate)}%</div>
               <div className="text-sm text-blue-200">Taux de réussite</div>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-base font-bold text-white">{quiz.passScore}</div>
-              <div className="text-sm text-blue-200">Note de passage</div>
             </div>
           </div>
 
@@ -1558,7 +1514,6 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
               <thead className="bg-white/5">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Étudiant</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Score</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Pourcentage</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Temps</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Date</th>
@@ -1577,11 +1532,6 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
                         </div>
                         <span className="text-sm font-medium text-white">{attempt.studentName}</span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-sm font-bold text-white">
-                        {attempt.score}/{attempt.totalPoints}
-                      </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center space-x-2">

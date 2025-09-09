@@ -839,16 +839,7 @@ const ChildrenProgressTab: React.FC<ChildrenProgressTabProps> = ({
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
           <h2 className="text-white text-2xl font-bold mb-6">Sélectionner un enfant</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {parentChildren.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-blue-400" />
-                </div>
-                <h3 className="text-white text-lg font-semibold mb-2">Aucun enfant trouvé</h3>
-                <p className="text-blue-300">Aucun enfant n'est associé à votre compte parent.</p>
-                <p className="text-blue-200 text-sm mt-2">Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
-              </div>
-            ) : (
+            {parentChildren.length > 0 && (
               parentChildren.map((child) => (
               <button
                 key={child.id}

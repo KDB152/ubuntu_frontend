@@ -83,7 +83,7 @@ export function ParentDashboard() {
         <div className="space-y-3">
           <Progress value={child.progress} className="w-full" />
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Moyenne: {child.averageScore}/100</span>
+            <span className="text-muted-foreground">Moyenne: {child.averageScore}%</span>
             <span className="text-muted-foreground">
               {child.upcomingDeadlines} échéance{child.upcomingDeadlines > 1 ? 's' : ''}
             </span>
@@ -185,7 +185,7 @@ export function ParentDashboard() {
           />
           <StatCard
             title="Moyenne générale"
-            value={`${selectedChild.averageScore}/100`}
+            value={`${selectedChild.averageScore}%`}
             icon={Trophy}
             description="score moyen aux évaluations"
             color="blue-500"

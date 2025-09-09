@@ -318,11 +318,14 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
         isApproved: updatedUser.isApproved,
         role: activeTab === 'students' ? 'student' : 'parent',
         
-        // Champs spécifiques aux étudiants (table students)
+        // Champs spécifiques aux étudiants
         ...(activeTab === 'students' && {
           classLevel: (updatedUser as any).classLevel || (updatedUser as any).class,
           birthDate: (updatedUser as any).birthDate ? (updatedUser as any).birthDate.split('T')[0] : (updatedUser as any).birth_date,
         }),
+        
+        // Note: Les champs parent/enfant ne sont plus envoyés car ils ne sont pas stockés
+        // dans l'entité User mais dans les entités Student/Parent séparées
         
         
       };
@@ -409,19 +412,94 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
     }
   };
 
+  const validateUserData = (userData: any, userType: 'students' | 'parents') => {
+    const errors: Record<string, string> = {};
+
+    // Validation des champs de base
+    if (!userData.firstName || !userData.firstName.trim()) {
+      errors.firstName = 'Le prénom est obligatoire';
+    }
+    if (!userData.lastName || !userData.lastName.trim()) {
+      errors.lastName = 'Le nom est obligatoire';
+    }
+    if (!userData.email || !userData.email.trim()) {
+      errors.email = 'L\'email est obligatoire';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+      errors.email = 'Veuillez entrer un email valide';
+    }
+    if (!userData.phone_number || !userData.phone_number.trim()) {
+      errors.phone_number = 'Le numéro de téléphone est obligatoire';
+    } else if (!/^[0-9+\-\s()]+$/.test(userData.phone_number)) {
+      errors.phone_number = 'Veuillez entrer un numéro de téléphone valide';
+    }
+    if (!userData.password || !userData.password.trim()) {
+      errors.password = 'Le mot de passe est obligatoire';
+    } else if (userData.password.length < 8) {
+      errors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    }
+    if (!userData.confirmPassword || !userData.confirmPassword.trim()) {
+      errors.confirmPassword = 'La confirmation du mot de passe est obligatoire';
+    } else if (userData.password !== userData.confirmPassword) {
+      errors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    // Validation spécifique aux étudiants
+    if (userType === 'students') {
+      if (!userData.classLevel || !userData.classLevel.trim()) {
+        errors.classLevel = 'La classe est requise';
+      }
+      // Validation du parent pour les étudiants
+      if (!userData.parentPhone || !userData.parentPhone.trim()) {
+        errors.parentPhone = 'Le numéro de téléphone du parent est obligatoire';
+      } else if (!/^[0-9+\-\s()]+$/.test(userData.parentPhone)) {
+        errors.parentPhone = 'Veuillez entrer un numéro de téléphone valide pour le parent';
+      }
+    }
+
+    // Validation spécifique aux parents
+    if (userType === 'parents') {
+      // Validation obligatoire des données enfant
+      if (!userData.childFirstName || !userData.childFirstName.trim()) {
+        errors.childFirstName = 'Le prénom de l\'enfant est obligatoire';
+      }
+      if (!userData.childLastName || !userData.childLastName.trim()) {
+        errors.childLastName = 'Le nom de l\'enfant est obligatoire';
+      }
+      if (!userData.childPhone || !userData.childPhone.trim()) {
+        errors.childPhone = 'Le numéro de téléphone de l\'enfant est obligatoire';
+      } else if (!/^[0-9+\-\s()]+$/.test(userData.childPhone)) {
+        errors.childPhone = 'Veuillez entrer un numéro de téléphone valide pour l\'enfant';
+      }
+      if (!userData.childClass || !userData.childClass.trim()) {
+        errors.childClass = 'La classe de l\'enfant est obligatoire';
+      }
+    }
+
+    return errors;
+  };
+
   const handleAddUser = async (newUser: Partial<Student | Parent>) => {
     try {
       setIsLoading(true);
       
+      // Validation des données
+      const validationErrors = validateUserData(newUser, activeTab);
+      if (Object.keys(validationErrors).length > 0) {
+        const errorMessage = Object.values(validationErrors).join(', ');
+        showNotification('error', `Erreurs de validation: ${errorMessage}`);
+        return;
+      }
+      
     if (activeTab === 'students') {
         // Créer un étudiant avec son parent via l'endpoint d'inscription
+        const mainPassword = (newUser as any).password || 'changeme123';
         const registrationData = {
           userType: 'student',
           first_name: (newUser as any).firstName,
           last_name: (newUser as any).lastName,
         email: (newUser as any).email,
           phone: (newUser as any).phone_number, // ✅ Correct mapping
-          password: 'changeme123', // Mot de passe temporaire
+          password: mainPassword, // Utiliser le mot de passe saisi
           studentBirthDate: (newUser as any).birthDate || '2000-01-01',
           studentClass: (newUser as any).classLevel,
           // Informations du parent
@@ -429,7 +507,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           parentLastName: (newUser as any).parentLastName || 'Temporaire',
           parentEmail: (newUser as any).parentEmail || `parent.${(newUser as any).email}`,
           parentPhone: (newUser as any).parentPhone || (newUser as any).phone_number,
-          parentPassword: 'changeme123'
+          parentPassword: mainPassword // Même mot de passe que l'étudiant
         };
         
         console.log('🔍 Creating student with data:', registrationData);
@@ -449,13 +527,14 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
         showNotification('success', 'Étudiant et parent créés avec succès');
     } else {
         // Créer un parent avec son enfant via l'endpoint d'inscription
+        const mainPassword = (newUser as any).password || 'changeme123';
         const registrationData = {
           userType: 'parent',
           first_name: (newUser as any).firstName,
           last_name: (newUser as any).lastName,
         email: (newUser as any).email,
         phone: (newUser as any).phone_number,
-          password: 'changeme123', // Mot de passe temporaire
+          password: mainPassword, // Utiliser le mot de passe saisi
           // Informations de l'enfant
           childFirstName: (newUser as any).childFirstName || 'Enfant',
           childLastName: (newUser as any).childLastName || 'Temporaire',
@@ -463,7 +542,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           childPhone: (newUser as any).childPhone || (newUser as any).phone_number,
           childBirthDate: (newUser as any).childBirthDate || '2010-01-01',
           childClass: (newUser as any).childClass || 'Terminale groupe 1',
-          childPassword: 'changeme123'
+          childPassword: mainPassword // Même mot de passe que le parent
         };
         
         const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
@@ -886,12 +965,18 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
     lastName: '',
     email: '',
      phone_number: '',
+    password: '',
+    confirmPassword: '',
     ...(userType === 'students' ? {
       classLevel: 'Terminale S',
-      averageScore: 0
+      averageScore: 0,
+      parentPassword: '',
+      parentConfirmPassword: ''
     } : {
       address: '',
-      occupation: ''
+      occupation: '',
+      childPassword: '',
+      childConfirmPassword: ''
     })
   });
 
@@ -953,6 +1038,28 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                 onChange={(e) => setFormData((prev: any) => ({ ...prev, phone_number: e.target.value }))}
                 required
                 className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Mot de passe *</label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, password: e.target.value }))}
+                required
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                placeholder="Mot de passe principal"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">Confirmer le mot de passe *</label>
+              <input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, confirmPassword: e.target.value }))}
+                required
+                className="w-full px-4 py-3 border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all bg-white/10 backdrop-blur-md text-white placeholder-blue-300"
+                placeholder="Confirmez le mot de passe"
               />
             </div>
           </div>
@@ -1062,8 +1169,9 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                 </h3>
                 <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
                   <p className="text-sm text-blue-200">
-                    <strong>💡 Information :</strong> Le numéro de téléphone du parent est obligatoire. 
-                    Si les autres informations ne sont pas renseignées, un compte parent temporaire sera créé automatiquement.
+                    <strong>💡 Information :</strong> Le numéro de téléphone de votre parent est obligatoire. 
+                    Si vous ne renseignez pas les autres informations de vos parents, 
+                    un compte parent temporaire sera créé automatiquement. Vous pourrez contacter l'administrateur pour le personnaliser plus tard.
                   </p>
                 </div>
                 
@@ -1220,11 +1328,21 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                 <h3 className="text-base font-semibold text-white mb-4 flex items-center">
                   <Baby className="w-5 h-5 mr-2 text-amber-300" />
                   Informations de l'enfant
+                  <span className="ml-2 text-sm font-normal text-red-400/80">(Obligatoire)</span>
                 </h3>
+                <p className="text-sm text-white/70 mb-4">
+                  Si votre enfant a déjà créé son compte, contactez l'administrateur et ne créez pas de compte parent. Sinon, créez un compte pour vous-même et pour votre enfant.
+                </p>
+                <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-200">
+                    <strong>💡 Information :</strong> Les informations de votre enfant (nom, prénom, téléphone et classe) sont <strong className="text-red-300">obligatoires</strong>. 
+                    Un compte enfant sera créé automatiquement avec ces informations.
+                  </p>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1234,20 +1352,22 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childFirstName || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childFirstName: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Prénom de l'enfant (optionnel)"
+                        placeholder="Prénom de l'enfant (obligatoire)"
+                        required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                     <div className="relative group">
                       <input
                         type="text"
                         value={formData.childLastName || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childLastName: e.target.value }))}
                         className="w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Nom de l'enfant (optionnel)"
+                        placeholder="Nom de l'enfant (obligatoire)"
+                        required
                       />
                     </div>
                   </div>
@@ -1272,7 +1392,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1282,7 +1402,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childPhone || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childPhone: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm border-white/20"
-                        placeholder="Numéro de téléphone de l'enfant (optionnel)"
+                        placeholder="Numéro de téléphone de l'enfant (obligatoire)"
+                        required
                       />
                     </div>
                   </div>
@@ -1306,7 +1427,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant</label>
+                    <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                         <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -1315,8 +1436,9 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ userType, onSave, onClose, 
                         value={formData.childClass || ''}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, childClass: e.target.value }))}
                         className="w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none border-white/20"
+                        required
                       >
-                        <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant (optionnel)</option>
+                        <option value="" className="bg-slate-800 text-white">Sélectionnez la classe de l'enfant (obligatoire)</option>
                         {classes.map((classe) => (
                           <option 
                             key={classe} 
@@ -1447,6 +1569,27 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
       return;
     }
     
+    // Validation des champs obligatoires
+    const errors: string[] = [];
+    
+    if (!formData.firstName?.trim()) errors.push('Le prénom est obligatoire');
+    if (!formData.lastName?.trim()) errors.push('Le nom est obligatoire');
+    if (!formData.email?.trim()) errors.push('L\'email est obligatoire');
+    if (!formData.phone_number?.trim()) errors.push('Le téléphone est obligatoire');
+    
+    // Validation spécifique aux étudiants
+    if (userType === 'students') {
+      if (!formData.classLevel?.trim()) errors.push('La classe est obligatoire');
+    }
+    
+    // Note: Les champs parent/enfant ne sont plus validés car ils ne sont pas modifiés
+    // dans ce modal (ils sont gérés via les entités Student/Parent séparées)
+    
+    if (errors.length > 0) {
+      alert('Erreurs de validation:\n' + errors.join('\n'));
+      return;
+    }
+    
     setEmailError('');
     onSave(formData);
   };
@@ -1569,9 +1712,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
                 </div>
                 </div>
               </div>
-
             </>
           )}
+
+          {/* Note: Les champs parent/enfant ne sont plus affichés dans le modal de modification
+               car ils ne sont pas stockés dans l'entité User mais dans les entités Student/Parent séparées */}
 
 
           {/* Statut et approbation */}

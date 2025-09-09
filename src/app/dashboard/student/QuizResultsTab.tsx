@@ -18,8 +18,6 @@ interface QuizResult {
   id: number;
   quiz_id: number;
   student_id: number;
-  score: number;
-  total_points: number;
   percentage: number;
   time_spent: number;
   completed_at: string;
@@ -38,7 +36,6 @@ interface QuizQuestion {
   id: number;
   question_text: string;
   question_type: string;
-  points: number;
   correct_answer: string;
   options?: string[];
   student_answer?: string;
@@ -50,6 +47,13 @@ const QuizResultsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedResult, setSelectedResult] = useState<QuizResult | null>(null);
   const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
+
+  // Fonction pour formater le temps en minutes et secondes
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+  };
 
   useEffect(() => {
     loadQuizResults();
@@ -232,24 +236,13 @@ const QuizResultsTab: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-          <div className="flex items-center space-x-3">
-            <Target className="w-5 h-5 text-green-400" />
-            <div>
-              <div className="text-white font-semibold">
-                {results.reduce((acc, r) => acc + r.score, 0)}/{results.reduce((acc, r) => acc + r.total_points, 0)}
-              </div>
-              <div className="text-blue-200 text-sm">Total des points</div>
-            </div>
-          </div>
-        </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
           <div className="flex items-center space-x-3">
             <Clock className="w-5 h-5 text-purple-400" />
             <div>
               <div className="text-white font-semibold">
-                {Math.round(results.reduce((acc, r) => acc + r.time_spent, 0) / results.length)} min
+                {formatTime(Math.round(results.reduce((acc, r) => acc + r.time_spent, 0) / results.length))}
               </div>
               <div className="text-blue-200 text-sm">Temps moyen</div>
             </div>
@@ -274,7 +267,7 @@ const QuizResultsTab: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{result.time_spent} min</span>
+                      <span>{formatTime(result.time_spent)}</span>
                     </div>
                   </div>
                 </div>
@@ -283,7 +276,7 @@ const QuizResultsTab: React.FC = () => {
                     {result.percentage}%
                   </div>
                   <div className="text-white/80 text-sm">
-                    {result.score}/{result.total_points} points
+                    {result.score}/{result.total_points}
                   </div>
                 </div>
               </div>
@@ -345,10 +338,6 @@ const QuizResultsTab: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Points */}
-                          <div className="mt-2 text-sm text-blue-300">
-                            Points : {question.is_correct ? question.points : 0}/{question.points}
-                          </div>
                         </div>
                       </div>
                     </div>

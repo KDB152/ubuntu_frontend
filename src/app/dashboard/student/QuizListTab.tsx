@@ -54,13 +54,10 @@ interface Quiz {
   title: string;
   description: string;
   subject: 'history' | 'geography' | 'both';
-  difficulty: 'easy' | 'medium' | 'hard';
   duration: number; // en minutes
   questions: number;
-  points: number;
   attempts: number;
   bestScore?: number;
-  averageScore: number;
   completionRate: number;
   tags: string[];
   createdAt: string;
@@ -74,7 +71,6 @@ interface Quiz {
   category: string;
   prerequisites?: string[];
   rewards: {
-    xp: number;
     badges?: string[];
   };
 }
@@ -224,12 +220,9 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             title: q.title || 'Sans titre',
             description: q.description || '',
             subject: q.subject === 'Histoire' ? 'history' : q.subject === 'Géographie' ? 'geography' : 'both',
-            difficulty: 'medium', // Default difficulty
             duration: q.duration || 30,
             questions: 0, // Will be updated when questions are loaded
-            points: q.total_points || 0,
             attempts: q.attempts || 0,
-            averageScore: Number(q.average_score || 0),
             completionRate: 0, // Will be calculated
             tags: Array.isArray(q.tags) ? q.tags : [],
             createdAt: q.created_at || new Date().toISOString(),
@@ -239,9 +232,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             isFavorite: false,
             author: 'Admin',
             category: q.subject,
-            rewards: {
-              xp: q.total_points || 100
-            }
+            rewards: {}
           };
           
           console.log('🔍 Debug - Mapped quiz:', mappedQuiz);
@@ -356,15 +347,8 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
       case 'newest':
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
-      case 'difficulty':
-        const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
-        filtered.sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
-        break;
       case 'duration':
         filtered.sort((a, b) => a.duration - b.duration);
-        break;
-      case 'points':
-        filtered.sort((a, b) => b.points - a.points);
         break;
       case 'alphabetical':
         filtered.sort((a, b) => a.title.localeCompare(b.title));
@@ -374,14 +358,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
     setFilteredQuizzes(filtered);
   }, [quizzes, searchQuery, selectedSubject, selectedDifficulty, selectedStatus, sortBy]);
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'text-green-400 bg-green-500/20';
-      case 'medium': return 'text-yellow-400 bg-yellow-500/20';
-      case 'hard': return 'text-red-400 bg-red-500/20';
-      default: return 'text-gray-400 bg-gray-500/20';
-    }
-  };
 
   const getSubjectIcon = (subject: string) => {
     switch (subject) {
@@ -462,9 +438,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
           
           {/* Badges de statut */}
           <div className="flex items-center space-x-2 mt-3">
-            <span className={`text-xs px-2 py-1 rounded-full font-semibold ${getDifficultyColor(quiz.difficulty)}`}>
-              {quiz.difficulty === 'easy' ? 'Facile' : quiz.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
-            </span>
             {quiz.isCompleted && (
               <span className="bg-green-500/20 text-green-300 text-xs px-2 py-1 rounded-full font-semibold flex items-center">
                 <CheckCircle className="w-3 h-3 mr-1" />
@@ -479,7 +452,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
           <p className="text-blue-200 text-sm mb-4 line-clamp-2">{quiz.description}</p>
           
           {/* Statistiques */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex justify-center space-x-6 mb-3">
             <div className="flex items-center space-x-2">
               <Clock className="w-4 h-4 text-blue-300" />
               <span className="text-white text-sm">{quiz.duration} min</span>
@@ -487,14 +460,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             <div className="flex items-center space-x-2">
               <Target className="w-4 h-4 text-blue-300" />
               <span className="text-white text-sm">{quiz.questions} questions</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Star className="w-4 h-4 text-blue-300" />
-              <span className="text-white text-sm">{quiz.points} points</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-blue-300" />
-              <span className="text-white text-sm">{quiz.averageScore}% moy.</span>
             </div>
           </div>
 
@@ -536,21 +501,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
             </div>
           )}
 
-          {/* Récompenses */}
-          <div className="mb-4">
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="flex items-center space-x-1">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                <span className="text-yellow-400">{quiz.rewards.xp} XP</span>
-              </div>
-              {quiz.rewards.badges && quiz.rewards.badges.length > 0 && (
-                <div className="flex items-center space-x-1">
-                  <Award className="w-4 h-4 text-purple-400" />
-                  <span className="text-purple-400">{quiz.rewards.badges.length} badge(s)</span>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1 mb-4">
@@ -624,10 +574,7 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                 )}
               </div>
               <p className="text-blue-200 text-sm mb-2">{quiz.description}</p>
-              <div className="flex items-center space-x-3 text-sm">
-                <span className={`px-2 py-1 rounded-full font-semibold ${getDifficultyColor(quiz.difficulty)}`}>
-                  {quiz.difficulty === 'easy' ? 'Facile' : quiz.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
-                </span>
+              <div className="flex items-center space-x-4 text-sm">
                 <div className="flex items-center space-x-1 text-blue-300">
                   <Clock className="w-4 h-4" />
                   <span>{quiz.duration} min</span>
@@ -635,10 +582,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                 <div className="flex items-center space-x-1 text-blue-300">
                   <Target className="w-4 h-4" />
                   <span>{quiz.questions} questions</span>
-                </div>
-                <div className="flex items-center space-x-1 text-blue-300">
-                  <Star className="w-4 h-4" />
-                  <span>{quiz.points} points</span>
                 </div>
               </div>
             </div>
@@ -817,10 +760,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                   onChange={(e) => setSelectedDifficulty(e.target.value)}
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400"
                 >
-                  <option value="all">Toutes les difficultés</option>
-                  <option value="easy">Facile</option>
-                  <option value="medium">Moyen</option>
-                  <option value="hard">Difficile</option>
                 </select>
               </div>
 
@@ -850,7 +789,6 @@ const QuizListTab: React.FC<QuizListTabProps> = ({ onStartQuiz }) => {
                   <option value="alphabetical">Alphabétique</option>
                   <option value="difficulty">Difficulté</option>
                   <option value="duration">Durée</option>
-                  <option value="points">Points</option>
                 </select>
               </div>
             </div>

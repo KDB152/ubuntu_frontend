@@ -286,7 +286,7 @@ const AdminDashboard = () => {
     loadNotifications();
   };
 
-  const unreadNotifications = notifications.filter(n => !n.isRead).length;
+  const unreadNotifications = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
 
   const renderTabContent = () => {
     switch (activeTab) {

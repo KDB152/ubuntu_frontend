@@ -61,6 +61,11 @@ interface QuizStatisticsModalProps {
   onClose: () => void;
 }
 
+// Fonction utilitaire pour formater les pourcentages sans .0
+const formatPercentage = (value: number): string => {
+  return value % 1 === 0 ? value.toString() : value.toFixed(1);
+};
+
 const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen, onClose }) => {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(false);
@@ -200,10 +205,6 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                   <div className="text-base font-bold text-white">{quiz.duration}min</div>
                   <div className="text-blue-300 text-sm">Durée</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-base font-bold text-white">{quiz.totalPoints}</div>
-                  <div className="text-blue-300 text-sm">Points totaux</div>
-                </div>
               </div>
             </div>
 
@@ -224,7 +225,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                     <Star className="w-5 h-5 text-green-300" />
                     <span className="text-green-300 text-sm">Moyenne</span>
                   </div>
-                  <div className="text-base font-bold text-white">{stats.averageScore.toFixed(1)}%</div>
+                  <div className="text-base font-bold text-white">{formatPercentage(stats.averageScore)}%</div>
                   <div className="text-green-300 text-xs">
                     {stats.highestScore}% max / {stats.lowestScore}% min
                   </div>
@@ -235,7 +236,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                     <CheckCircle className="w-5 h-5 text-purple-300" />
                     <span className="text-purple-300 text-sm">Taux de réussite</span>
                   </div>
-                  <div className="text-base font-bold text-white">{stats.passRate.toFixed(1)}%</div>
+                  <div className="text-base font-bold text-white">{formatPercentage(stats.passRate)}%</div>
                   <div className="text-purple-300 text-xs">{stats.passedAttempts}/{stats.totalAttempts} réussis</div>
                 </div>
 
@@ -300,9 +301,6 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                         Étudiant
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                        Score
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
                         Pourcentage
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">
@@ -353,9 +351,6 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
                                   <div className="text-blue-300 text-xs">ID: {attempt.student_id}</div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="text-white font-medium">{attempt.score}/{attempt.total_points}</div>
                             </td>
                             <td className="px-4 py-3">
                               <div className={`text-base font-bold ${isPassed ? 'text-green-400' : 'text-red-400'}`}>

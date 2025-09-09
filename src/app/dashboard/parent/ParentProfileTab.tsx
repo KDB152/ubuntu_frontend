@@ -352,16 +352,7 @@ const ParentProfileTab: React.FC = () => {
             {/* Informations des enfants */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
               <h3 className="text-white font-semibold text-lg mb-4">Informations des enfants</h3>
-              {profile.children.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <User className="w-8 h-8 text-blue-400" />
-                  </div>
-                  <h4 className="text-white text-lg font-semibold mb-2">Aucun enfant trouvé</h4>
-                  <p className="text-blue-300">Aucun enfant n'est associé à votre compte parent.</p>
-                  <p className="text-blue-200 text-sm mt-2">Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
-                </div>
-              ) : (
+              {profile.children.length > 0 && (
                 profile.children.map((child, index) => (
                   <div key={child.id} className="bg-white/5 rounded-xl p-6 border border-white/10 mb-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

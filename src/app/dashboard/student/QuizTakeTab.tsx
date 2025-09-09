@@ -101,9 +101,11 @@ interface QuizData {
 interface QuizTakeTabProps {
   quizId: string | null;
   onComplete: () => void;
+  onBack?: () => void;
+  onStart?: () => void;
 }
 
-const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
+const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete, onBack, onStart }) => {
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: any }>({});
@@ -112,11 +114,10 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(false);
   const [autoSave, setAutoSave] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
-  const [showProgress, setShowProgress] = useState(true);
+  const [showProgress, setShowProgress] = useState(false);
   const [fontSize, setFontSize] = useState('medium');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showResults, setShowResults] = useState(false);
@@ -154,8 +155,8 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         subject: quizData.subject,
         difficulty: 'medium', // Default difficulty
         duration: quizData.duration || 30,
-        totalPoints: quizData.total_points || 0,
-        passingScore: quizData.pass_score || 60,
+        totalPoints: questionsData.length,
+        passingScore: 50, // Default passing score
         attempts: quizData.attempts || 0,
         instructions: 'Lisez attentivement chaque question. Bonne chance !',
         allowRetake: quizData.allow_retake || false,
@@ -184,8 +185,8 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             options: q.options || [],
             correctAnswer: q.correct_answer,
             explanation: q.explanation || '',
-            points: q.points || 1,
-            difficulty: 'medium' as const,
+            points: 1,
+            difficulty: 'easy' as const,
             hint: q.explanation || ''
           };
         })
@@ -220,11 +221,9 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         const attempts = await attemptsResponse.json();
         if (attempts && attempts.length > 0) {
           setHasAttempted(true);
-          // If show results is enabled, load the results
-          if (quiz?.showResults) {
-            setQuizResults(attempts[0]); // Get the latest attempt
-            setShowResults(true);
-          }
+          // Load the results but don't show them automatically
+          setQuizResults(attempts[0]); // Get the latest attempt
+          // Don't automatically show results - let user choose
         }
       }
     } catch (error) {
@@ -271,22 +270,74 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
   const renderDetailedResults = () => {
     if (!quizResults || !quiz) return null;
 
+    // Si show_results = false, afficher seulement le score
+    if (!quiz.showResults) {
+      return (
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 text-center">
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              quizResults.percentage >= 50 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                : 'bg-gradient-to-r from-orange-500 to-red-600'
+            }`}>
+              <Trophy className="w-10 h-10 text-white" />
+            </div>
+
+            <h2 className="text-base font-bold text-white mb-2">Quiz terminé</h2>
+            <p className="text-blue-200 text-base mb-4">
+              Votre score a été enregistré
+            </p>
+
+            <div className="flex justify-center space-x-6 mb-6">
+              <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`text-lg font-bold mb-1 ${
+                  quizResults.percentage >= 50 ? 'text-green-400' : 'text-orange-400'
+                }`}>
+                  {quizResults.percentage}%
+                </div>
+                <div className="text-blue-300 text-sm">Score final</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className="text-white text-lg font-bold mb-1">
+                  {quizResults.time_spent ? `${Math.floor(quizResults.time_spent / 60)}:${(quizResults.time_spent % 60).toString().padStart(2, '0')}` : 'N/A'}
+                </div>
+                <div className="text-blue-300 text-sm">Temps utilisé</div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-center space-x-2 text-yellow-200">
+                <Info className="w-5 h-5" />
+                <span className="text-sm">
+                  Les réponses correctes ne sont pas affichées pour ce quiz
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={onBack}
+              className="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
+            >
+              Retour à la liste des quiz
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Si show_results = true, afficher les résultats détaillés
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-3">
           <h2 className="text-base font-bold text-white mb-4">Résultats détaillés</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-            <div className="bg-white/5 rounded-lg p-4">
-              <div className="text-base font-bold text-white mb-1">{quizResults.percentage}%</div>
+          <div className="flex justify-center space-x-6 mb-4">
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <div className="text-lg font-bold text-white mb-1">{quizResults.percentage}%</div>
               <div className="text-blue-300 text-sm">Score final</div>
             </div>
-            <div className="bg-white/5 rounded-lg p-4">
-              <div className="text-base font-bold text-white mb-1">{quizResults.score}/{quizResults.total_points}</div>
-              <div className="text-blue-300 text-sm">Points obtenus</div>
-            </div>
-            <div className="bg-white/5 rounded-lg p-4">
-              <div className="text-base font-bold text-white mb-1">
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <div className="text-lg font-bold text-white mb-1">
                 {quizResults.time_spent ? `${Math.floor(quizResults.time_spent / 60)}:${(quizResults.time_spent % 60).toString().padStart(2, '0')}` : 'N/A'}
               </div>
               <div className="text-blue-300 text-sm">Temps utilisé</div>
@@ -343,9 +394,6 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
                       </div>
                     )}
 
-                    <div className="text-sm text-blue-300">
-                      Points : {isCorrect ? question.points : 0}/{question.points}
-                    </div>
                   </div>
                 </div>
               );
@@ -354,7 +402,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 
           <div className="mt-3 flex justify-center">
             <button
-              onClick={onComplete}
+              onClick={onBack}
               className="px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Retour à la liste des quiz
@@ -376,24 +424,70 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     );
   }
 
-  // If student has already attempted and retakes are not allowed, show results directly
+  // If student has already attempted and retakes are not allowed, show completion screen
   if (hasAttempted && !quiz.allowRetake) {
-    if (quiz.showResults && quizResults) {
-      return renderDetailedResults();
-    } else {
-      // If results are not shown, redirect to completion
-      setTimeout(() => {
-        onComplete();
-      }, 100);
-      return (
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-white">Redirection...</p>
+    // Show completion screen with score and options
+    const percentage = quizResults ? quizResults.percentage : 0;
+    const passed = percentage >= quiz.passingScore;
+
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-center">
+          <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-3 ${
+            passed 
+              ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+              : 'bg-gradient-to-r from-orange-500 to-red-600'
+          }`}>
+            {passed ? (
+              <Trophy className="w-10 h-10 text-white" />
+            ) : (
+              <Target className="w-10 h-10 text-white" />
+            )}
+          </div>
+
+          <h1 className="text-white text-base font-bold mb-2">
+            {passed ? 'Félicitations !' : 'Quiz terminé'}
+          </h1>
+          <p className="text-blue-200 text-base mb-4">
+            {passed 
+              ? 'Vous avez réussi ce quiz avec brio !' 
+              : 'Continuez vos efforts, vous progressez !'}
+          </p>
+
+          <div className="flex justify-center space-x-6 mb-4">
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <div className={`text-lg font-bold mb-1 ${passed ? 'text-green-400' : 'text-orange-400'}`}>
+                {percentage}%
+              </div>
+              <div className="text-blue-300 text-sm">Score final</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <div className="text-white text-lg font-bold mb-1">
+                {quizResults?.time_spent ? `${Math.floor(quizResults.time_spent / 60)}:${(quizResults.time_spent % 60).toString().padStart(2, '0')}` : 'N/A'}
+              </div>
+              <div className="text-blue-300 text-sm">Temps utilisé</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center space-x-3">
+            {quiz.showResults && quizResults && (
+              <button
+                onClick={onComplete}
+                className="px-3 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
+              >
+                Voir les résultats détaillés
+              </button>
+            )}
+            <button
+              onClick={onBack}
+              className="px-3 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
+            >
+              Retour à la liste des quiz
+            </button>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -406,9 +500,21 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      // Fallback: utiliser onComplete si onBack n'est pas fourni
+      onComplete();
+    }
+  };
+
   const handleStartQuiz = () => {
     setIsStarted(true);
     setShowInstructions(false);
+    if (onStart) {
+      onStart();
+    }
     if (soundEnabled) {
       console.log('Son de démarrage');
     }
@@ -435,18 +541,6 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     }
   };
 
-  const handleFlagQuestion = () => {
-    const questionId = currentQuestion.id;
-    setFlaggedQuestions(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(questionId)) {
-        newSet.delete(questionId);
-      } else {
-        newSet.add(questionId);
-      }
-      return newSet;
-    });
-  };
 
   const handleSubmitQuiz = async () => {
     setIsCompleted(true);
@@ -456,20 +550,18 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     }
     
     // Calculer le score
-    let score = 0;
-    let totalPoints = 0;
+    let correctAnswers = 0;
     quiz.questions.forEach(question => {
-      totalPoints += question.points;
       const userAnswer = answers[question.id];
       if (userAnswer !== undefined) {
         if (JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)) {
-          score += question.points;
+          correctAnswers++;
         }
       }
     });
 
-    const percentage = Math.round((score / totalPoints) * 100);
-    console.log(`Quiz terminé ! Score: ${score}/${totalPoints} (${percentage}%)`);
+    const percentage = Math.round((correctAnswers / quiz.questions.length) * 100);
+    console.log(`Quiz terminé ! Réponses correctes: ${correctAnswers}/${quiz.questions.length} (${percentage}%)`);
     
     // Submit results to API
     try {
@@ -483,8 +575,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         quiz_id: parseInt(quiz.id),
         student_id: user.studentDetails?.id || user.id,
         student_name: `${user.firstName} ${user.lastName}`,
-        score: score,
-        total_points: totalPoints,
+        total_points: quiz.questions.length,
         percentage: percentage,
         time_spent: quiz.isTimeLimited ? (quiz.duration * 60 - timeRemaining) : null,
         answers: answers
@@ -503,15 +594,8 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
         setQuizResults(result);
         setHasAttempted(true);
         
-        // Show results if enabled
-        if (quiz.showResults) {
-          setShowResults(true);
-        } else {
-          // Redirect to completion
-          setTimeout(() => {
-            onComplete();
-          }, 3000);
-        }
+        // Ne pas afficher automatiquement les résultats, laisser l'utilisateur choisir
+        // setShowResults(true); // Supprimé pour permettre le choix
       } else {
         console.error('Failed to submit quiz results');
         setTimeout(() => {
@@ -628,32 +712,27 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             <p className="text-blue-200 text-base">{quiz.description}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
-            <div className="bg-white/5 rounded-xl p-6 text-center">
-              <Clock className="w-5 h-5 text-blue-400 mx-auto mb-3" />
-              <div className="text-white text-base font-bold">
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <Clock className="w-4 h-4 text-blue-400 mx-auto mb-2" />
+              <div className="text-white text-sm font-bold">
                 {quiz.isTimeLimited ? `${quiz.duration} min` : 'Illimité'}
               </div>
-              <div className="text-blue-300 text-sm">
+              <div className="text-blue-300 text-xs">
                 {quiz.isTimeLimited ? 'Durée limitée' : 'Pas de limite'}
               </div>
             </div>
-            <div className="bg-white/5 rounded-xl p-6 text-center">
-              <Target className="w-5 h-5 text-green-400 mx-auto mb-3" />
-              <div className="text-white text-base font-bold">{quiz.questions.length}</div>
-              <div className="text-blue-300 text-sm">Questions</div>
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <Target className="w-4 h-4 text-green-400 mx-auto mb-2" />
+              <div className="text-white text-sm font-bold">{quiz.questions.length}</div>
+              <div className="text-blue-300 text-xs">Questions</div>
             </div>
-            <div className="bg-white/5 rounded-xl p-6 text-center">
-              <Star className="w-5 h-5 text-yellow-400 mx-auto mb-3" />
-              <div className="text-white text-base font-bold">{quiz.totalPoints}</div>
-              <div className="text-blue-300 text-sm">Points</div>
-            </div>
-            <div className="bg-white/5 rounded-xl p-6 text-center">
-              <RefreshCw className="w-5 h-5 text-purple-400 mx-auto mb-3" />
-              <div className="text-white text-base font-bold">
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <RefreshCw className="w-4 h-4 text-purple-400 mx-auto mb-2" />
+              <div className="text-white text-sm font-bold">
                 {quiz.allowRetake ? 'Oui' : 'Non'}
               </div>
-              <div className="text-blue-300 text-sm">
+              <div className="text-blue-300 text-xs">
                 {quiz.allowRetake ? 'Reprises autorisées' : 'Une seule tentative'}
               </div>
             </div>
@@ -705,7 +784,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
 
           <div className="flex items-center justify-center space-x-3">
             <button
-              onClick={() => window.history.back()}
+              onClick={handleBack}
               className="px-3 py-3 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all"
             >
               Retour
@@ -723,17 +802,17 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
     );
   }
 
-  // Écran de fin
-  if (isCompleted) {
-    const score = quiz.questions.reduce((total, question) => {
+  // Écran de fin - seulement si on n'affiche pas les résultats
+  if (isCompleted && !showResults) {
+    const correctAnswers = quiz.questions.reduce((total, question) => {
       const userAnswer = answers[question.id];
       if (userAnswer !== undefined && JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)) {
-        return total + question.points;
+        return total + 1;
       }
       return total;
     }, 0);
 
-    const percentage = Math.round((score / quiz.totalPoints) * 100);
+    const percentage = Math.round((correctAnswers / quiz.questions.length) * 100);
     const passed = percentage >= quiz.passingScore;
 
     return (
@@ -760,39 +839,34 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               : 'Continuez vos efforts, vous progressez !'}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-            <div className="bg-white/5 rounded-xl p-6">
-              <div className={`text-base font-bold mb-2 ${passed ? 'text-green-400' : 'text-orange-400'}`}>
+          <div className="flex justify-center space-x-6 mb-4">
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <div className={`text-lg font-bold mb-1 ${passed ? 'text-green-400' : 'text-orange-400'}`}>
                 {percentage}%
               </div>
               <div className="text-blue-300 text-sm">Score final</div>
             </div>
-            <div className="bg-white/5 rounded-xl p-6">
-              <div className="text-white text-base font-bold mb-2">{score}/{quiz.totalPoints}</div>
-              <div className="text-blue-300 text-sm">Points obtenus</div>
-            </div>
-            <div className="bg-white/5 rounded-xl p-6">
-              <div className="text-white text-base font-bold mb-2">{answeredQuestions}/{quiz.questions.length}</div>
+            <div className="bg-white/5 rounded-lg p-4 text-center">
+              <div className="text-white text-lg font-bold mb-1">{answeredQuestions}/{quiz.questions.length}</div>
               <div className="text-blue-300 text-sm">Questions répondues</div>
             </div>
           </div>
 
           <div className="flex items-center justify-center space-x-3">
-            {quiz.showResults ? (
-              <button
-                onClick={() => setShowResults(true)}
-                className="px-3 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
-              >
-                Voir les résultats détaillés
-              </button>
-            ) : (
+            {quiz.showResults && (
               <button
                 onClick={onComplete}
                 className="px-3 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
               >
-                Retour à la liste des quiz
+                Voir les résultats détaillés
               </button>
             )}
+            <button
+              onClick={onBack}
+              className="px-3 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
+            >
+              Retour à la liste des quiz
+            </button>
           </div>
         </div>
       </div>
@@ -842,67 +916,27 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             </div>
           </div>
 
-          {/* Barre de progression */}
-          {showProgress && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-blue-300 text-sm">Progression</span>
-                <span className="text-white text-sm">{Math.round(progress)}%</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Contenu principal */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="flex-1">
           {/* Question */}
-          <div className="lg:col-span-3">
+          <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 h-full">
-              {/* En-tête de la question */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold">{currentQuestionIndex + 1}</span>
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                          currentQuestion.difficulty === 'easy' ? 'bg-green-500/20 text-green-400' :
-                          currentQuestion.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-red-500/20 text-red-400'
-                        }`}>
-                          {currentQuestion.difficulty === 'easy' ? 'Facile' : 
-                           currentQuestion.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
-                        </span>
-                        <span className="text-blue-300 text-sm">{currentQuestion.points} points</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <h2 className="text-white text-base font-semibold mb-4">
-                    {currentQuestion.question}
-                  </h2>
-                </div>
+               {/* En-tête de la question */}
+               <div className="flex items-center space-x-3 mb-4">
+                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                   <span className="text-white font-bold text-sm">{currentQuestionIndex + 1}</span>
+                 </div>
+                 <h2 className="text-white text-lg font-semibold">Question {currentQuestionIndex + 1}</h2>
+               </div>
 
-                <button
-                  onClick={handleFlagQuestion}
-                  className={`p-2 rounded-lg transition-all ${
-                    flaggedQuestions.has(currentQuestion.id)
-                      ? 'bg-red-500/20 text-red-300'
-                      : 'bg-white/10 text-white/60 hover:text-white'
-                  }`}
-                  title="Marquer cette question"
-                >
-                  <Flag className="w-5 h-5" />
-                </button>
-              </div>
+               {/* Question directement au-dessus des réponses */}
+               <div className="mb-3">
+                 <h3 className="text-white text-base font-medium leading-relaxed">
+                   {currentQuestion.question}
+                 </h3>
+               </div>
 
               {/* Média si présent */}
               {currentQuestion.media && (
@@ -918,7 +952,7 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               )}
 
               {/* Réponse */}
-              <div className="mb-3">
+              <div className="mb-4">
                 {renderQuestion()}
               </div>
 
@@ -941,32 +975,21 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
               )}
 
               {/* Navigation */}
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={handlePreviousQuestion}
-                  disabled={currentQuestionIndex === 0}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  <span>Précédent</span>
-                </button>
-
-                
-
+              <div className="flex items-center justify-center">
                 {currentQuestionIndex === quiz.questions.length - 1 ? (
                   <button
                     onClick={handleSubmitQuiz}
-                    className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
                   >
                     <Send className="w-5 h-5" />
-                    <span>Terminer</span>
+                    <span>Terminer le quiz</span>
                   </button>
                 ) : (
                   <button
                     onClick={handleNextQuestion}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-all"
+                    className="flex items-center space-x-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-all"
                   >
-                    <span>Suivant</span>
+                    <span>Question suivante</span>
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 )}
@@ -974,102 +997,6 @@ const QuizTakeTab: React.FC<QuizTakeTabProps> = ({ quizId, onComplete }) => {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Navigation des questions */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <h3 className="text-white font-semibold mb-4">Questions</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {quiz.questions.map((_, index) => {
-                  const isAnswered = answers[quiz.questions[index].id] !== undefined;
-                  const isFlagged = flaggedQuestions.has(quiz.questions[index].id);
-                  const isCurrent = index === currentQuestionIndex;
-                  
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentQuestionIndex(index)}
-                      className={`w-10 h-10 rounded-lg text-sm font-semibold transition-all relative ${
-                        isCurrent
-                          ? 'bg-blue-500 text-white'
-                          : isAnswered
-                          ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                          : 'bg-white/10 text-white/60 hover:bg-white/20'
-                      }`}
-                    >
-                      {index + 1}
-                      {isFlagged && (
-                        <Flag className="w-3 h-3 text-red-400 absolute -top-1 -right-1" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <div className="mt-4 space-y-2 text-xs">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500/20 rounded"></div>
-                  <span className="text-green-400">Répondu ({answeredQuestions})</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-white/20 rounded"></div>
-                  <span className="text-white/60">Non répondu ({quiz.questions.length - answeredQuestions})</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Flag className="w-3 h-3 text-red-400" />
-                  <span className="text-red-400">Marqué ({flaggedQuestions.size})</span>
-                </div>
-              </div>
-            </div>
-
-                         {/* Paramètres */}
-             <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-               <h3 className="text-white font-semibold mb-4">Paramètres</h3>
-               <div className="space-y-3">
-                 <div className="flex items-center justify-between">
-                   <span className="text-blue-200 text-sm">Progression</span>
-                   <button
-                     onClick={() => setShowProgress(!showProgress)}
-                     className={`w-10 h-6 rounded-full transition-all ${
-                       showProgress ? 'bg-green-500' : 'bg-white/20'
-                     }`}
-                   >
-                     <div className={`w-4 h-4 bg-white rounded-full transition-all ${
-                       showProgress ? 'translate-x-5' : 'translate-x-1'
-                     }`} />
-                   </button>
-                 </div>
-
-                 <div className="flex items-center justify-between">
-                   <span className="text-blue-200 text-sm">Son</span>
-                   <button
-                     onClick={() => setSoundEnabled(!soundEnabled)}
-                     className={`p-2 rounded-lg transition-all ${
-                       soundEnabled 
-                         ? 'bg-blue-500/20 text-blue-300' 
-                         : 'bg-white/10 text-white/60'
-                     }`}
-                   >
-                     {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                   </button>
-                 </div>
-               </div>
-             </div>
-
-            {/* Aide */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-              <h3 className="text-white font-semibold mb-4 flex items-center">
-                <HelpCircle className="w-5 h-5 mr-2" />
-                Aide
-              </h3>
-              <div className="space-y-2 text-sm text-blue-200">
-                <p>• Utilisez les flèches pour naviguer</p>
-                <p>• Marquez les questions difficiles</p>
-                <p>• Vos réponses sont sauvegardées</p>
-                <p>• Gérez votre temps efficacement</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

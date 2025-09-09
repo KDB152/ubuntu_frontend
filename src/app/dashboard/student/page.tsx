@@ -99,6 +99,8 @@ const StudentDashboard = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
+  const [isQuizInProgress, setIsQuizInProgress] = useState(false);
+  const [isQuizCompleted, setIsQuizCompleted] = useState(false);
 
   // Données dynamiques de l'étudiant connecté
   const [currentStudent, setCurrentStudent] = useState<StudentUser | null>(null);
@@ -258,6 +260,12 @@ const StudentDashboard = () => {
   }, []);
 
   const handleTabChange = (tabId: TabType, quizId?: string) => {
+    // Empêcher la navigation si un quiz est en cours (mais pas terminé), sauf pour le quiz lui-même
+    if (isQuizInProgress && !isQuizCompleted && tabId !== 'quiz-take') {
+      alert('Vous ne pouvez pas quitter le quiz en cours. Terminez-le d\'abord.');
+      return;
+    }
+    
     setActiveTab(tabId);
     if (tabId === 'quiz-take' && quizId) {
       setCurrentQuizId(quizId);
@@ -265,6 +273,25 @@ const StudentDashboard = () => {
     if (window.innerWidth < 1024) {
       setSidebarCollapsed(true);
     }
+  };
+
+  const handleQuizStart = () => {
+    setIsQuizInProgress(true);
+    setIsQuizCompleted(false);
+  };
+
+  const handleQuizComplete = () => {
+    setIsQuizInProgress(false);
+    setIsQuizCompleted(true);
+    setCurrentQuizId(null);
+    handleTabChange('results');
+  };
+
+  const handleQuizBack = () => {
+    setIsQuizInProgress(false);
+    setIsQuizCompleted(true);
+    setCurrentQuizId(null);
+    handleTabChange('quizzes');
   };
 
   const toggleFullscreen = () => {
@@ -278,6 +305,10 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = () => {
+    if (isQuizInProgress && !isQuizCompleted) {
+      alert('Vous ne pouvez pas vous déconnecter pendant qu\'un quiz est en cours. Terminez-le d\'abord.');
+      return;
+    }
     if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
       logout();
     }
@@ -314,7 +345,12 @@ const StudentDashboard = () => {
       case 'quizzes':
         return <QuizListTab onStartQuiz={(quizId) => handleTabChange('quiz-take', quizId)} />;
       case 'quiz-take':
-        return <QuizTakeTab quizId={currentQuizId} onComplete={() => handleTabChange('results')} />;
+        return <QuizTakeTab 
+          quizId={currentQuizId} 
+          onComplete={handleQuizComplete} 
+          onBack={handleQuizBack}
+          onStart={handleQuizStart}
+        />;
       case 'results':
         return <QuizResultsTab />;
       case 'progress':
@@ -390,9 +426,12 @@ const StudentDashboard = () => {
                 <button
                   key={item.id}
                   onClick={() => handleTabChange(item.id as TabType)}
+                  disabled={isQuizInProgress && !isQuizCompleted && item.id !== 'quiz-take'}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
                     isActive
                       ? `bg-gradient-to-r ${item.color} text-white shadow-lg`
+                      : isQuizInProgress && !isQuizCompleted && item.id !== 'quiz-take'
+                      ? 'text-blue-400/50 cursor-not-allowed opacity-50'
                       : 'text-blue-200 hover:bg-blue-800/50 hover:text-blue-100'
                   }`}
                   title={sidebarCollapsed ? item.label : ''}
@@ -454,7 +493,12 @@ const StudentDashboard = () => {
                     <div className="p-2">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 border border-red-500/40 rounded-lg transition-all text-left font-medium"
+                        disabled={isQuizInProgress && !isQuizCompleted}
+                        className={`w-full flex items-center space-x-3 px-3 py-2 border rounded-lg transition-all text-left font-medium ${
+                          isQuizInProgress && !isQuizCompleted
+                            ? 'text-red-400/50 cursor-not-allowed opacity-50 border-red-500/20'
+                            : 'text-red-400 hover:text-red-300 hover:bg-red-900/30 border-red-500/40'
+                        }`}
                       >
                         <LogOut className="w-4 h-4" />
                         <span className="text-sm font-semibold">Se déconnecter</span>
@@ -487,9 +531,21 @@ const StudentDashboard = () => {
                     <h1 className="text-2xl font-bold text-blue-100 transition-colors duration-300">
                       {currentTabInfo.label}
                     </h1>
+                    {isQuizInProgress && !isQuizCompleted && (
+                      <span className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-sm font-semibold border border-orange-500/30">
+                        Quiz en cours
+                      </span>
+                    )}
+                    {isQuizInProgress && isQuizCompleted && (
+                      <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm font-semibold border border-green-500/30">
+                        Quiz terminé
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-blue-300 transition-colors duration-300">
-                    {currentTabInfo.description}
+                    {isQuizInProgress && !isQuizCompleted ? 'Quiz en cours - Terminez-le pour accéder aux autres sections' : 
+                     isQuizInProgress && isQuizCompleted ? 'Quiz terminé - Vous pouvez maintenant naviguer librement' : 
+                     currentTabInfo.description}
                   </p>
                 </div>
               </div>
@@ -521,7 +577,12 @@ const StudentDashboard = () => {
                                 {/* Bouton de déconnexion */}
                                 <button
                                   onClick={handleLogout}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-transparent border border-white/30 rounded-xl text-red-400 hover:bg-red-500/20 hover:border-red-400/50 transition-all"
+                                  disabled={isQuizInProgress && !isQuizCompleted}
+                                  className={`flex items-center space-x-2 px-4 py-2 bg-transparent border rounded-xl transition-all ${
+                                    isQuizInProgress && !isQuizCompleted
+                                      ? 'border-white/10 text-red-400/50 cursor-not-allowed opacity-50'
+                                      : 'border-white/30 text-red-400 hover:bg-red-500/20 hover:border-red-400/50'
+                                  }`}
                                 >
                                   <LogOut className="w-4 h-4" />
                                   <span className="font-medium">Déconnexion</span>

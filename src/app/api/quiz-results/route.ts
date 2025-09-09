@@ -26,12 +26,15 @@ async function getConnection() {
 
 // GET - Récupérer les résultats de quiz pour un parent ou un enfant spécifique
 export async function GET(request: NextRequest) {
+  let connection;
   try {
     const { searchParams } = new URL(request.url);
     const parentUserId = searchParams.get('parentUserId');
     const studentId = searchParams.get('studentId');
 
-    const connection = await getConnection();
+    console.log('🔍 API quiz-results appelée avec:', { parentUserId, studentId });
+
+    connection = await getConnection();
 
     let finalStudentIds: number[] = [];
 
@@ -69,7 +72,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Récupérer les résultats de quiz
+    // Récupérer les résultats de quiz de manière simplifiée
     const placeholders = finalStudentIds.map(() => '?').join(',');
     const [quizResults] = await connection.execute(`
       SELECT qa.*, 
@@ -83,26 +86,34 @@ export async function GET(request: NextRequest) {
       JOIN quizzes q ON qa.quiz_id = q.id
       LEFT JOIN students s ON s.id IN (${placeholders})
       LEFT JOIN users s_user ON s.user_id = s_user.id
-      WHERE (qa.student_id IN (${placeholders}) OR qa.student_name LIKE CONCAT('%', s_user.first_name, '%'))
+      WHERE qa.student_id IN (${placeholders})
       ORDER BY qa.completed_at DESC
     `, [...finalStudentIds, ...finalStudentIds]);
 
     // Transformer les données pour le frontend
-    const transformedResults = (quizResults as any).map((result: any) => ({
-      id: result.id.toString(),
-      quiz_id: result.quiz_id,
-      student_id: result.correct_student_id || result.student_id,
-      student_name: `${result.student_first_name || ''} ${result.student_last_name || ''}`.trim() || result.student_name,
-      quiz_title: result.quiz_title || 'Quiz sans titre',
-      subject: result.subject || 'general',
-      level: result.level || 'Seconde',
-      score: result.score || 0,
-      total_points: result.total_points || 0,
-      percentage: result.percentage || 0,
-      time_spent: result.time_spent || 0,
-      completed_at: result.completed_at,
-      answers: result.answers
-    }));
+    const transformedResults = (quizResults as any).map((result: any) => {
+      // Utiliser total_points comme nombre de questions et calculer les bonnes réponses
+      const questionsTotal = result.total_points || 2;
+      const questionsCorrect = Math.round((result.percentage / 100) * questionsTotal);
+      
+      return {
+        id: result.id.toString(),
+        quiz_id: result.quiz_id,
+        student_id: result.correct_student_id || result.student_id,
+        student_name: `${result.student_first_name || ''} ${result.student_last_name || ''}`.trim() || result.student_name,
+        quiz_title: result.quiz_title || 'Quiz sans titre',
+        subject: result.subject || 'general',
+        level: result.level || 'Seconde',
+        score: result.score || 0,
+        total_points: result.total_points || 0,
+        percentage: result.percentage || 0,
+        time_spent: result.time_spent || 0,
+        completed_at: result.completed_at,
+        answers: result.answers,
+        questions_total: questionsTotal,
+        questions_correct: questionsCorrect
+      };
+    });
 
     // Calculer les statistiques
     const stats = {
@@ -126,8 +137,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erreur lors de la récupération des résultats de quiz:', error);
+    if (connection) {
+      await connection.end();
+    }
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération des résultats de quiz' },
+      { error: 'Erreur lors de la récupération des résultats de quiz', details: error instanceof Error ? error.message : 'Erreur inconnue' },
       { status: 500 }
     );
   }

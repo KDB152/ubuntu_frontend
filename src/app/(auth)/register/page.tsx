@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ToastProvider } from '@/components/ui/toast';
 import { Mail, Lock, User, Eye, EyeOff, UserPlus, Globe, MapPin, BookOpen, CheckCircle, AlertCircle, GraduationCap, Phone, Calendar, Baby, ArrowRight, Shield, Zap, Users, Star, Award } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export const viewport = {
 import { AVAILABLE_CLASSES } from '@/constants/classes';
 
 const RegisterPage: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -158,21 +160,33 @@ const RegisterPage: React.FC = () => {
 
     // Validation spécifique aux parents
     if (formData.userType === 'parent') {
-      // Validation optionnelle des données enfant
+      // Validation obligatoire des données enfant
+      if (!formData.childFirstName || !formData.childFirstName.trim()) {
+        newErrors.childFirstName = 'Le prénom de l\'enfant est obligatoire';
+      }
+      if (!formData.childLastName || !formData.childLastName.trim()) {
+        newErrors.childLastName = 'Le nom de l\'enfant est obligatoire';
+      }
+      if (!formData.childPhone || !formData.childPhone.trim()) {
+        newErrors.childPhone = 'Le numéro de téléphone de l\'enfant est obligatoire';
+      } else if (!/^[0-9+\-\s()]+$/.test(formData.childPhone)) {
+        newErrors.childPhone = 'Veuillez entrer un numéro de téléphone valide pour l\'enfant';
+      }
+      if (!formData.childClass || !formData.childClass.trim()) {
+        newErrors.childClass = 'La classe de l\'enfant est obligatoire';
+      } else if (!AVAILABLE_CLASSES.includes(formData.childClass)) {
+        newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
+      }
+      
+      // Validation optionnelle des autres données enfant
       if (formData.childEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.childEmail)) {
         newErrors.childEmail = 'Veuillez entrer un email valide pour l\'enfant';
-      }
-      if (formData.childPhone && !/^[0-9+\-\s()]+$/.test(formData.childPhone)) {
-        newErrors.childPhone = 'Veuillez entrer un numéro de téléphone valide pour l\'enfant';
       }
       if (formData.childPassword && formData.childPassword.length < 8) {
         newErrors.childPassword = 'Le mot de passe de l\'enfant doit contenir au moins 8 caractères';
       }
       if (formData.childPassword && formData.childConfirmPassword && formData.childPassword !== formData.childConfirmPassword) {
         newErrors.childConfirmPassword = 'Les mots de passe de l\'enfant ne correspondent pas';
-      }
-      if (formData.childClass && !AVAILABLE_CLASSES.includes(formData.childClass)) {
-        newErrors.childClass = 'Veuillez sélectionner une classe valide pour l\'enfant';
       }
     }
 
@@ -217,7 +231,8 @@ const RegisterPage: React.FC = () => {
         if (formData.parentLastName?.trim()) requestData.parentLastName = formData.parentLastName;
         if (formData.parentEmail?.trim()) requestData.parentEmail = formData.parentEmail;
         if (formData.parentPhone?.trim()) requestData.parentPhone = formData.parentPhone;
-        if (formData.parentPassword?.trim()) requestData.parentPassword = formData.parentPassword;
+        // Utiliser le mot de passe principal pour le parent
+        requestData.parentPassword = formData.password;
       }
 
       // Parent-specific fields
@@ -226,7 +241,8 @@ const RegisterPage: React.FC = () => {
         if (formData.childLastName?.trim()) requestData.childLastName = formData.childLastName;
         if (formData.childBirthDate?.trim()) requestData.childBirthDate = formData.childBirthDate;
         if (formData.childClass?.trim()) requestData.childClass = formData.childClass;
-        if (formData.childPassword?.trim()) requestData.childPassword = formData.childPassword;
+        // Utiliser le mot de passe principal pour l'enfant
+        requestData.childPassword = formData.password;
         if (formData.childEmail?.trim()) requestData.childEmail = formData.childEmail;
         if (formData.childPhone?.trim()) requestData.childPhone = formData.childPhone;
       }
@@ -242,33 +258,9 @@ const RegisterPage: React.FC = () => {
         throw new Error(data.message || "Erreur lors de l'inscription");
       }
 
-      setSuccessMessage(data.message || 'Inscription réussie !');
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        userType: 'student',
-        acceptTerms: false,
-        studentBirthDate: '',
-        studentClass: '',
-        childFirstName: '',
-        childLastName: '',
-        childBirthDate: '',
-        childClass: '',
-        parentFirstName: '',
-        parentLastName: '',
-        parentEmail: '',
-        parentPhone: '',
-        parentPassword: '',
-        parentConfirmPassword: '',
-        childPassword: '',
-        childConfirmPassword: '',
-        childEmail: '',
-        childPhone: ''
-      });
+      // Rediriger vers la page de vérification d'email après inscription réussie
+      localStorage.setItem('pendingVerificationEmail', formData.email);
+      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       setErrors({ ...errors, global: (error as Error).message });
     } finally {
@@ -279,10 +271,27 @@ const RegisterPage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      
+      // Synchroniser automatiquement les mots de passe
+      if (name === 'password') {
+        // Si c'est le mot de passe principal, le copier vers parent et enfant
+        if (formData.userType === 'student') {
+          newData.parentPassword = value;
+          newData.parentConfirmPassword = value;
+        } else if (formData.userType === 'parent') {
+          newData.childPassword = value;
+          newData.childConfirmPassword = value;
+        }
+      }
+      
+      return newData;
+    });
     
     // Effacer l'erreur quand l'utilisateur commence à taper
     if (errors[name]) {
@@ -456,7 +465,7 @@ const RegisterPage: React.FC = () => {
                       }`}
                     >
                       <GraduationCap className={`w-5 h-5 ${formData.userType === 'student' ? 'text-amber-300' : 'group-hover:text-white'} transition-colors`} />
-                      <span className="text-sm font-medium">Élève</span>
+                      <span className="text-sm font-medium">Étudiant</span>
                     </button>
                     <button
                       type="button"
@@ -793,22 +802,22 @@ const RegisterPage: React.FC = () => {
                     <h3 className="text-lg font-semibold text-white mb-2 flex items-center">
                       <Baby className="w-5 h-5 mr-2 text-amber-300" />
                       Informations de l'enfant
-                      <span className="ml-2 text-sm font-normal text-amber-300/80">(Optionnel)</span>
+                      <span className="ml-2 text-sm font-normal text-red-400/80">(Obligatoire)</span>
                     </h3>
                     <p className="text-sm text-white/70 mb-4">
-                      Vous pouvez ajouter les informations de votre enfant maintenant ou plus tard depuis votre profil.
+                    Si votre enfant a déjà créé son compte, contactez l’administrateur et ne créez pas de compte parent. Sinon, créez un compte pour vous-même et pour votre enfant.
                     </p>
                     <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
                       <p className="text-sm text-blue-200">
-                        <strong>💡 Information :</strong> Si vous ne renseignez pas les informations de votre enfant, 
-                        un compte étudiant temporaire sera créé automatiquement. Vous pourrez le personnaliser plus tard.
+                        <strong>💡 Information :</strong> Les informations de votre enfant (nom, prénom, téléphone et classe) sont <strong className="text-red-300">obligatoires</strong>. 
+                        Un compte enfant sera créé automatiquement avec ces informations et le <strong className="text-amber-300">même mot de passe</strong> que le vôtre.
                       </p>
                     </div>
                     
                     {/* Les champs enfant sont déjà dans la section précédente, on les déplace ici */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Prénom de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Baby className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -821,7 +830,8 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childFirstName ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Prénom de l'enfant (optionnel)"
+                            placeholder="Prénom de l'enfant (obligatoire)"
+                            required
                           />
                         </div>
                         {errors.childFirstName && (
@@ -830,7 +840,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Nom de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                         <div className="relative group">
                           <input
                             type="text"
@@ -840,7 +850,8 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-4 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childLastName ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Nom de l'enfant (optionnel)"
+                            placeholder="Nom de l'enfant (obligatoire)"
+                            required
                           />
                         </div>
                         {errors.childLastName && (
@@ -874,7 +885,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Téléphone de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Phone className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -887,7 +898,8 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm ${
                               errors.childPhone ? 'border-red-400' : 'border-white/20'
                             }`}
-                            placeholder="Numéro de téléphone de l'enfant (optionnel)"
+                            placeholder="Numéro de téléphone de l'enfant (obligatoire)"
+                            required
                           />
                         </div>
                         {errors.childPhone && (
@@ -920,7 +932,7 @@ const RegisterPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant <span className="text-amber-300/80 text-xs">(Optionnel)</span></label>
+                        <label className="block text-sm font-medium text-white/90 mb-3">Classe de l'enfant <span className="text-red-400/80 text-xs">(Obligatoire)</span></label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                             <BookOpen className="h-5 w-5 text-blue-300 group-focus-within:text-amber-300 transition-colors" />
@@ -932,8 +944,9 @@ const RegisterPage: React.FC = () => {
                             className={`w-full pl-12 pr-4 py-4 bg-white/10 border rounded-xl text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 backdrop-blur-sm appearance-none ${
                               errors.childClass ? 'border-red-400' : 'border-white/20'
                             }`}
+                            required
                           >
-                            <option value="" className="bg-slate-800 text-white">La classe de votre enfant (optionnel)</option>
+                            <option value="" className="bg-slate-800 text-white">La classe de votre enfant (obligatoire)</option>
                             {AVAILABLE_CLASSES.map((classe) => (
                               <option 
                                 key={classe} 
@@ -1033,11 +1046,14 @@ const RegisterPage: React.FC = () => {
                       Informations des parents
                       <span className="ml-2 text-sm font-normal text-red-400/80">(Téléphone obligatoire)</span>
                     </h3>
+                    <p className="text-sm text-white/70 mb-4">
+                    Si votre  a déjà créé son compte, contactez l’administrateur et ne créez pas de compte étudiant. Sinon, créez un compte pour vous-même et pour votre parent.
+                    </p>
                     <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-3 mb-4">
                       <p className="text-sm text-blue-200">
                         <strong>💡 Information :</strong> Le numéro de téléphone de votre parent est obligatoire. 
                         Si vous ne renseignez pas les autres informations de vos parents, 
-                        un compte parent temporaire sera créé automatiquement. Vous pourrez le personnaliser plus tard.
+                        un compte parent temporaire sera créé automatiquement avec le <strong className="text-amber-300">même mot de passe</strong> que le vôtre.
                       </p>
                     </div>
                     

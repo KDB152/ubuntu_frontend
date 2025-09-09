@@ -40,38 +40,77 @@ export const useParentDashboardStats = () => {
       }
 
       let completedQuizzes = 0;
-      let averageScore = 0;
+      let totalScore = 0; // Somme de tous les scores
+      let totalValidResults = 0; // Nombre total de résultats valides
       let totalMessages = 0;
       let unreadMessages = 0;
       let totalMeetings = 0;
       let pendingMeetings = 0;
 
-      // 1. Récupérer les quiz terminés et score moyen (comme dans QuizResultsTab)
+      // 1. Récupérer les enfants du parent d'abord via l'API frontend
       try {
-        const attemptsResponse = await fetch(`${API_BASE}/quizzes/attempts?parent_id=${currentUserId}`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        console.log('🔍 Tentative de récupération des enfants pour parentId:', currentUserId);
+        const childrenResponse = await fetch(`/api/parent/children?parentId=${currentUserId}`, {
+          headers: { 'Content-Type': 'application/json' }
         });
         
-        if (attemptsResponse.ok) {
-          const attempts = await attemptsResponse.json();
-          console.log('📊 Tentatives récupérées pour parent:', attempts);
+        console.log('📡 Réponse API enfants:', childrenResponse.status, childrenResponse.ok);
+        
+        if (childrenResponse.ok) {
+          const parentData = await childrenResponse.json();
+          const children = parentData.children || [];
+          console.log('👶 Enfants trouvés via API frontend:', children);
+          console.log('📊 Nombre d\'enfants:', children.length);
           
-          if (attempts && attempts.length > 0) {
-            completedQuizzes = attempts.length;
-            
-            // Calculer le score moyen
-            const validResults = attempts.filter((attempt: any) => attempt.percentage !== null && attempt.percentage !== undefined);
-            if (validResults.length > 0) {
-              const totalScore = validResults.reduce((sum: number, result: any) => {
-                return sum + (result.percentage || 0);
-              }, 0);
-              averageScore = Math.round(totalScore / validResults.length);
+          if (children && children.length > 0) {
+            // Pour chaque enfant, récupérer ses résultats via l'API frontend
+            for (const child of children) {
+              try {
+                const resultsResponse = await fetch(`/api/quiz-results?studentId=${child.id}`, {
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (resultsResponse.ok) {
+                  const resultsData = await resultsResponse.json();
+                  const quizResults = resultsData.quizResults || [];
+                  console.log(`📊 Résultats pour enfant ${child.id}:`, quizResults);
+                  console.log(`📊 Nombre de résultats pour enfant ${child.id}:`, quizResults.length);
+                  
+                  if (quizResults && quizResults.length > 0) {
+                    completedQuizzes += quizResults.length;
+                    
+                    // Ajouter tous les scores valides à la somme totale
+                    const validResults = quizResults.filter((result: any) => result.percentage !== null && result.percentage !== undefined);
+                    console.log(`📊 Résultats valides pour enfant ${child.id}:`, validResults.length);
+                    if (validResults.length > 0) {
+                      validResults.forEach((result: any) => {
+                        totalScore += (result.percentage || 0);
+                        totalValidResults += 1;
+                      });
+                    }
+                  }
+                } else {
+                  console.log(`❌ Erreur API quiz-results pour enfant ${child.id}:`, resultsResponse.status);
+                }
+              } catch (error) {
+                console.log(`❌ Erreur récupération résultats enfant ${child.id}:`, error);
+              }
             }
           }
         }
       } catch (error) {
-        console.log('❌ Erreur récupération tentatives parent:', error);
+        console.log('❌ Erreur récupération enfants parent:', error);
       }
+
+      // Calculer la moyenne globale
+      const averageScore = totalValidResults > 0 ? Math.round(totalScore / totalValidResults) : 0;
+      
+      console.log('📊 Statistiques calculées:', {
+        completedQuizzes,
+        totalScore,
+        totalValidResults,
+        averageScore
+      });
 
       // 2. Récupérer les messages reçus non répondus
       try {

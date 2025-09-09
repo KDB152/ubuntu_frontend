@@ -197,7 +197,7 @@ export function StudentDashboard() {
         />
         <StatCard
           title="Moyenne générale"
-          value={`${studentData.averageScore}/100`}
+          value={`${studentData.averageScore}%`}
           icon={Trophy}
           description="score moyen aux quiz"
           color="yellow-500"
