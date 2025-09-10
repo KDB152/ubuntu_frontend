@@ -44,6 +44,7 @@ interface User {
   lastName: string;
   email: string;
   role: string;
+  childName?: string; // Nom de l'enfant pour les parents
 }
 
 interface Message {
@@ -209,6 +210,18 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
               };
             }
 
+            // Si c'est un parent, récupérer le nom de l'enfant si pas déjà fait
+            if (otherUser.role === 'parent' && !otherUser.childName) {
+              try {
+                const childInfo = await getChildInfoForParent(otherUser.id);
+                if (childInfo) {
+                  otherUser.childName = childInfo;
+                }
+              } catch (error) {
+                console.log('Erreur lors de la récupération de l\'enfant pour le parent:', otherUser.id, error);
+              }
+            }
+
             // Get last message if conversation has messages
             let lastMessage = null;
             if (conversation.last_message_id) {
@@ -252,11 +265,27 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
       setIsLoading(true);
       const data = await messagingAPI.getAvailableRecipients(currentUserId);
       
-      // Map camelCase to snake_case for consistency
-      const mappedUsers = data.map((user: any) => ({
-        ...user,
-        firstName: user.firstName || 'Utilisateur',
-        lastName: user.lastName || ''
+      // Map camelCase to snake_case for consistency and add child info for parents
+      const mappedUsers = await Promise.all(data.map(async (user: any) => {
+        const mappedUser = {
+          ...user,
+          firstName: user.firstName || 'Utilisateur',
+          lastName: user.lastName || ''
+        };
+
+        // Si c'est un parent, récupérer le nom de l'enfant
+        if (user.role === 'parent') {
+          try {
+            const childInfo = await getChildInfoForParent(user.id);
+            if (childInfo) {
+              mappedUser.childName = childInfo;
+            }
+          } catch (error) {
+            console.log('Erreur lors de la récupération de l\'enfant pour le parent:', user.id, error);
+          }
+        }
+
+        return mappedUser;
       }));
       
       setAvailableUsers(mappedUsers);
@@ -267,6 +296,56 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fonction pour récupérer le nom de l'enfant d'un parent
+  const getChildInfoForParent = async (userId: number): Promise<string | null> => {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const token = localStorage.getItem('token');
+      
+      if (!token) return null;
+
+      // D'abord, récupérer l'ID du parent à partir de l'ID utilisateur
+      const parentResponse = await fetch(`${API_BASE}/parents/by-user/${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!parentResponse.ok) {
+        console.log(`Parent non trouvé pour l'utilisateur ${userId}: ${parentResponse.status}`);
+        return null;
+      }
+
+      const parentData = await parentResponse.json();
+      if (!parentData || !parentData.id) {
+        console.log(`Aucun parent trouvé pour l'utilisateur ${userId}`);
+        return null;
+      }
+
+      // Maintenant récupérer l'enfant avec l'ID parent
+      const childResponse = await fetch(`${API_BASE}/parents/${parentData.id}/child`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (childResponse.ok) {
+        // Vérifier si la réponse est vide ou null
+        const text = await childResponse.text();
+        if (!text || text.trim() === '') {
+          console.log(`Aucun enfant trouvé pour le parent ${parentData.id}`);
+          return null;
+        }
+
+        const childData = JSON.parse(text);
+        if (childData && childData.firstName) {
+          return `${childData.firstName} ${childData.lastName || ''}`.trim();
+        }
+      } else {
+        console.log(`Erreur API pour le parent ${parentData.id}: ${childResponse.status} ${childResponse.statusText}`);
+      }
+    } catch (error) {
+      console.log('Erreur lors de la récupération de l\'enfant:', error);
+    }
+    return null;
   };
 
   // Load messages for a conversation
@@ -513,7 +592,16 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
       conversation.participant2_id : conversation.participant1_id;
     
     const otherUser = availableUsers.find(user => user.id === otherUserId);
-    return otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Conversation';
+    
+    if (otherUser) {
+      // Si c'est un parent et qu'on a le nom de l'enfant, l'afficher
+      if (otherUser.role === 'parent' && otherUser.childName) {
+        return `${otherUser.childName} (${otherUser.firstName} ${otherUser.lastName})`;
+      }
+      return `${otherUser.firstName} ${otherUser.lastName}`;
+    }
+    
+    return 'Conversation';
   };
 
   // Get other participant in current conversation
@@ -832,7 +920,18 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
                       )}
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-blue-400 font-medium">
-                          {conversation.type === 'direct' ? 'Conversation privée' : 'Groupe'}
+                          {conversation.type === 'direct' ? 
+                            (() => {
+                              const otherUserId = conversation.participant1_id === currentUserId ? 
+                                conversation.participant2_id : conversation.participant1_id;
+                              const otherUser = availableUsers.find(user => user.id === otherUserId);
+                              if (otherUser?.role === 'parent' && otherUser?.childName) {
+                                return otherUser.childName;
+                              }
+                              return 'Conversation privée';
+                            })() 
+                            : 'Groupe'
+                          }
                         </span>
                         {conversation.lastMessage && (
                           <span className="text-xs text-gray-500">

@@ -15,7 +15,6 @@ import {
   Search,
   RefreshCw,
   Eye,
-  Trash2,
   Plus,
   ChevronDown,
   ChevronUp,
@@ -117,8 +116,7 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
   const [responseType, setResponseType] = useState<'approve' | 'refuse'>('approve');
   const [adminReason, setAdminReason] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteReason, setDeleteReason] = useState('');
+  // Suppression des états de suppression - remplacé par refus avec raison
 
   // Fonction pour charger les rendez-vous
   const loadRendezVous = useCallback(async () => {
@@ -233,6 +231,12 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
   const submitResponse = async () => {
     if (!selectedRendezVous) return;
 
+    // Validation : la raison est obligatoire pour les deux actions
+    if (!adminReason.trim()) {
+      alert(`Veuillez fournir une raison pour ${responseType === 'approve' ? 'approuver' : 'refuser'} ce rendez-vous.`);
+      return;
+    }
+
     try {
       // Appeler l'API pour mettre à jour le rendez-vous
       const response = await fetch(`/api/rendez-vous/${selectedRendezVous.id}`, {
@@ -242,7 +246,7 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
         },
         body: JSON.stringify({
           status: responseType === 'approve' ? 'approved' : 'refused',
-          adminReason: adminReason,
+          adminReason: adminReason.trim(),
           updatedAt: new Date().toISOString()
         }),
       });
@@ -265,44 +269,7 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
     }
   };
 
-  const handleDelete = (rdv: RendezVous) => {
-    setSelectedRendezVous(rdv);
-    setDeleteReason('');
-    setShowDeleteModal(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!selectedRendezVous) return;
-
-    try {
-      // Appeler l'API pour supprimer le rendez-vous
-      const response = await fetch(`/api/rendez-vous?id=${selectedRendezVous.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de la suppression du rendez-vous');
-      }
-
-      const result = await response.json();
-
-      // Rafraîchir les données depuis la base
-      await loadRendezVous();
-
-      setShowDeleteModal(false);
-      setSelectedRendezVous(null);
-      setDeleteReason('');
-      
-      console.log('Rendez-vous supprimé avec succès:', result.message);
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      alert('Erreur lors de la suppression du rendez-vous. Veuillez réessayer.');
-    }
-  };
+  // Fonction de suppression supprimée - remplacée par refus avec raison
 
 
 
@@ -476,32 +443,25 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
                   </button>
                   
                   {rdv.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => handleResponse(rdv, 'approve')}
-                        className="p-2 bg-green-500/20 rounded-lg text-green-400 hover:bg-green-500/30 transition-all"
-                        title="Approuver"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleResponse(rdv, 'refuse')}
-                        className="p-2 bg-red-500/20 rounded-lg text-red-400 hover:bg-red-500/30 transition-all"
-                        title="Refuser"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </>
+                    <button
+                      onClick={() => handleResponse(rdv, 'approve')}
+                      className="p-2 bg-green-500/20 rounded-lg text-green-400 hover:bg-green-500/30 transition-all"
+                      title="Approuver"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
                   )}
                   
-                  {/* Bouton de suppression pour tous les statuts */}
-                  <button
-                    onClick={() => handleDelete(rdv)}
-                    className="p-2 bg-red-500/20 rounded-lg text-red-400 hover:bg-red-500/30 transition-all"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Bouton de refus avec raison pour tous les statuts (sauf déjà refusé) */}
+                  {rdv.status !== 'refused' && (
+                    <button
+                      onClick={() => handleResponse(rdv, 'refuse')}
+                      className="p-2 bg-red-500/20 rounded-lg text-red-400 hover:bg-red-500/30 transition-all"
+                      title="Refuser avec raison"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -542,15 +502,23 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
 
             <div className="mb-4">
               <label className="block text-white text-sm font-medium mb-2">
-                Raison de votre décision (optionnel)
+                Raison de votre décision (obligatoire)
               </label>
               <textarea
                 value={adminReason}
                 onChange={(e) => setAdminReason(e.target.value)}
                 placeholder={`Ajoutez une raison pour ${responseType === 'approve' ? 'l\'approbation' : 'le refus'}...`}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none"
+                className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none ${
+                  !adminReason.trim() 
+                    ? 'border-red-500/50 focus:ring-red-400' 
+                    : 'border-white/20'
+                }`}
                 rows={3}
+                required
               />
+              {!adminReason.trim() && (
+                <p className="text-red-400 text-xs mt-1">Une raison est obligatoire pour {responseType === 'approve' ? 'approuver' : 'refuser'} un rendez-vous</p>
+              )}
             </div>
 
             <div className="flex items-center justify-end space-x-3">
@@ -562,8 +530,11 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
               </button>
               <button
                 onClick={submitResponse}
+                disabled={!adminReason.trim()}
                 className={`px-4 py-2 rounded-lg text-white font-medium transition-all ${
-                  responseType === 'approve'
+                  !adminReason.trim()
+                    ? 'bg-gray-500 cursor-not-allowed opacity-50'
+                    : responseType === 'approve'
                     ? 'bg-green-500 hover:bg-green-600'
                     : 'bg-red-500 hover:bg-red-600'
                 }`}
@@ -596,22 +567,26 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
                   <User className="w-5 h-5 mr-2" />
                   Informations du parent
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-blue-200 text-sm">Nom</p>
-                    <p className="text-white font-medium">{selectedRendezVous.parentName}</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-blue-200 text-sm">Nom</p>
+                      <p className="text-white font-medium">{selectedRendezVous.parentName}</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-200 text-sm">Téléphone</p>
+                      <p className="text-white font-medium">{selectedRendezVous.parentPhone}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-blue-200 text-sm">Email</p>
-                    <p className="text-white font-medium">{selectedRendezVous.parentEmail}</p>
-                  </div>
-                  <div>
-                    <p className="text-blue-200 text-sm">Téléphone</p>
-                    <p className="text-white font-medium">{selectedRendezVous.parentPhone}</p>
-                  </div>
-                  <div>
-                    <p className="text-blue-200 text-sm">Enfant</p>
-                    <p className="text-white font-medium">{selectedRendezVous.childName} ({selectedRendezVous.childClass})</p>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <p className="text-blue-200 text-sm">Email</p>
+                      <p className="text-white font-medium break-all">{selectedRendezVous.parentEmail}</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-200 text-sm">Enfant</p>
+                      <p className="text-white font-medium">{selectedRendezVous.childName} ({selectedRendezVous.childClass})</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -697,71 +672,7 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
         </div>
       )}
 
-      {/* Modal de suppression */}
-      {showDeleteModal && selectedRendezVous && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md mx-4 border border-white/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white text-lg font-semibold flex items-center">
-                <Trash2 className="w-5 h-5 text-red-400 mr-2" />
-                Supprimer le rendez-vous
-              </h3>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="text-blue-300 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-blue-200 text-sm mb-2">
-                <strong>Parent:</strong> {selectedRendezVous.parentName}
-              </p>
-              <p className="text-blue-200 text-sm mb-2">
-                <strong>Enfant:</strong> {selectedRendezVous.childName} ({selectedRendezVous.childClass})
-              </p>
-              <p className="text-blue-200 text-sm mb-2">
-                <strong>Date demandée:</strong> {formatDateTime(selectedRendezVous.timing)}
-              </p>
-              <p className="text-blue-200 text-sm mb-4">
-                <strong>Raison:</strong> {selectedRendezVous.parentReason}
-              </p>
-              <p className="text-red-300 text-sm mb-4">
-                ⚠️ Cette action est irréversible. Le rendez-vous sera définitivement supprimé.
-              </p>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-white text-sm font-medium mb-2">
-                Raison de la suppression (optionnel)
-              </label>
-              <textarea
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                placeholder="Indiquez la raison de la suppression..."
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex items-center justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-blue-300 hover:text-white transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-white font-medium transition-all"
-              >
-                Supprimer définitivement
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de suppression supprimé - remplacé par refus avec raison */}
     </div>
   );
 };

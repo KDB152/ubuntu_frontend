@@ -326,23 +326,23 @@ const ParentProfileTab: React.FC = () => {
             {/* Informations de base */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
               <h3 className="text-white font-semibold text-lg mb-4">Informations de base</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <label className="block text-blue-200 text-sm mb-2">Prénom</label>
-                  <p className="text-white">{profile.personal.firstName}</p>
+                  <p className="text-white truncate">{profile.personal.firstName}</p>
                 </div>
                 
-                <div>
+                <div className="min-w-0">
                   <label className="block text-blue-200 text-sm mb-2">Nom</label>
-                  <p className="text-white">{profile.personal.lastName}</p>
+                  <p className="text-white truncate">{profile.personal.lastName}</p>
                 </div>
                 
-                <div>
+                <div className="min-w-0 sm:col-span-2 lg:col-span-1">
                   <label className="block text-blue-200 text-sm mb-2">Email</label>
-                  <p className="text-white">{profile.personal.email}</p>
+                  <p className="text-white break-all sm:break-normal">{profile.personal.email}</p>
                 </div>
                 
-                <div>
+                <div className="min-w-0 sm:col-span-2 lg:col-span-1">
                   <label className="block text-blue-200 text-sm mb-2">Téléphone</label>
                   <p className="text-white">{profile.personal.phone || 'Non renseigné'}</p>
                 </div>
@@ -355,30 +355,30 @@ const ParentProfileTab: React.FC = () => {
               {profile.children.length > 0 && (
                 profile.children.map((child, index) => (
                   <div key={child.id} className="bg-white/5 rounded-xl p-6 border border-white/10 mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                      <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                      <div className="min-w-0">
                         <label className="block text-blue-200 text-sm mb-2">Prénom</label>
-                        <p className="text-white">{child.firstName}</p>
+                        <p className="text-white truncate">{child.firstName}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <label className="block text-blue-200 text-sm mb-2">Nom</label>
-                        <p className="text-white">{child.lastName}</p>
+                        <p className="text-white truncate">{child.lastName}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0 sm:col-span-2 lg:col-span-1 xl:col-span-1">
                         <label className="block text-blue-200 text-sm mb-2">Email</label>
-                        <p className="text-white">{child.email || 'Non renseigné'}</p>
+                        <p className="text-white break-all sm:break-normal">{child.email || 'Non renseigné'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0 sm:col-span-2 lg:col-span-1 xl:col-span-1">
                         <label className="block text-blue-200 text-sm mb-2">Téléphone</label>
                         <p className="text-white">{child.phone || 'Non renseigné'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <label className="block text-blue-200 text-sm mb-2">Date de naissance</label>
                         <p className="text-white">{child.dateOfBirth || 'Non renseigné'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <label className="block text-blue-200 text-sm mb-2">Classe</label>
-                        <p className="text-white">{child.class || 'Non renseigné'}</p>
+                        <p className="text-white truncate">{child.class || 'Non renseigné'}</p>
                       </div>
                     </div>
                   </div>

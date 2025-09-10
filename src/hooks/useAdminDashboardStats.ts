@@ -63,15 +63,16 @@ export const useAdminDashboardStats = () => {
         console.log('❌ Erreur récupération messages admin:', error);
       }
 
-      // 2. Récupérer les rendez-vous en attente
+      // 2. Récupérer les rendez-vous en attente (utiliser le même endpoint que la section Rendez-vous)
       try {
-        const meetingsResponse = await fetch(`${API_BASE}/meetings?status=scheduled`, {
+        const rendezVousResponse = await fetch(`${API_BASE}/api/rendez-vous`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
 
-        if (meetingsResponse.ok) {
-          const meetings = await meetingsResponse.json();
-          pendingMeetings = meetings.length;
+        if (rendezVousResponse.ok) {
+          const rendezVous = await rendezVousResponse.json();
+          // Compter seulement les rendez-vous avec le statut 'pending'
+          pendingMeetings = rendezVous.filter((rdv: any) => rdv.status === 'pending').length;
           console.log('📅 Rendez-vous en attente:', pendingMeetings);
         }
       } catch (error) {
