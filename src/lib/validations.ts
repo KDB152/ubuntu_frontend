@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from './errorMessages';
+
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;
@@ -69,75 +71,75 @@ export const patterns = {
 // Validation schemas
 export const loginSchema: ValidationSchema = {
   email: [
-    { required: true, message: 'L\'email est requis' },
-    { pattern: patterns.email, message: 'Format d\'email invalide' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.EMAIL },
+    { pattern: patterns.email, message: ERROR_MESSAGES.VALIDATION.INVALID.EMAIL },
   ],
   password: [
-    { required: true, message: 'Le mot de passe est requis' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.PASSWORD },
     { minLength: 6, message: 'Le mot de passe doit contenir au moins 6 caractères' },
   ],
 };
 
 export const registerSchema: ValidationSchema = {
   firstName: [
-    { required: true, message: 'Le prénom est requis' },
-    { pattern: patterns.name, message: 'Le prénom doit contenir uniquement des lettres (2-50 caractères)' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.FIRST_NAME },
+    { pattern: patterns.name, message: ERROR_MESSAGES.VALIDATION.INVALID.NAME_FORMAT },
   ],
   lastName: [
-    { required: true, message: 'Le nom est requis' },
-    { pattern: patterns.name, message: 'Le nom doit contenir uniquement des lettres (2-50 caractères)' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.LAST_NAME },
+    { pattern: patterns.name, message: ERROR_MESSAGES.VALIDATION.INVALID.NAME_FORMAT },
   ],
   email: [
-    { required: true, message: 'L\'email est requis' },
-    { pattern: patterns.email, message: 'Format d\'email invalide' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.EMAIL },
+    { pattern: patterns.email, message: ERROR_MESSAGES.VALIDATION.INVALID.EMAIL },
   ],
   password: [
-    { required: true, message: 'Le mot de passe est requis' },
-    { minLength: 8, message: 'Le mot de passe doit contenir au moins 8 caractères' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.PASSWORD },
+    { minLength: 8, message: ERROR_MESSAGES.VALIDATION.INVALID.PASSWORD_LENGTH },
     { 
       pattern: patterns.password, 
-      message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial' 
+      message: ERROR_MESSAGES.VALIDATION.INVALID.PASSWORD_STRENGTH
     },
   ],
   confirmPassword: [
-    { required: true, message: 'La confirmation du mot de passe est requise' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.CONFIRM_PASSWORD },
   ],
   phone: [
-    { pattern: patterns.phone, message: 'Format de téléphone invalide' },
+    { pattern: patterns.phone, message: ERROR_MESSAGES.VALIDATION.INVALID.PHONE },
   ],
   role: [
-    { required: true, message: 'Le rôle est requis' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.ROLE },
     { 
       custom: (value) => ['student', 'parent'].includes(value), 
-      message: 'Rôle invalide' 
+      message: ERROR_MESSAGES.VALIDATION.INVALID.ROLE_SELECTION
     },
   ],
   acceptTerms: [
     { 
       custom: (value) => value === true, 
-      message: 'Vous devez accepter les conditions d\'utilisation' 
+      message: ERROR_MESSAGES.VALIDATION.TERMS
     },
   ],
 };
 
 export const forgotPasswordSchema: ValidationSchema = {
   email: [
-    { required: true, message: 'L\'email est requis' },
-    { pattern: patterns.email, message: 'Format d\'email invalide' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.EMAIL },
+    { pattern: patterns.email, message: ERROR_MESSAGES.VALIDATION.INVALID.EMAIL },
   ],
 };
 
 export const resetPasswordSchema: ValidationSchema = {
   password: [
-    { required: true, message: 'Le mot de passe est requis' },
-    { minLength: 8, message: 'Le mot de passe doit contenir au moins 8 caractères' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.PASSWORD },
+    { minLength: 8, message: ERROR_MESSAGES.VALIDATION.INVALID.PASSWORD_LENGTH },
     { 
       pattern: patterns.password, 
-      message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial' 
+      message: ERROR_MESSAGES.VALIDATION.INVALID.PASSWORD_STRENGTH
     },
   ],
   confirmPassword: [
-    { required: true, message: 'La confirmation du mot de passe est requise' },
+    { required: true, message: ERROR_MESSAGES.VALIDATION.REQUIRED.CONFIRM_PASSWORD },
   ],
 };
 

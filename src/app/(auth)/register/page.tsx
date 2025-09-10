@@ -104,21 +104,21 @@ const RegisterPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Le prénom est requis';
+      newErrors.firstName = 'Le prénom est obligatoire';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Le nom est requis';
+      newErrors.lastName = 'Le nom est obligatoire';
     }
 
     if (!formData.email) {
-      newErrors.email = 'L\'adresse email est requise';
+      newErrors.email = 'L\'adresse email est obligatoire';
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Veuillez entrer une adresse email valide';
+      newErrors.email = 'L\'adresse email n\'est pas valide';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Le mot de passe est requis';
+      newErrors.password = 'Le mot de passe est obligatoire';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
     }
@@ -132,10 +132,10 @@ const RegisterPage: React.FC = () => {
     // Validation spécifique aux étudiants
     if (formData.userType === 'student') {
       if (!formData.studentBirthDate) {
-        newErrors.studentBirthDate = 'La date de naissance est requise';
+        newErrors.studentBirthDate = 'La date de naissance est obligatoire';
       }
       if (!formData.studentClass) {
-        newErrors.studentClass = 'La classe est requise';
+        newErrors.studentClass = 'La classe est obligatoire';
       } else if (!AVAILABLE_CLASSES.includes(formData.studentClass)) {
         newErrors.studentClass = 'Veuillez sélectionner une classe valide';
       }
@@ -255,7 +255,7 @@ const RegisterPage: React.FC = () => {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Erreur lors de l'inscription");
+        throw new Error(data.message || "Impossible de créer votre compte. Veuillez réessayer.");
       }
 
       // Rediriger vers la page de vérification d'email après inscription réussie

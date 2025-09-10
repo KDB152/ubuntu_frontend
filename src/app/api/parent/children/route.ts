@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     
     if (!parentId) {
       return NextResponse.json(
-        { error: 'ID du parent requis' },
+        { error: 'L\'identifiant du parent est obligatoire' },
         { status: 400 }
       );
     }
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
     
     if ((rows as any[]).length === 0 || validChildren.length === 0) {
       return NextResponse.json(
-        { error: 'Parent non trouvé ou aucun enfant associé' },
+        { error: 'Aucun parent trouvé ou aucun enfant associé à ce compte' },
         { status: 404 }
       );
     }
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Erreur lors de la récupération des enfants:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération des enfants' },
+      { error: 'Impossible de charger les informations des enfants. Veuillez réessayer.' },
       { status: 500 }
     );
   }

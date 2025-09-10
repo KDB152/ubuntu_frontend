@@ -35,10 +35,10 @@ export function LoginForm({ onLogin }) {
         localStorage.setItem('token', data.access_token);
         onLogin(data);
       } else {
-        setError(data.message || 'Erreur de connexion');
+        setError(data.message || 'Email ou mot de passe incorrect');
       }
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError('Impossible de se connecter. Vérifiez votre connexion internet.');
     } finally {
       setIsLoading(false);
     }

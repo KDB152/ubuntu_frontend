@@ -125,7 +125,7 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
       const response = await fetch('/api/rendez-vous');
       
       if (!response.ok) {
-        throw new Error('Erreur lors du chargement des rendez-vous');
+        throw new Error('Impossible de charger les rendez-vous. Veuillez réessayer.');
       }
       
       const data = await response.json();
@@ -252,7 +252,7 @@ const RendezVousManagementTab: React.FC<RendezVousManagementTabProps> = ({ onRef
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la mise à jour du rendez-vous');
+        throw new Error('Impossible de modifier le rendez-vous. Veuillez réessayer.');
       }
 
       // Rafraîchir les données depuis la base

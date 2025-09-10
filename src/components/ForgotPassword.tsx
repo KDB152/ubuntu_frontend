@@ -54,10 +54,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
         setMessage(data.message);
         setStep('code');
       } else {
-        setError(data.message || 'Erreur lors de l\'envoi du code');
+        setError(data.message || 'Impossible d\'envoyer le code. Vérifiez votre adresse email.');
       }
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError('Impossible de se connecter. Vérifiez votre connexion internet.');
     } finally {
       setLoading(false);
     }
@@ -87,10 +87,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
         setMessage(data.message);
         setStep('success');
       } else {
-        setError(data.message || 'Erreur lors de l\'envoi du lien');
+        setError(data.message || 'Impossible d\'envoyer le lien. Vérifiez votre adresse email.');
       }
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError('Impossible de se connecter. Vérifiez votre connexion internet.');
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
 
   const verifyPasswordResetCode = async () => {
     if (!code || code.length !== 6) {
-      setError('Veuillez saisir un code à 6 chiffres');
+      setError('Veuillez saisir le code à 6 chiffres reçu par email');
       return;
     }
 
@@ -121,10 +121,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
         setResetToken(data.resetToken);
         setStep('password');
       } else {
-        setError(data.message || 'Code de vérification incorrect');
+        setError(data.message || 'Le code saisi est incorrect. Vérifiez votre email.');
       }
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError('Impossible de se connecter. Vérifiez votre connexion internet.');
     } finally {
       setLoading(false);
     }
@@ -165,10 +165,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
           navigate('/login');
         }, 3000);
       } else {
-        setError(data.message || 'Erreur lors de la réinitialisation');
+        setError(data.message || 'Impossible de réinitialiser le mot de passe. Veuillez réessayer.');
       }
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError('Impossible de se connecter. Vérifiez votre connexion internet.');
     } finally {
       setLoading(false);
     }

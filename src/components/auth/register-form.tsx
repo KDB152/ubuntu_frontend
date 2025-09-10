@@ -83,11 +83,11 @@ const RegisterForm: React.FC = () => {
         if (response.errors) {
           setErrors(response.errors as unknown as Record<string, string>);
         } else {
-          addToast({
-            type: 'error',
-            title: 'Erreur d\'inscription',
-            message: response.message || 'Une erreur est survenue lors de l\'inscription.',
-          });
+        addToast({
+          type: 'error',
+          title: 'Erreur d\'inscription',
+          message: response.message || 'Impossible de créer votre compte. Veuillez réessayer.',
+        });
         }
       }
     } catch (error) {
@@ -95,7 +95,7 @@ const RegisterForm: React.FC = () => {
       addToast({
         type: 'error',
         title: 'Erreur d\'inscription',
-        message: 'Impossible de se connecter au serveur. Veuillez réessayer.',
+        message: 'Impossible de se connecter. Vérifiez votre connexion internet.',
       });
     } finally {
       setIsLoading(false);

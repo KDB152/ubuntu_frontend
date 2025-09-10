@@ -173,7 +173,7 @@ const ParentProfileTab: React.FC = () => {
       alert('Profil mis à jour avec succès !');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde du profil');
+      alert('Impossible de sauvegarder vos informations. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }

@@ -1,4 +1,6 @@
 // API service for connecting to backend endpoints
+import { ERROR_MESSAGES } from './errorMessages';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chrono-carto-api.loca.lt';
 
 // Generic API request function
@@ -32,10 +34,10 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
           window.location.href = '/login';
         }
         
-        throw new Error('Token invalide ou manquant');
+        throw new Error(ERROR_MESSAGES.AUTH.SESSION_EXPIRED);
       }
       
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(errorData.message || ERROR_MESSAGES.AUTH.SERVER_ERROR);
     }
     
     return await response.json();
@@ -583,7 +585,7 @@ export const updateUserProfile = async (userId: number, profileData: any) => {
     });
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la mise à jour du profil');
+      throw new Error(ERROR_MESSAGES.PROFILE.SAVE_FAILED);
     }
 
     const updatedUser = await response.json();
@@ -604,7 +606,7 @@ export const changePassword = async (currentPassword: string, newPassword: strin
   try {
     const token = localStorage.getItem('token');
     if (!token) {
-      throw new Error('Token d\'authentification manquant');
+      throw new Error(ERROR_MESSAGES.AUTH.UNAUTHORIZED);
     }
 
     const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
@@ -622,13 +624,13 @@ export const changePassword = async (currentPassword: string, newPassword: strin
     if (!response.ok) {
       const errorData = await response.json();
       if (response.status === 400) {
-        throw new Error(errorData.message || 'Données invalides');
+        throw new Error(errorData.message || 'Les informations saisies ne sont pas correctes');
       } else if (response.status === 401) {
-        throw new Error('Non autorisé');
+        throw new Error('Le mot de passe actuel est incorrect');
       } else if (response.status === 404) {
-        throw new Error('Utilisateur non trouvé');
+        throw new Error(ERROR_MESSAGES.AUTH.ACCOUNT_NOT_FOUND);
       } else {
-        throw new Error('Erreur lors du changement de mot de passe');
+        throw new Error(ERROR_MESSAGES.ACCOUNT.PASSWORD_CHANGE_FAILED);
       }
     }
 
@@ -650,7 +652,7 @@ export const getUserProfile = async (userId: number) => {
     });
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la récupération du profil');
+      throw new Error(ERROR_MESSAGES.PROFILE.LOAD_FAILED);
     }
 
     return await response.json();
@@ -672,7 +674,7 @@ export const getStudentProfile = async (studentId: number) => {
     });
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la récupération du profil étudiant');
+      throw new Error(ERROR_MESSAGES.PROFILE.STUDENT_LOAD_FAILED);
     }
 
     return await response.json();
@@ -696,7 +698,7 @@ export const updateStudentProfile = async (studentId: number, profileData: any) 
     });
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la mise à jour du profil étudiant');
+      throw new Error(ERROR_MESSAGES.PROFILE.STUDENT_SAVE_FAILED);
     }
 
     return await response.json();
@@ -718,7 +720,7 @@ export const getParentProfile = async (parentId: number) => {
     });
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la récupération du profil parent');
+      throw new Error(ERROR_MESSAGES.PROFILE.PARENT_LOAD_FAILED);
     }
 
     return await response.json();
@@ -742,7 +744,7 @@ export const updateParentProfile = async (parentId: number, profileData: any) =>
     });
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la mise à jour du profil parent');
+      throw new Error(ERROR_MESSAGES.PROFILE.PARENT_SAVE_FAILED);
     }
 
     return await response.json();

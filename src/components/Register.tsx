@@ -61,21 +61,21 @@ const RegisterPage: React.FC = () => {
     const newErrors = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Le prénom est requis';
+      newErrors.firstName = 'Le prénom est obligatoire';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Le nom est requis';
+      newErrors.lastName = 'Le nom est obligatoire';
     }
 
     if (!formData.email) {
-      newErrors.email = 'L\'adresse email est requise';
+      newErrors.email = 'L\'adresse email est obligatoire';
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Veuillez entrer une adresse email valide';
+      newErrors.email = 'L\'adresse email n\'est pas valide';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Le mot de passe est requis';
+      newErrors.password = 'Le mot de passe est obligatoire';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
     }
@@ -116,7 +116,7 @@ const handleSubmit = async (e) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Erreur lors de l\'inscription');
+      throw new Error(data.message || 'Impossible de créer votre compte. Veuillez réessayer.');
     }
 
     setSuccessMessage(data.message || 'Inscription réussie !');  // Affiche message du backend ou par défaut
