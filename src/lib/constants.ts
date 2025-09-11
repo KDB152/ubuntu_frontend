@@ -4,7 +4,7 @@ export const APP_DESCRIPTION = 'Plateforme pédagogique Histoire-Géographie';
 export const APP_VERSION = '1.0.0';
 
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // Authentication
