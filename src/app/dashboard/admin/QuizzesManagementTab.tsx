@@ -127,6 +127,7 @@ const QuizzesManagementTab = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [activeTab, setActiveTab] = useState<'quizzes' | 'results'>('quizzes');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const subjects = ['Histoire', 'Géographie', 'EMC'];
 
@@ -238,17 +239,73 @@ const QuizzesManagementTab = () => {
     setTimeout(() => setNotification(null), 5000);
   };
 
+  // Fonction pour recharger les données
+  const refreshData = async () => {
+    setIsLoading(true);
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      
+      // Charger tous les quiz
+      const res = await fetch(`${API_BASE}/quizzes`);
+      const json = await res.json();
+      const mapped: Quiz[] = (json.items || []).map((q: any) => ({
+        id: String(q.id),
+        title: q.title,
+        description: q.description || '',
+        subject: q.subject,
+        duration: q.duration || 0,
+        questions: [],
+        attempts: q.attempts || 0,
+        averageScore: Number(q.average_score || 0),
+        passScore: q.pass_score || 0,
+        status: q.status as 'Publié' | 'Brouillon' | 'Archivé',
+        createdDate: q.created_at?.slice(0,10) || '',
+        lastModified: q.updated_at?.slice(0,10) || '',
+        isTimeLimited: !!q.is_time_limited,
+        allowRetake: !!q.allow_retake,
+        showResults: !!q.show_results,
+        randomizeQuestions: !!q.randomize_questions,
+        targetGroups: q.target_groups || [],
+      }));
+      setQuizzes(mapped);
+      console.log('Données rechargées:', mapped); // Debug
+    } catch (error) {
+      console.error('Erreur rechargement:', error);
+      showNotification('error', 'Erreur lors du rechargement des données');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDeleteQuiz = async (quiz: Quiz) => {
     setIsLoading(true);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
-      await fetch(`${API_BASE}/quizzes/${quiz.id}`, { method: 'DELETE' });
-      setQuizzes(prev => prev.filter(q => q.id !== quiz.id));
+      const res = await fetch(`${API_BASE}/quizzes/${quiz.id}`, { method: 'DELETE' });
+      
+      if (!res.ok) {
+        throw new Error(`Erreur HTTP: ${res.status}`);
+      }
+
+      console.log('Quiz supprimé:', quiz.id); // Debug
+
+      // Mettre à jour l'état en filtrant le quiz supprimé
+      setQuizzes(prev => {
+        const updated = prev.filter(q => q.id !== quiz.id);
+        console.log('Quizzes après suppression:', updated); // Debug
+        return updated;
+      });
+
+      // Alternative robuste : recharger les données pour être sûr
+      // Décommentez cette ligne si le problème persiste :
+      // setTimeout(() => refreshData(), 100);
+
       showNotification('success', 'Quiz supprimé avec succès');
       setShowDeleteModal(false);
       setQuizToDelete(null);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la suppression');
+      console.error('Erreur suppression quiz:', error);
+      showNotification('error', `Erreur lors de la suppression: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -303,29 +360,57 @@ const QuizzesManagementTab = () => {
           target_groups: newQuiz.targetGroups || [],
         })
       });
+
+      if (!res.ok) {
+        throw new Error(`Erreur HTTP: ${res.status}`);
+      }
+
       const created = await res.json();
+      console.log('Quiz créé:', created); // Debug
+
+      // Vérifier que l'objet créé contient bien un ID
+      if (!created.id) {
+        throw new Error('ID du quiz créé manquant');
+      }
+
       const mapped: Quiz = {
         id: String(created.id),
         title: created.title,
-        description: created.description,
+        description: created.description || '',
         subject: created.subject,
-        duration: created.duration,
+        duration: created.duration || 0,
         questions: [],
         attempts: created.attempts || 0,
         averageScore: Number(created.average_score || 0),
-        status: created.status,
-        createdDate: created.created_at?.slice(0,10) || '',
-        lastModified: created.updated_at?.slice(0,10) || '',
+        passScore: created.pass_score || 0,
+        status: created.status || 'Brouillon',
+        createdDate: created.created_at?.slice(0,10) || new Date().toISOString().slice(0,10),
+        lastModified: created.updated_at?.slice(0,10) || new Date().toISOString().slice(0,10),
         isTimeLimited: !!created.is_time_limited,
         allowRetake: !!created.allow_retake,
         showResults: !!created.show_results,
+        randomizeQuestions: !!created.randomize_questions,
         targetGroups: created.target_groups || [],
       };
-      setQuizzes(prev => [...prev, mapped]);
+
+      console.log('Quiz mappé:', mapped); // Debug
+
+      // Mettre à jour l'état avec le nouveau quiz
+      setQuizzes(prev => {
+        const updated = [...prev, mapped];
+        console.log('Quizzes mis à jour:', updated); // Debug
+        return updated;
+      });
+
+      // Alternative robuste : recharger les données pour être sûr
+      // Décommentez cette ligne si le problème persiste :
+      // setTimeout(() => refreshData(), 100);
+
       showNotification('success', 'Quiz créé avec succès');
       setShowCreateModal(false);
     } catch (error) {
-      showNotification('error', 'Erreur lors de la création');
+      console.error('Erreur création quiz:', error);
+      showNotification('error', `Erreur lors de la création: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -511,10 +596,11 @@ const QuizzesManagementTab = () => {
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => window.location.reload()}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+              onClick={refreshData}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20 disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Actualiser</span>
             </button>
             <button

@@ -68,6 +68,14 @@ import { AnimatedCard, AnimatedButton, AnimatedList, AnimatedListItem } from '..
 
 type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'files' | 'profile';
 
+interface MenuItem {
+  id: TabType;
+  label: string;
+  icon: any;
+  description: string;
+  badge?: string | number | null;
+}
+
 interface AdminUser {
   id: string;
   name: string;
@@ -165,7 +173,7 @@ const AdminDashboard = () => {
     loadAdminData();
   }, []);
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       id: 'overview',
       label: 'Vue d\'ensemble',
