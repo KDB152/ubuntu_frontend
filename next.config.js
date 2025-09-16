@@ -4,7 +4,7 @@ const nextConfig = {
     appDir: true,
   },
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', '51.77.195.224'],
   },
   async headers() {
     return [
@@ -33,7 +33,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:3001 https://chrono-carto-api.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:3001 http://51.77.195.224:3001 https://chrono-carto-api.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
           },
         ],
       },
@@ -42,8 +42,8 @@ const nextConfig = {
   async rewrites() {
     // En production, utilisez l'URL de l'API déployée
     const apiUrl = process.env.NODE_ENV === 'production' 
-      ? process.env.NEXT_PUBLIC_API_URL || 'https://chrono-carto-api.vercel.app'
-      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      ? process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001'
+      : process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001';
     
     return [
       {

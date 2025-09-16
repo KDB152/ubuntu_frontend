@@ -1,7 +1,7 @@
 // API service for connecting to backend endpoints
 import { ERROR_MESSAGES } from './errorMessages';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001';
 
 // Generic API request function
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
