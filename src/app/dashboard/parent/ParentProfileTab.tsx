@@ -93,7 +93,7 @@ const ParentProfileTab: React.FC = () => {
         console.log('🔍 Chargement du profil parent pour l\'utilisateur:', user);
         
         // Récupérer les données du parent depuis l'API
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const token = localStorage.getItem('token');
         
         let parentData = null;
@@ -402,4 +402,5 @@ const ParentProfileTab: React.FC = () => {
 };
 
 export default ParentProfileTab;
+
 

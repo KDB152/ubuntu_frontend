@@ -103,8 +103,7 @@ interface DashboardStats {
 
 const AdminPage = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [showRefreshButton, setShowRefreshButton] = useState(false);
-  const { stats: realStats, refreshStats } = useRealStats();
+  const { stats: realStats } = useRealStats();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     activeUsers: 0,
@@ -116,84 +115,34 @@ const AdminPage = () => {
     engagementRate: 0
   });
 
-  // Chargement des données avec timeout de sécurité
+  // Simulation du chargement des données
   useEffect(() => {
     const loadDashboardData = async () => {
       setIsLoading(true);
-      
-      // Afficher le bouton de rafraîchissement après 5 secondes
-      const refreshButtonTimeout = setTimeout(() => {
-        setShowRefreshButton(true);
-      }, 5000);
-
-      // Timeout de sécurité : forcer l'arrêt du chargement après 10 secondes
-      const timeoutId = setTimeout(() => {
-        console.warn('⚠️ Timeout atteint - Affichage du dashboard avec données partielles');
-        setStats({
-          totalUsers: realStats.totalUsers || 0,
-          activeUsers: realStats.totalUsers || 0,
-          totalQuizzes: realStats.totalQuizzes || 0,
-          completedQuizzes: realStats.completedQuizzes || 0,
-          unreadMessages: realStats.userUnreadMessages || 0,
-          averageScore: realStats.averageScore || 0,
-          userGrowth: 0,
-          engagementRate: 0
-        });
-        setIsLoading(false);
-      }, 10000); // 10 secondes maximum
-
       try {
-        // Attendre que les statistiques soient chargées ou timeout
-        const startTime = Date.now();
-        
-        // Attendre un maximum de 8 secondes pour les stats
-        while (realStats.loading && (Date.now() - startTime) < 8000) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+        // Simulation d'un appel API
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         // Données réelles
         setStats({
-          totalUsers: realStats.totalUsers || 0,
-          activeUsers: realStats.totalUsers || 0,
-          totalQuizzes: realStats.totalQuizzes || 0,
-          completedQuizzes: realStats.completedQuizzes || 0,
-          unreadMessages: realStats.userUnreadMessages || 0,
-          averageScore: realStats.averageScore || 0,
+          totalUsers: realStats.totalUsers,
+          activeUsers: realStats.totalUsers,
+          totalQuizzes: realStats.totalQuizzes,
+          completedQuizzes: realStats.completedQuizzes,
+          unreadMessages: realStats.userUnreadMessages,
+          averageScore: realStats.averageScore,
           userGrowth: 0,
           engagementRate: 0
         });
-        
-        console.log('✅ Dashboard chargé avec succès');
       } catch (error) {
-        console.error('❌ Erreur lors du chargement des données:', error);
-        // En cas d'erreur, afficher quand même le dashboard avec des valeurs par défaut
-        setStats({
-          totalUsers: 0,
-          activeUsers: 0,
-          totalQuizzes: 0,
-          completedQuizzes: 0,
-          unreadMessages: 0,
-          averageScore: 0,
-          userGrowth: 0,
-          engagementRate: 0
-        });
+        console.error('Erreur lors du chargement des données:', error);
       } finally {
-        clearTimeout(refreshButtonTimeout);
-        clearTimeout(timeoutId);
         setIsLoading(false);
       }
     };
 
     loadDashboardData();
-  }, [realStats.loading]);
-
-  // Fonction pour forcer le rafraîchissement
-  const handleForceRefresh = () => {
-    setIsLoading(true);
-    setShowRefreshButton(false);
-    refreshStats();
-    window.location.reload();
-  };
+  }, []);
 
   // Écran de chargement
   if (isLoading) {
@@ -210,20 +159,6 @@ const AdminPage = () => {
           <div className="w-64 h-2 bg-white/10 rounded-full mt-3 mx-auto overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
           </div>
-
-          {/* Bouton de rafraîchissement après 5 secondes */}
-          {showRefreshButton && (
-            <div className="mt-6">
-              <p className="text-orange-300 text-sm mb-3">Le chargement prend plus de temps que prévu...</p>
-              <button
-                onClick={handleForceRefresh}
-                className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 mx-auto"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>Actualiser</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -258,4 +193,5 @@ const AdminPage = () => {
 };
 
 export default AdminPage;
+
 

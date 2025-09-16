@@ -122,3 +122,4 @@ export const getGenericUserName = (index: number): string => {
   const names = ['Utilisateur', 'Élève', 'Parent', 'Professeur', 'Administrateur'];
   return `${names[index % names.length]} ${Math.floor(index / names.length) + 1}`;
 };
+

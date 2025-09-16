@@ -60,3 +60,4 @@ export interface MessagingSystemProps {
   currentUserId: number;
   currentUserRole: string;
 }
+

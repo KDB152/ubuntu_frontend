@@ -59,3 +59,4 @@ export const checkAuthAndRedirectWithMessage = (): boolean => {
   }
   return true;
 };
+

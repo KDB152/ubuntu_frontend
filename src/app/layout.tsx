@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '../components/ui/toast';
+import F12Detector from '../components/F12Detector';
+import GlobalConsoleScript from '../components/GlobalConsoleScript';
+import '../lib/global-console-protection';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -33,6 +36,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" className={`${inter.variable} ${poppins.variable}`}>
+      <head>
+        <GlobalConsoleScript />
+      </head>
       <body className="font-sans antialiased">
         <ToastProvider>
           <div id="root">
@@ -40,8 +46,10 @@ export default function RootLayout({
           </div>
           <div id="modal-root"></div>
         </ToastProvider>
+        <F12Detector />
       </body>
     </html>
   );
 }
+
 

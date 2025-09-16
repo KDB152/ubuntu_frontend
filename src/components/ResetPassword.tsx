@@ -21,7 +21,7 @@ const ResetPassword: React.FC = () => {
       setToken(resetToken);
       setTokenValid(true);
     } else {
-      setError('Le lien de réinitialisation est invalide');
+      setError('Token de réinitialisation manquant');
       setTimeout(() => navigate('/forgot-password'), 3000);
     }
   }, [searchParams, navigate]);
@@ -83,7 +83,7 @@ const ResetPassword: React.FC = () => {
           navigate('/login');
         }, 3000);
       } else {
-        setError(data.message || 'Impossible de réinitialiser le mot de passe. Veuillez réessayer.');
+        setError(data.message || 'Erreur lors de la réinitialisation');
         if (response.status === 400) {
           // Token expiré ou invalide
           setTimeout(() => {
@@ -92,7 +92,7 @@ const ResetPassword: React.FC = () => {
         }
       }
     } catch (err) {
-      setError('Impossible de se connecter. Vérifiez votre connexion internet.');
+      setError('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ const ResetPassword: React.FC = () => {
           </div>
           <h2>Lien invalide</h2>
           <p className="error-message">
-            Ce lien de réinitialisation n'est plus valide.
+            Le lien de réinitialisation est invalide ou manquant.
             Vous allez être redirigé vers la page de récupération de mot de passe.
           </p>
         </div>
@@ -230,4 +230,3 @@ const ResetPassword: React.FC = () => {
 };
 
 export default ResetPassword;
-

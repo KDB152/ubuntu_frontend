@@ -52,3 +52,4 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ admin }) => {
 };
 
 export default SettingsTab;
+

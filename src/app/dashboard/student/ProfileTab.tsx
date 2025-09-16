@@ -229,7 +229,7 @@ const ProfileTab: React.FC = () => {
         setUserId(user.id);
         
         // Récupérer les données de l'étudiant depuis l'API
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const token = localStorage.getItem('token');
         
         let studentData = null;
@@ -676,4 +676,5 @@ const ProfileTab: React.FC = () => {
 };
 
 export default ProfileTab;
+
 

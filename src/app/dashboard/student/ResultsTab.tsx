@@ -982,3 +982,4 @@ const ResultsTab: React.FC<ResultsTabProps> = () => {
 };
 
 export default ResultsTab;
+

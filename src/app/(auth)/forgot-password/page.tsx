@@ -49,7 +49,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   setIsLoading(true);
   try {
-    const response = await fetch('/api/auth/send-password-reset-link', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: formData.email }),
@@ -59,14 +59,13 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     if (!response.ok) {
       // 🔥 AMÉLIORATION: Messages d'erreur plus spécifiques
-      if (data.message?.toLowerCase().includes("aucun utilisateur ayant cette adresse e-mail !") || 
-          data.message?.toLowerCase().includes("not found") || 
+      if (data.message?.toLowerCase().includes("not found") || 
           data.message?.toLowerCase().includes("user not found") ||
           data.message?.toLowerCase().includes("email not found") ||
           data.message?.toLowerCase().includes("n'existe pas") ||
           response.status === 404) {
         setErrors({ 
-          email: "Aucun utilisateur ayant cette adresse e-mail !" 
+          email: "Cette adresse email n'est pas inscrite. Veuillez vérifier votre email ou créer un compte." 
         });
       } else if (data.message?.toLowerCase().includes("invalid email") ||
                  data.message?.toLowerCase().includes("email invalide")) {

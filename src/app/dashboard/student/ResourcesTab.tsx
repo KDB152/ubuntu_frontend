@@ -12,3 +12,4 @@ const ResourcesTab: React.FC = () => {
 };
 
 export default ResourcesTab;
+

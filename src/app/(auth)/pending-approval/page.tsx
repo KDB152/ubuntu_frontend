@@ -39,7 +39,7 @@ export default function PendingApprovalPage() {
     if (!emailToCheck) return;
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${API_BASE}/auth/check-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,7 +71,7 @@ export default function PendingApprovalPage() {
     setMessage('');
     
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${API_BASE}/auth/check-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -121,7 +121,7 @@ export default function PendingApprovalPage() {
     setMessage('');
     
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${API_BASE}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -275,3 +275,5 @@ export default function PendingApprovalPage() {
     </div>
   );
 }
+
+

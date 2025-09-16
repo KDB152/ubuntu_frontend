@@ -694,3 +694,4 @@ const PaymentsManagementTab: React.FC = () => {
 };
 
 export default PaymentsManagementTab;
+

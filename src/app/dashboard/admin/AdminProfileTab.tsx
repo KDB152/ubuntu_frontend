@@ -201,7 +201,7 @@ const AdminProfileTab = () => {
         <div className="flex items-center space-x-6">
           <ProfilePictureUpload
             userId={userId}
-            currentImageUrl={profileImageUrl}
+            currentImageUrl={profileImageUrl || undefined}
             onImageChange={setProfileImageUrl}
             size="lg"
           />
@@ -287,3 +287,4 @@ const AdminProfileTab = () => {
 };
 
 export default AdminProfileTab;
+

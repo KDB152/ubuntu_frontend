@@ -13,3 +13,4 @@ export const localDbConfig = {
   password: '',
   database: 'chrono_carto'
 };
+

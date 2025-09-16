@@ -51,7 +51,7 @@ export interface Notification {
 }
 
 // API functions
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Fonction pour obtenir l'ID de l'utilisateur parent (pour les tests)
 const getParentUserId = (): number => {
@@ -393,3 +393,4 @@ const NotificationsTab: React.FC = () => {
 };
 
 export default NotificationsTab;
+

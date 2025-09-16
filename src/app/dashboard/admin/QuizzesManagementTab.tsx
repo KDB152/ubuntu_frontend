@@ -127,7 +127,6 @@ const QuizzesManagementTab = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [activeTab, setActiveTab] = useState<'quizzes' | 'results'>('quizzes');
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const subjects = ['Histoire', 'Géographie', 'EMC'];
 
@@ -178,7 +177,7 @@ const QuizzesManagementTab = () => {
   };
 
   useEffect(() => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const load = async () => {
       setIsLoading(true);
       try {
@@ -239,73 +238,21 @@ const QuizzesManagementTab = () => {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  // Fonction pour recharger les données
-  const refreshData = async () => {
-    setIsLoading(true);
-    try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
-      
-      // Charger tous les quiz
-      const res = await fetch(`${API_BASE}/quizzes`);
-      const json = await res.json();
-      const mapped: Quiz[] = (json.items || []).map((q: any) => ({
-        id: String(q.id),
-        title: q.title,
-        description: q.description || '',
-        subject: q.subject,
-        duration: q.duration || 0,
-        questions: [],
-        attempts: q.attempts || 0,
-        averageScore: Number(q.average_score || 0),
-        passScore: q.pass_score || 0,
-        status: q.status as 'Publié' | 'Brouillon' | 'Archivé',
-        createdDate: q.created_at?.slice(0,10) || '',
-        lastModified: q.updated_at?.slice(0,10) || '',
-        isTimeLimited: !!q.is_time_limited,
-        allowRetake: !!q.allow_retake,
-        showResults: !!q.show_results,
-        randomizeQuestions: !!q.randomize_questions,
-        targetGroups: q.target_groups || [],
-      }));
-      setQuizzes(mapped);
-      console.log('Données rechargées:', mapped); // Debug
-    } catch (error) {
-      console.error('Erreur rechargement:', error);
-      showNotification('error', 'Erreur lors du rechargement des données');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleDeleteQuiz = async (quiz: Quiz) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
-      const res = await fetch(`${API_BASE}/quizzes/${quiz.id}`, { method: 'DELETE' });
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      await fetch(`${API_BASE}/quizzes/${quiz.id}`, { method: 'DELETE' });
+      setQuizzes(prev => prev.filter(q => q.id !== quiz.id));
       
-      if (!res.ok) {
-        throw new Error(`Erreur HTTP: ${res.status}`);
-      }
-
-      console.log('Quiz supprimé:', quiz.id); // Debug
-
-      // Mettre à jour l'état en filtrant le quiz supprimé
-      setQuizzes(prev => {
-        const updated = prev.filter(q => q.id !== quiz.id);
-        console.log('Quizzes après suppression:', updated); // Debug
-        return updated;
-      });
-
-      // Alternative robuste : recharger les données pour être sûr
-      // Décommentez cette ligne si le problème persiste :
-      // setTimeout(() => refreshData(), 100);
-
+      // Mettre à jour quizResults pour l'affichage immédiat
+      setQuizResults(prev => prev.filter(result => result.quiz.id !== quiz.id));
+      
       showNotification('success', 'Quiz supprimé avec succès');
       setShowDeleteModal(false);
       setQuizToDelete(null);
     } catch (error) {
-      console.error('Erreur suppression quiz:', error);
-      showNotification('error', `Erreur lors de la suppression: ${error.message}`);
+      showNotification('error', 'Erreur lors de la suppression');
     } finally {
       setIsLoading(false);
     }
@@ -314,7 +261,7 @@ const QuizzesManagementTab = () => {
   const handleEditQuiz = async (updatedQuiz: Quiz) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       await fetch(`${API_BASE}/quizzes/${updatedQuiz.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -331,6 +278,14 @@ const QuizzesManagementTab = () => {
         })
       });
       setQuizzes(prev => prev.map(q => q.id === updatedQuiz.id ? updatedQuiz : q));
+      
+      // Mettre à jour quizResults pour l'affichage immédiat
+      setQuizResults(prev => prev.map(result => 
+        result.quiz.id === updatedQuiz.id 
+          ? { ...result, quiz: updatedQuiz }
+          : result
+      ));
+      
       showNotification('success', 'Quiz modifié avec succès');
       setShowEditModal(false);
       setQuizToEdit(null);
@@ -344,7 +299,7 @@ const QuizzesManagementTab = () => {
   const handleCreateQuiz = async (newQuiz: Partial<Quiz>) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const res = await fetch(`${API_BASE}/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -360,57 +315,41 @@ const QuizzesManagementTab = () => {
           target_groups: newQuiz.targetGroups || [],
         })
       });
-
-      if (!res.ok) {
-        throw new Error(`Erreur HTTP: ${res.status}`);
-      }
-
       const created = await res.json();
-      console.log('Quiz créé:', created); // Debug
-
-      // Vérifier que l'objet créé contient bien un ID
-      if (!created.id) {
-        throw new Error('ID du quiz créé manquant');
-      }
-
       const mapped: Quiz = {
         id: String(created.id),
         title: created.title,
-        description: created.description || '',
+        description: created.description,
         subject: created.subject,
-        duration: created.duration || 0,
+        duration: created.duration,
         questions: [],
         attempts: created.attempts || 0,
         averageScore: Number(created.average_score || 0),
-        passScore: created.pass_score || 0,
-        status: created.status || 'Brouillon',
-        createdDate: created.created_at?.slice(0,10) || new Date().toISOString().slice(0,10),
-        lastModified: created.updated_at?.slice(0,10) || new Date().toISOString().slice(0,10),
+        status: created.status,
+        createdDate: created.created_at?.slice(0,10) || '',
+        lastModified: created.updated_at?.slice(0,10) || '',
         isTimeLimited: !!created.is_time_limited,
         allowRetake: !!created.allow_retake,
         showResults: !!created.show_results,
-        randomizeQuestions: !!created.randomize_questions,
         targetGroups: created.target_groups || [],
       };
-
-      console.log('Quiz mappé:', mapped); // Debug
-
-      // Mettre à jour l'état avec le nouveau quiz
-      setQuizzes(prev => {
-        const updated = [...prev, mapped];
-        console.log('Quizzes mis à jour:', updated); // Debug
-        return updated;
-      });
-
-      // Alternative robuste : recharger les données pour être sûr
-      // Décommentez cette ligne si le problème persiste :
-      // setTimeout(() => refreshData(), 100);
-
+      setQuizzes(prev => [...prev, mapped]);
+      
+      // Mettre à jour quizResults pour l'affichage immédiat
+      const newQuizResult: QuizResults = {
+        quiz: mapped,
+        attempts: [],
+        totalAttempts: 0,
+        averageScore: 0,
+        bestScore: 0,
+        worstScore: 0
+      };
+      setQuizResults(prev => [...prev, newQuizResult]);
+      
       showNotification('success', 'Quiz créé avec succès');
       setShowCreateModal(false);
     } catch (error) {
-      console.error('Erreur création quiz:', error);
-      showNotification('error', `Erreur lors de la création: ${error.message}`);
+      showNotification('error', 'Erreur lors de la création');
     } finally {
       setIsLoading(false);
     }
@@ -491,7 +430,7 @@ const QuizzesManagementTab = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const res = await fetch(`${API_BASE}/quizzes`);
         const json = await res.json();
         const mapped: Quiz[] = (json.items || []).map((q: any) => ({
@@ -596,11 +535,10 @@ const QuizzesManagementTab = () => {
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={refreshData}
-              disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20 disabled:opacity-50"
+              onClick={() => window.location.reload()}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className="w-4 h-4" />
               <span>Actualiser</span>
             </button>
             <button
@@ -821,7 +759,7 @@ const QuizzesManagementTab = () => {
                           <span>Reprise</span>
                         </div>
                       )}
-                      {quiz.randomizeQuestions && (
+                      {(quiz as any).randomizeQuestions && (
                         <div className="flex items-center space-x-1">
                           <Zap className="w-3 h-3" />
                           <span>Aléatoire</span>
@@ -1650,11 +1588,11 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        attempt.score >= quiz.passScore 
+                        attempt.score >= (quiz as any).passScore 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {attempt.score >= quiz.passScore ? 'Réussi' : 'Échoué'}
+                        {attempt.score >= (quiz as any).passScore ? 'Réussi' : 'Échoué'}
                       </span>
                     </td>
                   </tr>
@@ -1676,3 +1614,4 @@ const QuizResultsModal: React.FC<QuizResultsModalProps> = ({ quiz, attempts, onC
 };
 
 export default QuizzesManagementTab;
+

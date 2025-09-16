@@ -33,15 +33,8 @@ export const useRealStats = () => {
     setLoading(true);
     setError(null);
     
-    // Timeout de sécurité pour éviter les blocages
-    const timeoutId = setTimeout(() => {
-      console.warn('⚠️ Timeout useRealStats - Arrêt forcé du chargement');
-      setLoading(false);
-      setError('Timeout lors du chargement des statistiques');
-    }, 8000); // 8 secondes maximum
-    
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       
       // Récupérer l'utilisateur connecté
       const userDetails = localStorage.getItem('userDetails');
@@ -59,17 +52,12 @@ export const useRealStats = () => {
         const token = localStorage.getItem('token');
         
         try {
-          const studentsResponse = await Promise.race([
-            fetch(`${API_BASE}/admin/students`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout')), 3000)
-            )
-          ]);
+          const studentsResponse = await fetch(`${API_BASE}/admin/students`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
           if (studentsResponse.ok) {
             const studentsData = await studentsResponse.json();
             const students = studentsData.items || [];
@@ -79,21 +67,16 @@ export const useRealStats = () => {
             console.log('❌ Erreur récupération étudiants:', studentsResponse.status);
           }
         } catch (error) {
-          console.log('Erreur récupération étudiants:', error.message);
+          console.log('Erreur récupération étudiants:', error);
         }
 
         try {
-          const parentsResponse = await Promise.race([
-            fetch(`${API_BASE}/admin/parents`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout')), 3000)
-            )
-          ]);
+          const parentsResponse = await fetch(`${API_BASE}/admin/parents`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
           if (parentsResponse.ok) {
             const parentsData = await parentsResponse.json();
             const parents = parentsData.items || [];
@@ -103,7 +86,7 @@ export const useRealStats = () => {
             console.log('❌ Erreur récupération parents:', parentsResponse.status);
           }
         } catch (error) {
-          console.log('Erreur récupération parents:', error.message);
+          console.log('Erreur récupération parents:', error);
         }
         
         totalUsers = totalStudents + totalParents;
@@ -233,7 +216,6 @@ export const useRealStats = () => {
       setError('Erreur lors du chargement des statistiques');
       console.error('Erreur lors du chargement des statistiques:', error);
     } finally {
-      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -249,3 +231,4 @@ export const useRealStats = () => {
     refreshStats: loadRealStats
   };
 };
+

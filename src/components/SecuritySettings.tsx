@@ -97,7 +97,8 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ userId, currentEmai
     setIsLoading(true);
     try {
       // Utilisation de la vraie API avec base de données
-      const response = await fetch('/api/auth/change-email', {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE}/auth/change-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -383,3 +384,5 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ userId, currentEmai
 };
 
 export default SecuritySettings;
+
+

@@ -1,7 +1,7 @@
 // API service for connecting to backend endpoints
 import { ERROR_MESSAGES } from './errorMessages';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chrono-carto-api.loca.lt';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Generic API request function
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
@@ -754,6 +754,21 @@ export const updateParentProfile = async (parentId: number, profileData: any) =>
   }
 };
 
+// API Client for easy access
+export const apiClient = {
+  ...authAPI,
+  ...adminAPI,
+  ...quizzesAPI,
+  ...messagingAPI,
+  ...filesAPI,
+  ...usersAPI,
+  ...studentsAPI,
+  ...parentsAPI,
+  ...progressAPI,
+  ...notificationsAPI,
+  ...analyticsAPI,
+};
+
 export default {
   auth: authAPI,
   admin: adminAPI,
@@ -767,4 +782,5 @@ export default {
   notifications: notificationsAPI,
   analytics: analyticsAPI,
 };
+
 

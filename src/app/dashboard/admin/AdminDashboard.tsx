@@ -68,14 +68,6 @@ import { AnimatedCard, AnimatedButton, AnimatedList, AnimatedListItem } from '..
 
 type TabType = 'overview' | 'users' | 'quizzes' | 'messages' | 'rendez-vous' | 'attendance' | 'payments' | 'files' | 'profile';
 
-interface MenuItem {
-  id: TabType;
-  label: string;
-  icon: any;
-  description: string;
-  badge?: string | number | null;
-}
-
 interface AdminUser {
   id: string;
   name: string;
@@ -173,7 +165,7 @@ const AdminDashboard = () => {
     loadAdminData();
   }, []);
 
-  const menuItems: MenuItem[] = [
+  const menuItems = [
     {
       id: 'overview',
       label: 'Vue d\'ensemble',
@@ -185,19 +177,22 @@ const AdminDashboard = () => {
       id: 'users',
       label: 'Utilisateurs',
       icon: Users,
-      description: 'Gestion des étudiants et parents'
+      description: 'Gestion des étudiants et parents',
+      badge: null
     },
     {
       id: 'quizzes',
       label: 'Quiz',
       icon: BookOpen,
-      description: 'Création et gestion des questionnaires'
+      description: 'Création et gestion des questionnaires',
+      badge: null
     },
     {
       id: 'messages',
       label: 'Messages',
       icon: MessageSquare,
-      description: 'Communication avec les utilisateurs'
+      description: 'Communication avec les utilisateurs',
+      badge: null
     },
     {
       id: 'rendez-vous',
@@ -231,7 +226,8 @@ const AdminDashboard = () => {
       id: 'profile',
       label: 'Mon Profil',
       icon: User,
-      description: 'Gestion du profil administrateur'
+      description: 'Gestion du profil administrateur',
+      badge: null
     }
   ];
 
@@ -523,3 +519,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

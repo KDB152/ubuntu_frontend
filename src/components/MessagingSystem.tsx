@@ -301,7 +301,7 @@ const MessagingSystem: React.FC<MessagingSystemProps> = ({ currentUserId, curren
   // Fonction pour récupérer le nom de l'enfant d'un parent
   const getChildInfoForParent = async (userId: number): Promise<string | null> => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const token = localStorage.getItem('token');
       
       if (!token) return null;
@@ -1481,3 +1481,5 @@ const NewConversationView: React.FC<NewConversationViewProps> = ({
 };
 
 export default MessagingSystem;
+
+

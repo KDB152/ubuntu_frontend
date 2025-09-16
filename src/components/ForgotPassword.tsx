@@ -145,7 +145,8 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
     setError('');
     
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -445,4 +446,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ mode = 'code' }) => {
 };
 
 export default ForgotPassword;
+
+
 

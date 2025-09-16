@@ -141,3 +141,4 @@ export function getDisplayFileType(fileName: string, mimeType: string): string {
   // Par défaut, utiliser la partie après le slash du MIME type
   return mimeType.split('/')[1]?.toUpperCase() || 'FILE';
 }
+

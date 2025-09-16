@@ -513,7 +513,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
         console.log('🔍 Creating student with data:', registrationData);
         console.log('🔍 Phone field value:', (newUser as any).phone_number);
         
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const response = await fetch(`${API_BASE}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -545,7 +545,7 @@ const UsersManagementTab: React.FC<UsersManagementTabProps> = ({
           childPassword: mainPassword // Même mot de passe que le parent
         };
         
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.11:3001';
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const response = await fetch(`${API_BASE}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1579,7 +1579,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, userType, onSave, o
     
     // Validation spécifique aux étudiants
     if (userType === 'students') {
-      if (!formData.classLevel?.trim()) errors.push('La classe est obligatoire');
+      if (!(formData as any).classLevel?.trim()) errors.push('La classe est obligatoire');
     }
     
     // Note: Les champs parent/enfant ne sont plus validés car ils ne sont pas modifiés
@@ -1841,4 +1841,5 @@ const DeleteUserModal: React.FC<DeleteUserModalProps> = ({ user, onConfirm, onCl
 };
 
 export default UsersManagementTab;
+
 
