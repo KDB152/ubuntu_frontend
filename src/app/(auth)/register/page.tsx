@@ -247,7 +247,7 @@ const RegisterPage: React.FC = () => {
         if (formData.childPhone?.trim()) requestData.childPhone = formData.childPhone;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/register`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001'}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),

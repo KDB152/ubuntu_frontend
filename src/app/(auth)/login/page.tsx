@@ -69,7 +69,7 @@ const LoginPage = () => {
     setErrorMessage(null); // Clear previous error message
 
     try {
-      const res = await fetch('http://localhost:3001/auth/login', {
+      const res = await fetch('http://51.77.195.224:3001/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

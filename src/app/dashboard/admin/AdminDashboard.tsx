@@ -140,7 +140,7 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
         if (token) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/me`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001'}/auth/me`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },

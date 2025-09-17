@@ -51,7 +51,7 @@ export interface Notification {
 }
 
 // API functions
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001';
 
 // Fonction pour obtenir l'ID de l'utilisateur parent (pour les tests)
 const getParentUserId = (): number => {

@@ -1,6 +1,6 @@
 import { secureApiCall, sanitizeFormData, generateCSRFToken, setCSRFToken } from './security';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001';
 
 class SecureAPI {
   private baseUrl: string;

@@ -84,7 +84,7 @@ const QuizStatisticsModal: React.FC<QuizStatisticsModalProps> = ({ quiz, isOpen,
     
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/quizzes/${quiz.id}/attempts`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001'}/quizzes/${quiz.id}/attempts`);
       if (response.ok) {
         const data = await response.json();
         setAttempts(data);

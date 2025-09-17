@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
 
     // Connexion à la base de données
     const connection = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'chrono_carto'
+      host: process.env.DB_HOST || '51.77.195.224',
+      user: process.env.DB_USERNAME || 'chrono_user',
+      password: process.env.DB_PASSWORD || 'Abu3soib2004@',
+      database: process.env.DB_NAME || 'chrono_carto'
     });
 
     try {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       console.log('📧 Debug - Email de vérification simulé:');
       console.log('📧 À:', email);
       console.log('📧 Token:', verificationToken);
-      console.log('📧 Lien de vérification:', `http://localhost:3000/verify-email?token=${verificationToken}`);
+      console.log('📧 Lien de vérification:', `http://51.77.195.224:3000/verify-email?token=${verificationToken}`);
 
       await connection.end();
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Email de vérification envoyé (simulé en développement)',
         token: verificationToken, // Pour le développement seulement
-        verificationLink: `http://localhost:3000/verify-email?token=${verificationToken}`
+        verificationLink: `http://51.77.195.224:3000/verify-email?token=${verificationToken}`
       });
 
     } catch (dbError) {

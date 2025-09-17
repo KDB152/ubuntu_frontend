@@ -67,7 +67,7 @@ const ResetPasswordPage = () => {
     setErrors({});
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/reset-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001'}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: formData.password }),

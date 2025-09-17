@@ -3,9 +3,9 @@ import mysql from 'mysql2/promise';
 
 // Configuration de la base de données MySQL
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  host: process.env.DB_HOST || '51.77.195.224',
+  user: process.env.DB_USERNAME || 'chrono_user',
+  password: process.env.DB_PASSWORD || 'Abu3soib2004@',
   database: process.env.DB_NAME || 'chrono_carto',
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,

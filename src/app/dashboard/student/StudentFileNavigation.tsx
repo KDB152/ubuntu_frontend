@@ -73,7 +73,7 @@ const StudentFileNavigation: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://51.77.195.224:3001';
 
   // Charger les dossiers accessibles à l'étudiant
   const loadDossiers = async () => {

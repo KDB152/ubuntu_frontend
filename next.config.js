@@ -4,7 +4,7 @@ const nextConfig = {
     appDir: true,
   },
   images: {
-    domains: ['localhost', '51.77.195.224'],
+    domains: ['51.77.195.224'],
   },
   async headers() {
     return [
@@ -33,7 +33,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:3001 http://51.77.195.224:3001 https://chrono-carto-api.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://51.77.195.224:3001 https://chrono-carto-api.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
           },
         ],
       },

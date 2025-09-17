@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     // Connexion à la base de données
     console.log('🔍 Debug - Tentative de connexion à MySQL...');
     const connection = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'chrono_carto'
+      host: process.env.DB_HOST || '51.77.195.224',
+      user: process.env.DB_USERNAME || 'chrono_user',
+      password: process.env.DB_PASSWORD || 'Abu3soib2004@',
+      database: process.env.DB_NAME || 'chrono_carto'
     });
     console.log('✅ Debug - Connexion MySQL réussie');
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       // Envoyer l'email de vérification
       try {
         console.log('📧 Debug - Envoi de l\'email de vérification...');
-        const emailResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/send-verification-email`, {
+        const emailResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://51.77.195.224:3000'}/api/auth/send-verification-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
